@@ -21,6 +21,7 @@ import { createEnemyManager } from './systems/enemies.js';
 import { createTowerManager } from './systems/towers.js';
 import { createProjectileManager } from './systems/projectiles.js';
 import { createWaveDirector } from './systems/waves.js';
+import { createCastleGuard } from './systems/castleGuard.js';
 import { createArenaDecor } from './art/arenaDecor.js';
 import { createGameSounds, connectGameSounds } from './audio/gameSounds.js';
 import { createHud } from './ui/hud.js';
@@ -40,6 +41,7 @@ export async function createGame({ container }) {
   const projectiles = createProjectileManager({ scene: stage.scene, events, enemies, debris, config: GAME });
   const towers = createTowerManager({ scene: stage.scene, events, enemies, projectiles, debris, art, config: GAME });
   const waves = createWaveDirector({ events, enemies, art, config: GAME });
+  const guard = createCastleGuard({ castle, enemies, projectiles, config: GAME });
   const decor = createArenaDecor({ scene: stage.scene, events, config: GAME });
   const sounds = createGameSounds();
   connectGameSounds(events, sounds);
@@ -169,6 +171,7 @@ export async function createGame({ container }) {
     const screen = view.worldToScreen(position);
     if (screen.visible) hud.floatText(screen.x, screen.y, `+${gold}`, 'gold');
   });
+  events.on('castleRepaired', ({ hp, maxHp }) => hud.setCastleHp(hp, maxHp));
   events.on('castleHit', ({ hp, maxHp }) => {
     hud.setCastleHp(hp, maxHp);
     view.shake(0.25);
@@ -184,7 +187,9 @@ export async function createGame({ container }) {
     if (state.phase !== 'wave') return;
     const bonus = GAME.economy.waveBonus + GAME.economy.waveBonusGrowth * wave;
     economy.earn(bonus);
-    hud.toast(`웨이브 ${wave} 막았어요! 보너스 +${bonus}`);
+    const repaired = castle.hp < castle.maxHp && wave < totalWaves;
+    if (repaired) castle.repair(GAME.castle.repairPerWave);
+    hud.toast(`웨이브 ${wave} 막았어요! 보너스 +${bonus}${repaired ? ' · 성 수리' : ''}`);
     if (wave >= totalWaves) {
       state.phase = 'victory';
       closeMenu();
@@ -212,6 +217,7 @@ export async function createGame({ container }) {
   function startBreak(seconds) {
     state.phase = 'break';
     state.breakLeft = seconds;
+    waves.preview(state.wave + 1); // 다음 웨이브가 올 방향을 바닥에 미리 표시
   }
 
   function startNextWave() {
@@ -229,10 +235,11 @@ export async function createGame({ container }) {
     towers.clear();
     debris.clear();
     waves.reset();
+    guard.reset();
     economy.reset();
     castle.reset();
-    Object.assign(state, { phase: 'break', wave: 0, kills: 0 });
-    state.breakLeft = GAME.waves.firstBreakSeconds;
+    Object.assign(state, { wave: 0, kills: 0 });
+    startBreak(GAME.waves.firstBreakSeconds);
     hud.setWave(0, totalWaves);
     hud.setCastleHp(castle.hp, castle.maxHp);
   }
@@ -254,6 +261,7 @@ export async function createGame({ container }) {
       waves.update(dt);
       enemies.update(dt, { cameraYaw: yaw });
       towers.update(dt, { cameraYaw: yaw });
+      guard.update(dt);
       projectiles.update(dt);
     } else {
       towers.update(dt, { cameraYaw: yaw });

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>블록 성 지키기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+<!--
+  블록 성 지키기 화면
+  화면에 보이는 글자는 대부분 이 파일에서 바로 고칠 수 있습니다.
+  id="..." 는 프로그램(js/game/ui/*.js)이 찾아 쓰는 이름이라 바꾸면 안 됩니다.
+  모양(색, 크기, 위치)은 css/game.css 에서 바꿉니다.
+-->
+
+<!-- ── 3D 전장 (그림판은 프로그램이 여기에 넣습니다) ── -->
+<div id="arena" class="arena" aria-label="성 지키기 전장"></div>
+<p id="bootMessage" class="boot-message">블록을 꺼내는 중…</p>
+<p class="arena-hint">끌어서 돌려 보기 · 휠이나 두 손가락으로 확대 · 타워 자리를 눌러 짓기</p>
+
+<!-- ── 위쪽 정보판 (js/game/ui/hud.js) ── -->
+<div class="hud">
+  <header class="hud-top" aria-label="게임 상황">
+    <div class="hud-card hud-wave">
+      <span class="hud-label">웨이브</span>
+      <span class="hud-wave-count"><strong id="hudWave" class="hud-big">0</strong><span class="hud-of">/ <span id="hudWaveTotal">10</span></span></span>
+    </div>
+
+    <div id="hudHp" class="hud-card hud-hp">
+      <div class="hud-hp-head">
+        <span class="hud-label">성 체력</span>
+        <span id="hudHpText" class="hud-hp-text">100/100</span>
+      </div>
+      <div id="hudHpTrack" class="hp-track" role="progressbar" aria-label="성 체력" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+        <div id="hudHpFill" class="hp-fill" data-level="ok"></div>
+      </div>
+    </div>
+
+    <div class="hud-stats">
+      <div id="hudGoldCard" class="hud-card hud-stat">
+        <span class="coin" aria-hidden="true"></span>
+        <span class="hud-stat-text">
+          <span class="hud-label">골드</span>
+          <strong id="hudGold" class="hud-big">0</strong>
+        </span>
+      </div>
+      <div class="hud-card hud-stat">
+        <span class="mini-slime" aria-hidden="true"></span>
+        <span class="hud-stat-text">
+          <span class="hud-label"><span class="label-long">남은 </span>몬스터</span>
+          <strong id="hudEnemies" class="hud-big">0</strong>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 웨이브 사이 쉬는 시간 안내 -->
+  <div id="countdown" class="countdown" hidden>
+    <p class="countdown-text">다음 웨이브 <strong id="countdownSeconds" class="countdown-num">5</strong>초</p>
+    <button id="startWaveBtn" class="btn btn-primary btn-pill" type="button">바로 시작</button>
+  </div>
+
+  <p id="pausedBadge" class="paused-badge" hidden>잠깐 멈춤</p>
+
+  <!-- 잠깐 떴다 사라지는 알림 -->
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+</div>
+
+<!-- 몬스터를 쓰러뜨리면 떠오르는 "+6" 같은 글자 -->
+<div id="floatLayer" class="float-layer" aria-hidden="true"></div>
+
+<!-- ── 아래쪽 조작 버튼 ── -->
+<nav class="hud-controls" aria-label="게임 조작">
+  <button id="speedBtn" class="hud-btn hud-btn--speed" type="button" aria-label="게임 속도 바꾸기">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l7 6-7 6zM12 6l7 6-7 6z"/></svg>
+    <span id="speedValue" class="hud-btn-big">1×</span>
+  </button>
+  <button id="pauseBtn" class="hud-btn hud-btn--pause" type="button" aria-pressed="false">
+    <svg class="icon when-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+    <svg class="icon when-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>
+    <span class="when-off">멈춤</span><span class="when-on">계속</span>
+  </button>
+  <button id="soundBtn" class="hud-btn hud-btn--sound" type="button" aria-pressed="false">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
+      <path class="when-on" d="M15 9a4 4 0 010 6M17.5 6.5a7.5 7.5 0 010 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path class="when-off" d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span class="when-on">소리 켬</span><span class="when-off">소리 끔</span>
+  </button>
+  <button id="artBtn" class="hud-btn hud-btn--art" type="button">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M6 17l4-5 3 3.5 2-2 3 3.5z"/><circle cx="15.5" cy="9.5" r="1.6"/>
+    </svg>
+    <span>내 그림</span>
+  </button>
+</nav>
+
+<!-- ── 타워 메뉴 (js/game/ui/buildMenu.js) ── -->
+<div id="buildMenu" class="build-menu" role="dialog" aria-label="타워 메뉴" tabindex="-1" hidden>
+  <span class="sheet-grabber" aria-hidden="true"></span>
+  <button id="buildMenuClose" class="icon-btn menu-close" type="button" aria-label="닫기">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+  </button>
+
+  <!-- 빈 자리를 눌렀을 때 -->
+  <section id="padPanel" class="menu-panel">
+    <h2 class="menu-title">타워 짓기</h2>
+    <p class="menu-sub">어떤 타워를 지을까요?</p>
+    <ul id="towerChoices" class="tower-choices"></ul>
+  </section>
+
+  <!-- 지어 둔 타워를 눌렀을 때 -->
+  <section id="towerPanel" class="menu-panel" data-upgrade="ready" hidden>
+    <div class="menu-head">
+      <span id="towerIcon" class="block-icon" aria-hidden="true"></span>
+      <div>
+        <h2 id="towerName" class="menu-title">화살 타워</h2>
+        <p class="level-line"><span>레벨 <span id="towerLevel">1</span>/<span id="towerMaxLevel">3</span></span> <span id="towerLevelStuds" class="level-studs" aria-hidden="true"></span></p>
+      </div>
+    </div>
+    <dl class="tower-stats">
+      <div><dt>공격력</dt><dd id="towerDamage">6</dd></div>
+      <div><dt>사거리</dt><dd id="towerRange">13</dd></div>
+      <div><dt>1초에</dt><dd><span id="towerRate">1.8</span>번</dd></div>
+    </dl>
+    <div class="menu-actions">
+      <button id="upgradeBtn" class="btn btn-primary" type="button">
+        <span class="when-ready btn-line">강화 <span class="price"><span class="coin" aria-hidden="true"></span><span id="upgradeCost" class="price-text">40</span></span></span>
+        <span class="when-max">최고 레벨</span>
+        <span class="when-wait">짓는 중</span>
+      </button>
+      <button id="sellBtn" class="btn" type="button"><span class="btn-line">팔기 <span class="price-text">+<span id="sellValue">30</span></span></span></button>
+    </div>
+    <p class="menu-note note-short"><span id="upgradeShort">20</span>골드가 더 있으면 강화할 수 있어요</p>
+    <p class="menu-note note-wait">다 지으면 강화할 수 있어요</p>
+    <p class="menu-note note-max">가장 강한 타워예요</p>
+  </section>
+
+  <span class="menu-tail" aria-hidden="true"></span>
+</div>
+
+<!-- 타워 목록 한 줄의 모양 (이름·설명·값은 gameConfig.js 에서 가져옵니다) -->
+<template id="towerChoiceTemplate">
+  <li>
+    <button class="tower-choice" type="button">
+      <span class="block-icon" aria-hidden="true"></span>
+      <span class="choice-text">
+        <strong class="choice-name"></strong>
+        <span class="choice-desc"></span>
+      </span>
+      <span class="choice-price">
+        <span class="price"><span class="coin" aria-hidden="true"></span><span class="choice-cost"></span></span>
+        <span class="choice-missing"><span class="choice-missing-value"></span> 모자라요</span>
+      </span>
+    </button>
+  </li>
+</template>
+
+<!-- ── 시작 화면 (js/game/ui/overlays.js) ── -->
+<section id="startOverlay" class="overlay" aria-labelledby="startTitle" hidden>
+  <div class="overlay-card">
+    <div class="brick-row" aria-hidden="true">
+      <span class="block-icon" style="--icon: #C91A09"></span>
+      <span class="block-icon" style="--icon: #F2CD37"></span>
+      <span class="block-icon" style="--icon: #0055BF"></span>
+      <span class="block-icon" style="--icon: #4B9F4A"></span>
+    </div>
+    <h1 id="startTitle" class="overlay-title">블록 성 지키기</h1>
+    <ol class="howto">
+      <li>타워 자리를 눌러 타워 짓기</li>
+      <li>몬스터는 맞을 때마다 블록이 떨어져요</li>
+      <li>성이 무너지기 전에 10웨이브를 막아요</li>
+    </ol>
+    <div class="overlay-actions">
+      <button id="startBtn" class="btn btn-primary btn-big" type="button">게임 시작</button>
+      <button id="startArtBtn" class="btn btn-big" type="button">내 그림 넣기</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── 성이 무너졌을 때 ── -->
+<section id="gameOverOverlay" class="overlay overlay--lose" aria-labelledby="gameOverTitle" hidden>
+  <div class="overlay-card">
+    <div class="brick-row brick-row--fallen" aria-hidden="true">
+      <span class="block-icon" style="--icon: #A0A5A9"></span>
+      <span class="block-icon" style="--icon: #6C6E68"></span>
+      <span class="block-icon" style="--icon: #A0A5A9"></span>
+    </div>
+    <h2 id="gameOverTitle" class="overlay-title">성이 무너졌어요</h2>
+    <p class="overlay-sub">다시 쌓아서 한 번 더 지켜 봐요.</p>
+    <div class="result-stats">
+      <div class="result-stat"><strong><span data-field="wave">0</span><small>/<span data-field="total">10</span></small></strong><span>버틴 웨이브</span></div>
+      <div class="result-stat"><strong data-field="kills">0</strong><span>쓰러뜨린 몬스터</span></div>
+    </div>
+    <div class="overlay-actions">
+      <button class="btn btn-primary btn-big" type="button" data-action="restart">다시 하기</button>
+      <button class="btn btn-big" type="button" data-action="art">내 그림 넣기</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── 모든 웨이브를 막았을 때 ── -->
+<section id="victoryOverlay" class="overlay overlay--win" aria-labelledby="victoryTitle" hidden>
+  <div class="overlay-card">
+    <div class="brick-row" aria-hidden="true">
+      <span class="block-icon" style="--icon: #F2CD37"></span>
+      <span class="block-icon" style="--icon: #F2CD37"></span>
+      <span class="block-icon" style="--icon: #F2CD37"></span>
+    </div>
+    <h2 id="victoryTitle" class="overlay-title">성을 지켰어요!</h2>
+    <p class="overlay-sub"><span data-field="total">10</span>웨이브를 모두 막았어요.</p>
+    <div class="result-stats">
+      <div class="result-stat"><strong data-field="kills">0</strong><span>쓰러뜨린 몬스터</span></div>
+      <div class="result-stat"><strong data-field="hp">0</strong><span>남은 성 체력</span></div>
+    </div>
+    <div class="overlay-actions">
+      <button class="btn btn-primary btn-big" type="button" data-action="restart">다시 하기</button>
+      <button class="btn btn-big" type="button" data-action="art">내 그림 넣기</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── 내 그림 넣기 창 (js/game/ui/artUpload.js) ── -->
+<dialog id="artDialog" class="art-dialog" aria-labelledby="artTitle">
+  <div class="art-sheet">
+    <header class="art-head">
+      <h2 id="artTitle" class="art-title">내 그림 넣기</h2>
+      <button id="artCloseBtn" class="icon-btn" type="button" aria-label="닫기">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+
+    <div class="art-body">
+      <section class="art-picture" aria-label="사진">
+        <div id="artDrop" class="art-drop">
+          <div id="artEmpty" class="art-empty">
+            <p class="art-drop-title">사진을 여기에 끌어다 놓거나<br>붙여넣기(Ctrl+V) 해도 돼요</p>
+            <button id="artPickBtn" class="btn btn-primary" type="button">사진 고르기</button>
+          </div>
+          <div id="artPreview" class="art-preview" hidden>
+            <figure>
+              <canvas id="artPreviewImage" class="art-canvas" width="160" height="160"></canvas>
+              <figcaption>올린 사진</figcaption>
+            </figure>
+            <figure>
+              <canvas id="artPreviewBlocks" class="art-canvas" width="160" height="160"></canvas>
+              <figcaption>블록으로 바꾸면</figcaption>
+            </figure>
+          </div>
+        </div>
+        <input id="artFileInput" type="file" accept="image/*" hidden>
+        <div class="art-picture-foot">
+          <p class="hint">배경이 투명한 PNG가 가장 잘 어울려요. 배경이 있으면 배경도 블록이 돼요.</p>
+          <button id="artRepickBtn" class="btn btn-small" type="button" hidden>다른 사진</button>
+        </div>
+      </section>
+
+      <fieldset class="art-roles">
+        <legend>어디에 쓸까요?</legend>
+        <div id="artRoles" class="art-role-groups"></div>
+      </fieldset>
+    </div>
+
+    <footer class="art-foot">
+      <p id="artError" class="art-error" role="alert"></p>
+      <div class="art-foot-actions">
+        <button id="artCancelBtn" class="btn" type="button">닫기</button>
+        <button id="artApplyBtn" class="btn btn-primary" type="button" disabled>
+          <span class="when-idle">적용</span><span class="when-busy">바꾸는 중…</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+</dialog>
+
+<!-- 그림 자리 한 줄의 모양 -->
+<template id="artRoleTemplate">
+  <div class="role">
+    <label class="role-pick">
+      <input type="radio" name="artRole">
+      <span class="role-name"></span>
+      <span class="role-badge" hidden>내 그림 사용 중</span>
+    </label>
+    <button class="btn btn-small role-reset" type="button" hidden>기본 그림으로</button>
+  </div>
+</template>
+
+<script type="module" src="js/game/main.js"></script>
+</body>
+</html>

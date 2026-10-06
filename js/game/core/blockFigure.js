@@ -9,6 +9,7 @@
 //   figure.removeBlocks(n, 방식)   블록 n개를 떼어 내고, 떼어 낸 블록의 [{ position, color }] 를 돌려줌
 //                                  방식: 'random'(아무 데나) | 'exposed'(위가 비어 있는 블록) | 'top'(가장 높은 블록)
 //   figure.removeAll()             남은 블록 전부 떼어 내기 (쓰러질 때)
+//   figure.restoreBlocks(n, 옵션)   떨어져 나갔던 블록 n개를 아래쪽부터 다시 떨어뜨려 쌓기 (수리)
 //   figure.setTint(색|null, 정도)   몸 전체 색을 살짝 물들이기 (얼었을 때 등)
 //   figure.dispose()               화면에서 지우기
 
@@ -23,6 +24,7 @@ const rotation = new THREE.Quaternion();
 const euler = new THREE.Euler();
 const scale = new THREE.Vector3();
 const tmpColor = new THREE.Color();
+const RESTORE_FALL_SECONDS = 0.35; // 수리할 때 블록 하나가 떨어지는 시간
 
 export class BlockFigure {
   constructor(blueprint, parent, { castShadow = true } = {}) {
@@ -39,6 +41,9 @@ export class BlockFigure {
     this.slotBlock = new Int32Array(blueprint.count); // 그리는 칸 → 설계도 블록 번호
     this.occupied = new Set(); // 남아 있는 블록의 격자 칸
     this.tint = null;
+    this.tintColor = null;
+    this.tintAmount = 0;
+    this.restoring = null;
     for (let i = 0; i < blueprint.count; i++) {
       this.slotBlock[i] = i;
       this.occupied.add(cellKey(blueprint.cells, i));
@@ -101,10 +106,12 @@ export class BlockFigure {
 
   update(dt) {
     if (this.animator) this.animator.update(dt);
+    if (this.restoring) this.updateRestore(dt);
   }
 
   removeBlocks(n, mode = 'random') {
     if (this.animator) this.finishBuild();
+    this.finishRestore();
     const removed = [];
     if (n <= 0 || this.alive === 0) return removed;
     this.group.updateWorldMatrix(true, false);
@@ -121,15 +128,48 @@ export class BlockFigure {
     const key = hex ? `${hex}|${amount}` : null;
     if (key === this.tint) return;
     this.tint = key;
-    const tintColor = hex ? new THREE.Color(hex) : null;
-    for (let slot = 0; slot < this.alive; slot++) {
-      tmpColor.copy(this.blueprint.colors[this.slotBlock[slot]]);
-      if (tintColor) tmpColor.lerp(tintColor, amount);
-      this.bodies.setColorAt(slot, tmpColor);
-      this.studs.setColorAt(slot, tmpColor);
-    }
+    this.tintColor = hex ? new THREE.Color(hex) : null;
+    this.tintAmount = amount;
+    for (let slot = 0; slot < this.alive; slot++) this.paintSlot(slot);
     this.bodies.instanceColor.needsUpdate = true;
     this.studs.instanceColor.needsUpdate = true;
+  }
+
+  // 떨어져 나갔던 블록을 아래쪽부터 n개 골라 위에서 하나씩 떨어뜨려 제자리에 다시 쌓음
+  restoreBlocks(n, { seconds = 1.2, dropHeight = 6, onLand } = {}) {
+    if (this.animator) this.finishBuild();
+    this.finishRestore();
+    const cells = this.blueprint.cells;
+    const missing = [];
+    for (let i = 0; i < this.blueprint.count; i++) {
+      if (!this.occupied.has(cellKey(cells, i))) missing.push({ index: i, y: cells[i * 3 + 1], shuffle: Math.random() });
+    }
+    missing.sort((a, b) => a.y - b.y || a.shuffle - b.shuffle);
+    const picked = missing.slice(0, Math.max(0, Math.floor(n)));
+    if (picked.length === 0) return 0;
+
+    const interval = picked.length > 1 ? Math.max(0, seconds - RESTORE_FALL_SECONDS) / (picked.length - 1) : 0;
+    const items = picked.map(({ index }, k) => {
+      const slot = this.alive++;
+      this.slotBlock[slot] = index;
+      this.occupied.add(cellKey(cells, index));
+      this.paintSlot(slot);
+      this.setPose(slot, 0, dropHeight, 0, 0, 0.001, 0.001, 0.001);
+      return { slot, start: k * interval, landed: false };
+    });
+    this.restoring = { time: 0, dropHeight, onLand, items, left: items.length };
+    this.setVisibleCount(this.alive);
+    this.commit();
+    this.bodies.instanceColor.needsUpdate = true;
+    this.studs.instanceColor.needsUpdate = true;
+    return picked.length;
+  }
+
+  finishRestore() {
+    if (!this.restoring) return;
+    for (const item of this.restoring.items) if (!item.landed) this.setFinal(item.slot);
+    this.restoring = null;
+    this.commit();
   }
 
   dispose() {
@@ -168,6 +208,35 @@ export class BlockFigure {
   commit() {
     this.bodies.instanceMatrix.needsUpdate = true;
     this.studs.instanceMatrix.needsUpdate = true;
+  }
+
+  paintSlot(slot) {
+    tmpColor.copy(this.blueprint.colors[this.slotBlock[slot]]);
+    if (this.tintColor) tmpColor.lerp(this.tintColor, this.tintAmount);
+    this.bodies.setColorAt(slot, tmpColor);
+    this.studs.setColorAt(slot, tmpColor);
+  }
+
+  updateRestore(dt) {
+    const restore = this.restoring;
+    restore.time += dt;
+    for (const item of restore.items) {
+      if (item.landed) continue;
+      const local = restore.time - item.start;
+      if (local < 0) continue;
+      if (local >= RESTORE_FALL_SECONDS) {
+        this.setFinal(item.slot);
+        item.landed = true;
+        restore.left--;
+        restore.onLand?.();
+        continue;
+      }
+      const p = local / RESTORE_FALL_SECONDS;
+      const grow = Math.min(1, p * 4);
+      this.setPose(item.slot, 0, restore.dropHeight * (1 - p * p), 0, 0, grow, grow, grow);
+    }
+    this.commit();
+    if (restore.left === 0) this.restoring = null;
   }
 
   pickSlot(mode) {

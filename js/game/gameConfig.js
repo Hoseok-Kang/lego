@@ -28,10 +28,13 @@ export const GAME = {
   castle: {
     columns: 22, // 성 그림의 가로 블록 수
     depth: 3, // 성의 두께 (블록 줄 수)
-    maxHp: 100, // 성 체력
+    maxHp: 150, // 성 체력
     buildSeconds: 5, // 처음에 성이 쌓이는 시간
     platformSize: 26, // 성 아래 돌바닥 한 변 칸 수
     reach: 14, // 적이 성 중심에서 이 거리(정사각형 둘레)까지 오면 멈추고 공격
+    // 성 수비대: 성 위에서 가까운 적에게 화살을 쏨 (타워가 없는 쪽도 조금은 막아 줌)
+    guard: { range: 21, fireInterval: 0.9, damage: 6, projectileSpeed: 30 },
+    repairPerWave: 20, // 웨이브를 막을 때마다 성 체력을 이만큼 수리 (떨어진 블록이 다시 쌓임)
   },
 
   // 타워 자리
@@ -50,9 +53,9 @@ export const GAME = {
       columns: 8, // 타워 그림 가로 블록 수
       depth: 2,
       buildSeconds: 2.5, // 다 쌓여야 공격 시작
-      range: 13,
+      range: 14,
       fireInterval: 0.55, // 몇 초마다 쏘는지
-      damage: 6,
+      damage: 8,
       projectile: 'arrow',
       projectileSpeed: 34,
     },
@@ -65,7 +68,7 @@ export const GAME = {
       buildSeconds: 3.5,
       range: 15,
       fireInterval: 1.6,
-      damage: 14,
+      damage: 18,
       splashRadius: 3.5, // 맞은 곳 둘레 이 거리 안의 적도 피해
       projectile: 'cannonball',
       projectileSpeed: 20,
@@ -79,7 +82,7 @@ export const GAME = {
       buildSeconds: 3,
       range: 12,
       fireInterval: 0.8,
-      damage: 3,
+      damage: 4,
       slow: 0.45, // 이동 속도를 이만큼 줄임 (0.45 = 45% 느려짐)
       slowSeconds: 1.8,
       projectile: 'ice',
@@ -101,11 +104,11 @@ export const GAME = {
 
   // 적 몬스터 종류
   enemies: {
-    slime: { name: '슬라임', columns: 8, depth: 2, hp: 28, speed: 2.6, damage: 3, attackInterval: 1.2, gold: 6, motion: 'hop' },
-    bat: { name: '박쥐', columns: 9, depth: 1, hp: 14, speed: 4.5, damage: 2, attackInterval: 0.9, gold: 4, motion: 'fly' },
-    golem: { name: '골렘', columns: 10, depth: 3, hp: 85, speed: 1.6, damage: 7, attackInterval: 1.6, gold: 14, motion: 'stomp' },
-    boss: { name: '대장 골렘', columns: 15, depth: 3, hp: 520, speed: 1.2, damage: 15, attackInterval: 2, gold: 90, motion: 'stomp' },
-    custom: { name: '내 몬스터', columns: 9, depth: 2, hp: 40, speed: 2.8, damage: 4, attackInterval: 1.2, gold: 8, motion: 'hop' },
+    slime: { name: '슬라임', columns: 8, depth: 2, hp: 28, speed: 2.6, damage: 2, attackInterval: 1.2, gold: 7, motion: 'hop' },
+    bat: { name: '박쥐', columns: 9, depth: 1, hp: 14, speed: 4.5, damage: 1, attackInterval: 0.9, gold: 5, motion: 'fly' },
+    golem: { name: '골렘', columns: 10, depth: 3, hp: 85, speed: 1.6, damage: 5, attackInterval: 1.6, gold: 16, motion: 'stomp' },
+    boss: { name: '대장 골렘', columns: 15, depth: 3, hp: 340, speed: 1.2, damage: 8, attackInterval: 2, gold: 90, motion: 'stomp' },
+    custom: { name: '내 몬스터', columns: 9, depth: 2, hp: 40, speed: 2.8, damage: 3, attackInterval: 1.2, gold: 8, motion: 'hop' },
   },
   enemyArriveSeconds: 0.7, // 적이 나타날 때 블록이 모여 몸이 만들어지는 시간
 
@@ -128,14 +131,14 @@ export const GAME = {
     customPerWave: 0.5, // 웨이브 번호 × 이 값만큼 '내 몬스터'가 추가로 나옴 (반올림)
     directions: [1, 2, 2, 2, 3, 3, 3, 4, 4, 4], // 웨이브마다 적이 몰려오는 방향 수
     spawnInterval: 0.9, // 적이 한 마리씩 나오는 간격
-    hpGrowth: 0.18, // 웨이브가 하나 늘 때마다 적 체력 18%씩 증가
+    hpGrowth: 0.15, // 웨이브가 하나 늘 때마다 적 체력 15%씩 증가
     firstBreakSeconds: 5, // 첫 웨이브 전 준비 시간
     breakSeconds: 8, // 웨이브 사이 쉬는 시간
   },
 
   // 돈
   economy: {
-    startGold: 160,
+    startGold: 180,
     waveBonus: 30, // 웨이브를 막을 때마다 받는 돈
     waveBonusGrowth: 5, // 웨이브 번호마다 보너스 추가
   },

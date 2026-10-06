@@ -6,6 +6,7 @@
 //   'blockLanded'        { }                                  블록 하나가 쌓임 (딸깍 소리)
 //   'castleBuilt'        { }
 //   'castleHit'          { damage, hp, maxHp, position }      성이 공격받음
+//   'castleRepaired'     { amount, hp, maxHp }                웨이브를 막고 성이 수리됨
 //   'castleDestroyed'    { }
 //   'enemySpawned'       { enemy }
 //   'enemyHit'           { enemy, damage, position }
@@ -17,6 +18,7 @@
 //   'projectileFired'    { kind, position }                   kind: 'arrow' | 'cannonball' | 'ice'
 //   'projectileHit'      { kind, position }
 //   'goldChanged'        { gold, delta }
+//   'wavePreview'        { wave, total, directions }          쉬는 시간에 다음 웨이브 방향 미리 알림
 //   'waveStarted'        { wave, total, directions }          directions: 적이 오는 각도(라디안) 목록
 //   'waveSpawnDone'      { wave }
 //   'waveCleared'        { wave, total }
