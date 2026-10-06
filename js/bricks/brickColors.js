@@ -1,0 +1,42 @@
+// 블록 색 목록
+// 실제 장난감 블록에서 자주 쓰는 색에 가깝게 맞췄습니다.
+// 그림의 모든 색은 이 목록 중 가장 비슷한 색으로 바뀝니다.
+// 색을 넣거나 빼려면 이 목록만 고치면 됩니다. (hex는 '#RRGGBB' 형식)
+
+export const BRICK_COLORS = [
+  { name: '흰색', hex: '#F4F4F4' },
+  { name: '밝은 회색', hex: '#A0A5A9' },
+  { name: '진한 회색', hex: '#6C6E68' },
+  { name: '검정', hex: '#1B2A34' },
+  { name: '빨강', hex: '#C91A09' },
+  { name: '진한 빨강', hex: '#720E0F' },
+  { name: '주황', hex: '#FE8A18' },
+  { name: '진한 주황', hex: '#A95500' },
+  { name: '귤색', hex: '#F8BB3D' },
+  { name: '노랑', hex: '#F2CD37' },
+  { name: '연노랑', hex: '#FFF03A' },
+  { name: '모래색', hex: '#E4CD9E' },
+  { name: '진한 모래색', hex: '#958A73' },
+  { name: '밤색', hex: '#582A12' },
+  { name: '캐러멜', hex: '#AA7D55' },
+  { name: '살구 갈색', hex: '#D09168' },
+  { name: '연살구색', hex: '#F6D7B3' },
+  { name: '라임', hex: '#BBE90B' },
+  { name: '초록', hex: '#4B9F4A' },
+  { name: '진초록', hex: '#237841' },
+  { name: '짙은 초록', hex: '#184632' },
+  { name: '회녹색', hex: '#A0BCAC' },
+  { name: '청록', hex: '#36AEBF' },
+  { name: '진한 하늘색', hex: '#078BC9' },
+  { name: '연하늘색', hex: '#9FC3E9' },
+  { name: '중간 파랑', hex: '#5A93DB' },
+  { name: '파랑', hex: '#0055BF' },
+  { name: '남색', hex: '#0A3463' },
+  { name: '연보라', hex: '#E1D5ED' },
+  { name: '라벤더', hex: '#AC78BA' },
+  { name: '보라', hex: '#3F3691' },
+  { name: '자주', hex: '#923978' },
+  { name: '진분홍', hex: '#C870A0' },
+  { name: '분홍', hex: '#E4ADC8' },
+  { name: '코랄', hex: '#FF698F' },
+];

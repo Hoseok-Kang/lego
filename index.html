@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>블록 이미지 빌더</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <section class="stage-wrap" aria-label="블록이 쌓이는 3D 화면">
+    <div id="stage" class="stage"></div>
+    <div class="step" aria-hidden="true">
+      <span id="stepNow" class="step-now">0</span>
+      <span class="step-of">/ <span id="stepTotal">0</span>단</span>
+    </div>
+    <p class="stage-hint">끌어서 돌려 보기 · 휠로 확대</p>
+    <div class="progress" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+    <div id="dropOverlay" class="drop-overlay" hidden>
+      <p>여기에 놓으면 블록으로 바꿔요</p>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <header class="brand">
+      <h1>블록 이미지 빌더</h1>
+      <p>그림을 아주 작은 네모 블록으로 바꿔서 맨 아래부터 한 칸씩 쌓아요.</p>
+    </header>
+
+    <section class="group" aria-labelledby="pictureTitle">
+      <h2 id="pictureTitle">그림</h2>
+      <div class="button-row">
+        <button id="uploadBtn" class="btn btn-primary" type="button">사진 올리기</button>
+        <button id="sampleBtn" class="btn" type="button">토끼 예시</button>
+      </div>
+      <input id="fileInput" type="file" accept="image/*" hidden>
+      <p class="hint">사진을 화면에 끌어다 놓거나 붙여넣어도 돼요. 배경이 투명한 PNG는 모양대로만 쌓여요.</p>
+    </section>
+
+    <section class="group" aria-labelledby="buildTitle">
+      <h2 id="buildTitle">쌓는 방법</h2>
+      <div class="field">
+        <label for="sizeRange">가로 블록 수</label>
+        <output id="sizeValue" for="sizeRange">40칸</output>
+        <input id="sizeRange" type="range" step="2">
+      </div>
+      <div class="field">
+        <label for="speedRange">쌓는 속도</label>
+        <output id="speedValue" for="speedRange">1×</output>
+        <input id="speedRange" type="range" min="0.25" max="4" step="0.25">
+      </div>
+      <fieldset class="segmented">
+        <legend>한 줄 안에서 쌓는 순서</legend>
+        <div id="orderOptions" class="segments"></div>
+      </fieldset>
+      <label class="check" for="ditherToggle">
+        <input id="ditherToggle" type="checkbox">
+        <span>색 섞어서 사진처럼 부드럽게</span>
+      </label>
+    </section>
+
+    <section class="group button-row" aria-label="재생">
+      <button id="replayBtn" class="btn btn-primary" type="button">다시 쌓기</button>
+      <button id="finishBtn" class="btn" type="button">바로 완성</button>
+      <button id="soundBtn" class="btn" type="button" aria-pressed="false">소리 켜기</button>
+    </section>
+
+    <section class="group" aria-labelledby="partsTitle">
+      <h2 id="partsTitle">부품 목록</h2>
+      <p class="parts-summary"><span class="parts-total"><strong id="blockCount">0</strong>개</span> 1×1 블록 · <span id="colorCount">0</span>가지 색</p>
+      <p id="gridSize" class="hint"></p>
+      <ul id="partsList" class="parts"></ul>
+    </section>
+
+    <p id="message" class="message" role="status"></p>
+  </aside>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
