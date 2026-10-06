@@ -1,0 +1,13 @@
+{
+  "name": "block-image-builder",
+  "private": true,
+  "description": "그림을 작은 네모 블록으로 쌓아 올리는 3D 모션",
+  "type": "module",
+  "scripts": {
+    "serve": "python3 -m http.server 8765",
+    "record": "node tools/record-frames.mjs http://127.0.0.1:8765/index.html recording"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

@@ -20,8 +20,11 @@
 `index.html`을 더블클릭하면 브라우저 보안 규칙 때문에 화면이 비어 보입니다.
 아래 둘 중 하나로 열어 주세요.
 
-1. Claude가 만들어 준 미리보기 링크로 열기 (가장 쉬움)
+1. 미리보기 링크로 열기 (가장 쉬움): https://claude.ai/artifact/CrKQK7XD7JTvQErszExVrv
+   처음에는 만든 사람만 열 수 있고, 다른 사람에게 보여 주려면 페이지의 공유 메뉴에서 공유하면 됩니다.
 2. 이 폴더에서 간단한 웹 서버를 켜고 열기: `npx serve .` 를 실행한 뒤 안내되는 주소를 브라우저로 엽니다.
+
+`media/` 폴더에는 토끼가 쌓이는 영상(`rabbit-build.mp4`)과 완성 그림(`rabbit-final.png`)이 있습니다.
 
 ## 동작 순서
 
@@ -54,8 +57,18 @@
 | `index.html` | 화면에 보이는 글자와 버튼 | 문구 바꾸기 |
 | `css/style.css` | 색과 배치 | 화면 색, 글꼴, 크기 |
 | `vendor/three/` | 3D 그리기 도구 three.js (MIT 라이선스) | 바꾸지 않음 |
+| `tools/` | 쌓기 모션을 소리 있는 영상으로 뽑는 도구 | 영상 길이, 화면 크기 |
 
 ## 게임으로 키울 때
 
 `js/bricks/buildPlan.js`가 만드는 **블록 목록**(위치, 색, 쌓는 순서)이 게임의 기본 재료가 됩니다.
 예를 들어 점수, 시간 제한, 플레이어 조작 같은 기능은 새 파일(예: `js/game/…`)로 만들고 `js/main.js`에서 연결하면 지금 있는 파일을 거의 건드리지 않고 붙일 수 있습니다.
+
+## 영상으로 뽑기 (`tools/`)
+
+화면을 한 장면씩 찍어서 소리를 입힌 영상(mp4)으로 만듭니다. 컴퓨터에 Node.js, Python, ffmpeg가 있어야 합니다.
+
+1. `npm install` 후 `npm run serve` 로 웹 서버 켜기
+2. 다른 창에서 `npm run record` → `recording/frames/` 에 장면 그림이 쌓임
+3. `python3 tools/make-click-audio.py recording/events.json recording/audio.wav` 로 효과음 만들기
+4. `tools/make-click-audio.py` 맨 위에 적힌 ffmpeg 명령으로 영상 합치기
