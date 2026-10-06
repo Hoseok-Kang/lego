@@ -72,8 +72,8 @@ export function createStage(container, { ground, block, camera: cameraConfig }) 
   };
 }
 
-// 스튜디오 조명처럼 은은한 반사광을 만들어 블록이 플라스틱처럼 반짝이게 함
-function createStudioLight(renderer) {
+// 스튜디오 조명처럼 은은한 반사광을 만들어 블록이 플라스틱처럼 반짝이게 함 (게임에서도 같이 씀)
+export function createStudioLight(renderer) {
   const room = new THREE.Scene();
   room.add(
     new THREE.Mesh(
@@ -101,8 +101,9 @@ function createStudioLight(renderer) {
   return texture;
 }
 
-// 동그란 돌기가 촘촘히 박힌 바닥판
-function createBaseplate(ground, block) {
+// 동그란 돌기가 촘촘히 박힌 바닥판 (게임에서도 같이 씀)
+// studSegments: 돌기 둘레를 몇 조각으로 그릴지 (작을수록 가볍고 덜 둥긂)
+export function createBaseplate(ground, block, { studSegments = 18 } = {}) {
   const group = new THREE.Group();
   const material = new THREE.MeshStandardMaterial({ color: ground.color, roughness: 0.5 });
 
@@ -112,7 +113,7 @@ function createBaseplate(ground, block) {
   plate.receiveShadow = true;
   group.add(plate);
 
-  const studGeometry = new THREE.CylinderGeometry(block.studRadius, block.studRadius, block.studHeight, 18);
+  const studGeometry = new THREE.CylinderGeometry(block.studRadius, block.studRadius, block.studHeight, studSegments);
   studGeometry.translate(0, block.studHeight / 2, 0);
   let studs = null;
 

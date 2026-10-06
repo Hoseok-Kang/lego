@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>그림 블록 미리보기</title>
+<style>
+  body { margin: 0; padding: 16px; background: #dfe7ec; font: 13px system-ui, sans-serif; color: #17232c; }
+  .items { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+  figure { margin: 0; padding: 10px; background: #f6f9fb; border-radius: 10px; display: grid; gap: 6px; justify-items: center; }
+  .pair { display: flex; gap: 10px; align-items: flex-end; }
+  canvas { image-rendering: pixelated; background: repeating-conic-gradient(#e9eef1 0 25%, #ffffff 0 50%) 0 0 / 16px 16px; }
+  figcaption { font-variant-numeric: tabular-nums; }
+  .error { color: #c91a09; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div id="items" class="items"></div>
+<script type="module">
+// 그림이 블록으로 바뀌면 어떻게 보일지 미리 보는 도구 (그림 만드는 사람용)
+// 주소 예) tools/art-preview.html?items=js/game/art/towerArt.js:TOWER_ART.archer:7,js/game/art/castleArt.js:drawCastle:22
+// 각 항목 = 모듈 경로 : 내보낸 이름(점으로 안쪽 접근) : 가로 블록 수
+import { pixelate } from '../js/image/pixelator.js';
+import { quantizeGrid } from '../js/bricks/colorMatcher.js';
+import { BRICK_COLORS } from '../js/bricks/brickColors.js';
+
+const BLOCK_PX = 12;
+const root = document.getElementById('items');
+const items = (new URLSearchParams(location.search).get('items') ?? '').split(',').filter(Boolean);
+
+for (const item of items) {
+  const [path, name, columnsText] = item.split(':');
+  const figure = document.createElement('figure');
+  root.append(figure);
+  try {
+    const module = await import(`../${path}`);
+    const draw = name.split('.').reduce((value, key) => value[key], module);
+    const source = draw();
+    const grid = pixelate(source, Number(columnsText), { maxRows: 100, alphaThreshold: 0.5 });
+    const colorGrid = quantizeGrid(grid, BRICK_COLORS);
+
+    const original = document.createElement('canvas');
+    const scale = Math.min(1, 220 / Math.max(source.width, source.height));
+    original.width = Math.round(source.width * scale);
+    original.height = Math.round(source.height * scale);
+    original.getContext('2d').drawImage(source, 0, 0, original.width, original.height);
+
+    const blocks = document.createElement('canvas');
+    blocks.width = colorGrid.columns * BLOCK_PX;
+    blocks.height = colorGrid.rows * BLOCK_PX;
+    const ctx = blocks.getContext('2d');
+    let count = 0;
+    colorGrid.cells.forEach((index, i) => {
+      if (index === null) return;
+      count++;
+      const x = (i % colorGrid.columns) * BLOCK_PX;
+      const y = Math.floor(i / colorGrid.columns) * BLOCK_PX;
+      ctx.fillStyle = BRICK_COLORS[index].hex;
+      ctx.fillRect(x, y, BLOCK_PX, BLOCK_PX);
+      ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+      ctx.strokeRect(x + 0.5, y + 0.5, BLOCK_PX - 1, BLOCK_PX - 1);
+    });
+
+    const pair = document.createElement('div');
+    pair.className = 'pair';
+    pair.append(original, blocks);
+    const caption = document.createElement('figcaption');
+    caption.textContent = `${name} · 가로 ${colorGrid.columns} × 세로 ${colorGrid.rows} · 블록 ${count}개`;
+    figure.append(pair, caption);
+  } catch (error) {
+    figure.innerHTML = `<p class="error">${item}\n${error.stack ?? error}</p>`;
+  }
+}
+document.body.dataset.ready = 'true';
+</script>
+</body>
+</html>
