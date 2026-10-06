@@ -1,20 +1,34 @@
 // 부서진 블록 조각
-// 몬스터가 맞거나 성이 공격받을 때 떨어져 나간 블록이 튀어 올랐다가 바닥에 통통 튀고 사라집니다.
+// 몬스터가 맞거나 성이 공격받을 때 떨어져 나간 블록이 튀어 올랐다가 바닥에 통통 튑니다.
+// 바닥에 멈춘 조각은 사라지지 않고 '잔해'로 전장에 남아 있다가, 대장 몬스터가 나올 때 모여서 대장이 됩니다.
+// (잔해가 가득 차면 새 조각은 잠깐 뒤에 작아지며 사라집니다)
 //
 //   debris.burst(blocks, { from, power, upward })   blocks: [{ position, color }] (BlockFigure.removeBlocks 결과)
 //   debris.spawn(position, color, velocity)         조각 하나 띄우기
+//   debris.takeRubble(n)                            바닥에 남은 잔해 n개를 가져감 → [{ position, quaternion, color }]
+//   debris.setGroundHeight((x, z) => 높이)           바닥 높이 알려 주기 (성 돌바닥·타워 자리 위는 1)
 //   debris.update(dt)
 //   debris.clear()
+//   debris.count / debris.rubbleCount                날아다니는 조각 수 / 바닥에 남은 잔해 수
 
 import * as THREE from '../../lib/three.js';
 import { createBlockBatch } from './blockAssets.js';
 
-const GROUND_Y = 0.48; // 블록 절반 높이 (바닥에 닿는 높이)
+const HALF = 0.48; // 블록 절반 높이 (바닥에 닿는 높이)
+const SETTLE_SPEED = 0.25; // 이보다 느리게 바닥에 누워 있으면 잔해가 됨
+const SETTLE_AGE = 0.35; // 튀어나온 뒤 최소 이만큼은 날아다님 (초)
 
-export function createDebris(scene, { capacity, gravity, lifeSeconds }) {
+export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapacity = 0 }) {
   const batch = createBlockBatch(capacity);
-  scene.add(batch.bodies, batch.studs);
+  const mesh = batch.bodies;
+  scene.add(mesh);
+  const rubbleBatch = createBlockBatch(Math.max(1, rubbleCapacity), { castShadow: false });
+  const rubbleMesh = rubbleBatch.bodies;
+  scene.add(rubbleMesh);
+  let lastCount = 0;
+  let colorsDirty = false;
 
+  // 날아다니는 조각
   const pos = new Float32Array(capacity * 3);
   const vel = new Float32Array(capacity * 3);
   const rot = new Float32Array(capacity * 3);
@@ -23,12 +37,20 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds }) {
   const life = new Float32Array(capacity);
   let count = 0;
 
+  // 바닥에 남은 잔해
+  const rubblePos = new Float32Array(Math.max(1, rubbleCapacity) * 3);
+  const rubbleQuat = new Float32Array(Math.max(1, rubbleCapacity) * 4);
+  let rubbleCount = 0;
+  let rubbleDirty = false;
+  let groundHeight = () => 0;
+
   const matrix = new THREE.Matrix4();
   const position = new THREE.Vector3();
   const rotation = new THREE.Quaternion();
   const euler = new THREE.Euler();
   const scale = new THREE.Vector3();
   const color = new THREE.Color();
+  const unit = new THREE.Vector3(1, 1, 1);
 
   function spawn(at, blockColor, velocity, { lifetime = lifeSeconds } = {}) {
     if (count >= capacity) return; // 너무 많으면 새 조각은 생략
@@ -39,8 +61,8 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds }) {
     spin.set([(Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14], i * 3);
     age[i] = 0;
     life[i] = lifetime * (0.75 + Math.random() * 0.5);
-    batch.bodies.setColorAt(i, blockColor);
-    batch.studs.setColorAt(i, blockColor);
+    mesh.setColorAt(i, blockColor);
+    colorsDirty = true;
   }
 
   function burst(blocks, { from = null, power = 6, upward = 7 } = {}) {
@@ -57,20 +79,28 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds }) {
   }
 
   function update(dt) {
+    if (rubbleDirty) flushRubble();
+    if (count === 0 && lastCount === 0) return; // 날아다니는 조각이 없으면 할 일 없음
     let i = 0;
     while (i < count) {
       age[i] += dt;
+      const b = i * 3;
+      const floor = groundHeight(pos[b], pos[b + 2]) + HALF;
+      const resting = vel[b + 1] === 0 && Math.abs(vel[b]) + Math.abs(vel[b + 2]) < SETTLE_SPEED;
+      if (resting && age[i] > SETTLE_AGE && pos[b + 1] <= floor + 0.01 && rubbleCount < rubbleCapacity) {
+        settle(i, floor);
+        continue;
+      }
       if (age[i] >= life[i]) {
         removeAt(i);
         continue;
       }
-      const b = i * 3;
       vel[b + 1] -= gravity * dt;
       pos[b] += vel[b] * dt;
       pos[b + 1] += vel[b + 1] * dt;
       pos[b + 2] += vel[b + 2] * dt;
-      if (pos[b + 1] < GROUND_Y) {
-        pos[b + 1] = GROUND_Y;
+      if (pos[b + 1] < floor) {
+        pos[b + 1] = floor;
         vel[b + 1] = Math.abs(vel[b + 1]) < 1.5 ? 0 : -vel[b + 1] * 0.35;
         vel[b] *= 0.6;
         vel[b + 2] *= 0.6;
@@ -79,7 +109,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds }) {
         spin[b + 2] *= 0.5;
         if (vel[b + 1] === 0) {
           // 바닥에 누우면 가장 가까운 평평한 면으로 천천히 바로 눕힘
-          for (let k = 0; k < 3; k++) rot[b + k] += (Math.round(rot[b + k] / (Math.PI / 2)) * (Math.PI / 2) - rot[b + k]) * Math.min(1, dt * 8);
+          for (let k = 0; k < 3; k++) rot[b + k] += (snapAngle(rot[b + k]) - rot[b + k]) * Math.min(1, dt * 8);
         }
       }
       rot[b] += spin[b] * dt;
@@ -92,16 +122,64 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds }) {
       rotation.setFromEuler(euler.set(rot[b], rot[b + 1], rot[b + 2]));
       scale.set(s, s, s);
       matrix.compose(position, rotation, scale);
-      batch.bodies.setMatrixAt(i, matrix);
-      batch.studs.setMatrixAt(i, matrix);
+      mesh.setMatrixAt(i, matrix);
       i++;
     }
-    batch.bodies.count = count;
-    batch.studs.count = count;
-    batch.bodies.instanceMatrix.needsUpdate = true;
-    batch.studs.instanceMatrix.needsUpdate = true;
-    if (batch.bodies.instanceColor) batch.bodies.instanceColor.needsUpdate = true;
-    if (batch.studs.instanceColor) batch.studs.instanceColor.needsUpdate = true;
+    mesh.count = count;
+    mesh.visible = count > 0;
+    lastCount = count;
+    // 살아 있는 조각 부분만 그래픽 카드로 보냄
+    mesh.instanceMatrix.clearUpdateRanges();
+    mesh.instanceMatrix.addUpdateRange(0, Math.max(1, count) * 16);
+    mesh.instanceMatrix.needsUpdate = true;
+    if (colorsDirty && mesh.instanceColor) {
+      mesh.instanceColor.clearUpdateRanges();
+      mesh.instanceColor.addUpdateRange(0, Math.max(1, count) * 3);
+      mesh.instanceColor.needsUpdate = true;
+      colorsDirty = false;
+    }
+    if (rubbleDirty) flushRubble();
+  }
+
+  // 바닥에 멈춘 조각을 잔해로 옮김 (평평하게 눕히고 더 이상 움직이지 않음)
+  function settle(i, floor) {
+    const b = i * 3;
+    const r = rubbleCount++;
+    rotation.setFromEuler(euler.set(snapAngle(rot[b]), snapAngle(rot[b + 1]), snapAngle(rot[b + 2])));
+    rubblePos.set([pos[b], floor, pos[b + 2]], r * 3);
+    rubbleQuat.set([rotation.x, rotation.y, rotation.z, rotation.w], r * 4);
+    position.set(pos[b], floor, pos[b + 2]);
+    matrix.compose(position, rotation, unit);
+    mesh.getColorAt(i, color);
+    rubbleMesh.setMatrixAt(r, matrix);
+    rubbleMesh.setColorAt(r, color);
+    rubbleDirty = true;
+    removeAt(i);
+  }
+
+  // 잔해 n개 가져가기 (뒤에서부터 → 다른 잔해는 그대로 둠)
+  function takeRubble(n) {
+    const taken = [];
+    const amount = Math.min(n, rubbleCount);
+    for (let k = 0; k < amount; k++) {
+      const r = --rubbleCount;
+      rubbleMesh.getColorAt(r, color);
+      taken.push({
+        position: new THREE.Vector3(rubblePos[r * 3], rubblePos[r * 3 + 1], rubblePos[r * 3 + 2]),
+        quaternion: new THREE.Quaternion(rubbleQuat[r * 4], rubbleQuat[r * 4 + 1], rubbleQuat[r * 4 + 2], rubbleQuat[r * 4 + 3]),
+        color: color.clone(),
+      });
+    }
+    if (amount > 0) rubbleDirty = true;
+    return taken;
+  }
+
+  function flushRubble() {
+    rubbleDirty = false;
+    rubbleMesh.count = rubbleCount;
+    rubbleMesh.visible = rubbleCount > 0;
+    rubbleMesh.instanceMatrix.needsUpdate = true;
+    if (rubbleMesh.instanceColor) rubbleMesh.instanceColor.needsUpdate = true;
   }
 
   // i번째 조각을 지우고 맨 끝 조각을 그 자리로 옮김
@@ -111,18 +189,40 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds }) {
       for (const arr of [pos, vel, rot, spin]) arr.copyWithin(i * 3, last * 3, last * 3 + 3);
       age[i] = age[last];
       life[i] = life[last];
-      batch.bodies.getColorAt(last, color);
-      batch.bodies.setColorAt(i, color);
-      batch.studs.setColorAt(i, color);
+      mesh.getColorAt(last, color);
+      mesh.setColorAt(i, color);
+      colorsDirty = true;
     }
     count = last;
   }
 
   function clear() {
     count = 0;
-    batch.bodies.count = 0;
-    batch.studs.count = 0;
+    lastCount = 0;
+    mesh.count = 0;
+    mesh.visible = false;
+    rubbleCount = 0;
+    flushRubble();
   }
 
-  return { spawn, burst, update, clear, get count() { return count; } };
+  return {
+    spawn,
+    burst,
+    update,
+    clear,
+    takeRubble,
+    setGroundHeight(fn) {
+      groundHeight = fn;
+    },
+    get count() {
+      return count;
+    },
+    get rubbleCount() {
+      return rubbleCount;
+    },
+  };
+}
+
+function snapAngle(angle) {
+  return Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
 }

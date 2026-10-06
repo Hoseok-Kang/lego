@@ -48,6 +48,14 @@ const EVENT_SOUNDS = {
   towerSold: 'sell',
   waveStarted: 'horn',
   waveCleared: ({ wave, total }) => (wave >= total ? 'victory' : 'fanfare'),
+  partBuilt: 'build-done',
+  partUpgraded: 'upgrade',
+  cardPicked: ['coin', ['upgrade', 0.08]],
+  skillUnlocked: 'fanfare',
+  skillCast: ({ id }) => (id === 'freeze' ? ['chime', ['chime', 0.12]] : id === 'repair' ? 'build-done' : null),
+  skillImpact: ['boom', ['collapse', 0.05]],
+  bossAssembling: 'horn',
+  bossAssembled: ['boom', ['thud', 0.1]],
 };
 
 // ── 소리 하나하나 ──

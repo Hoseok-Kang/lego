@@ -22,6 +22,17 @@
 //   'waveStarted'        { wave, total, directions }          directions: 적이 오는 각도(라디안) 목록
 //   'waveSpawnDone'      { wave }
 //   'waveCleared'        { wave, total }
+//   'landGrowStarted'    { from, to }                         땅이 넓어지기 시작 (둘레에 블록이 쌓임)
+//   'landGrown'          { size, previousSize, spawnRadius }  땅이 다 넓어짐
+//   'partBuilt'          { part }                             성 부품 완성
+//   'partUpgraded'       { part }
+//   'cardPicked'         { card }                             보상 카드를 고름
+//   'skillUnlocked'      { id }
+//   'skillCast'          { id, point }                        스킬 사용
+//   'skillImpact'        { id, point }                        블록 떨어뜨리기가 땅에 닿음
+//   'skillReady'         { id }                               스킬 대기시간 끝
+//   'bossAssembling'     { enemy, fromRubble, total }         바닥 잔해가 모여 대장이 만들어지기 시작
+//   'bossAssembled'      { enemy }                            대장 완성 (이제 움직이고 맞을 수 있음)
 
 export function createEvents() {
   const listeners = new Map();

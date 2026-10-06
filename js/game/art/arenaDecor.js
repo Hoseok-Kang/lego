@@ -1,39 +1,56 @@
 // 전장 꾸미기
-// 바닥판 네 모서리(적이 다니는 원 바깥)에 블록으로 만든 나무, 바위, 꽃, 버섯, 연못(오리 한 마리)을 놓고,
+// 바닥판 네 모서리(적이 다니는 원 바깥)에 블록으로 만든 나무, 소나무, 덤불, 바위, 꽃, 버섯, 연못(오리 한 마리)을 놓고,
 // 웨이브가 시작되면 적이 몰려오는 방향마다 빨간 화살표 경고 표시를 몇 초 동안 깜빡입니다.
 // 꾸미기는 게임이 열릴 때 블록이 떨어져 쌓이며 생겨납니다. 카메라를 따라 돌지 않는 입체 블록입니다.
+// 땅이 넓어지면('landGrown' 소식) 예전 꾸미기는 땅속으로 쏙 들어가고, 넓어진 모서리에 새 꾸미기가 다시 쌓입니다.
+// 땅이 넓을수록 모서리 빈터가 커져서 꾸미기도 많아집니다.
 //
-//   const decor = createArenaDecor({ scene, events, config })
-//   decor.update(dt)                  매 장면마다 불러서 쌓기 모션, 오리, 경고 표시를 움직임
+//   const decor = createArenaDecor({ scene, events, config, land })
+//   decor.update(dt)                  매 장면마다 불러서 쌓기·가라앉기 모션, 오리, 경고 표시를 움직임
 //   decor.showWarnings(각도 목록, 초)  경고 표시 띄우기 ('wavePreview'·'waveStarted' 소식이 오면 저절로 불림)
 //   decor.clear()                     떠 있는 경고 표시 모두 지우기
-//   decor.blockCount                  꾸미기에 쓴 블록 수 (경고 표시 제외)
+//   decor.setSize(칸 수)               그 땅 크기에 맞게 꾸미기를 다시 놓기 ('landGrown' 소식이 오면 저절로 불림)
+//   decor.size                        지금 꾸미기가 맞춰진 땅 크기
+//   decor.blockCount                  지금 꾸미기에 쓴 블록 수 (경고 표시 제외)
 //
 // 바꾸고 싶은 것
-//   무엇을 어디에 놓을지   → DECOR_LAYOUT (모서리에서 안쪽으로 몇 칸 들어온 자리인지)
-//   색                    → COLORS, FLOWER_COLORS
-//   모양                  → MODELS (나무, 바위 같은 모양을 블록으로 쌓는 방법)
-//   경고 표시 시간·모양     → WARNING, ARROW
-// 적이 다니는 원(적이 나타나는 거리 + CLEAR_MARGIN 칸) 안쪽이나 바닥판 밖으로 나가는 꾸미기는 통째로 빠집니다.
+//   무엇을 어디에 놓을지     → DECOR_LAYOUT (모서리에서 안쪽으로 몇 칸 들어온 자리인지, 땅이 몇 칸일 때부터 나오는지)
+//   색                      → COLORS, FLOWER_COLORS
+//   모양                    → MODELS (나무, 바위 같은 모양을 블록으로 쌓는 방법)
+//   쌓이는·가라앉는 시간      → DECOR_BUILD_SECONDS, DECOR_RESTACK_SECONDS, DECOR_SINK_SECONDS
+//   경고 표시 시간·모양       → WARNING, ARROW
+// 적이 다니는 원(적이 나타나는 거리 + CLEAR_MARGIN 칸) 안쪽이나 바닥판 밖으로 나가는 꾸미기는 그 땅 크기에서는 빠지고,
+// 땅이 넓어져서 자리가 생기면 나타납니다.
 
 import * as THREE from '../../lib/three.js';
 import { BlockFigure } from '../core/blockFigure.js';
 import { createBlockBatch } from '../core/blockAssets.js';
+import { getVoxelBlueprint } from '../core/blueprints.js';
 
+// ── 바꿔도 되는 숫자 ──
 const DECOR_SEED = 7; // 바꾸면 나뭇잎·돌 색 섞임이 달라짐
-const DECOR_BUILD_SECONDS = 3.5; // 처음에 꾸미기가 쌓이는 시간
+const DECOR_BUILD_SECONDS = 3.5; // 게임이 열릴 때 꾸미기가 쌓이는 시간
+const DECOR_RESTACK_SECONDS = 2; // 땅이 넓어진 뒤 새 꾸미기가 쌓이는 시간
+const DECOR_SINK_SECONDS = 0.5; // 땅이 넓어질 때 예전 꾸미기가 땅속으로 들어가는 시간
+const DECOR_RESTACK_DELAY = 0.3; // 예전 꾸미기가 들어가기 시작하고 몇 초 뒤에 새 꾸미기가 떨어지기 시작하는지
+const DECOR_SINK_DEPTH = 0.8; // 들어갈 때 몇 칸 내려가는지 (동시에 작아짐)
 const DECOR_DROP_HEIGHT = 7; // 꾸미기 블록이 몇 칸 위에서 떨어지는지
 const CLEAR_MARGIN = 3; // 적이 나타나는 거리보다 이만큼 더 바깥에만 꾸미기를 둠
 
 // 경고 표시 (적이 오는 방향의 땅 위에 놓이는 빨간 블록 화살표)
 const WARNING = {
   seconds: 4, // 보이는 시간
-  radiusOffset: -2, // 화살표 가운데 = 적이 나타나는 거리(config.arena.spawnRadius) + 이 값 (바닥판 밖으로 안 나가게 안쪽으로)
+  radiusOffset: -1, // 화살표 가운데 = 적이 나타나는 거리(land.spawnRadius) + 이 값 (바닥판 밖으로 안 나가게 안쪽으로)
   color: '#C91A09', // 평소 색 (빨강)
   flashColor: '#F2CD37', // 번쩍일 때 색 (노랑)
   chaseSpeed: 1.4, // 1초에 불빛이 꼬리에서 화살촉(성 쪽)으로 몇 번 지나가는지
   lift: 0.7, // 번쩍일 때 위로 뛰는 높이
   maxShown: 6, // 한꺼번에 보일 수 있는 방향 수
+  slideSpeed: 6, // 땅이 넓어지면 화살표가 새 자리로 미끄러져 가는 빠르기
+  // 성 돌바닥·타워 자리와 겹치면 화살표를 옆으로 조금(최대 maxNudgeDeg 도) 비켜 놓고,
+  // 그래도 겹치는 블록은 감춤 (돌 속으로 파고들지 않게). false 면 그냥 겹쳐 그림
+  avoidStone: true,
+  maxNudgeDeg: 20,
 };
 
 // 화살표 모양 (맨 윗줄이 화살촉 = 성을 가리킴, X = 블록)
@@ -54,6 +71,7 @@ const COLORS = {
   leafLight: '#4B9F4A', // 밝은 나뭇잎 (초록)
   leafDark: '#184632', // 어두운 나뭇잎, 소나무 (짙은 초록)
   apple: '#C91A09', // 사과 (빨강)
+  berry: '#AC78BA', // 덤불 열매 (연보라)
   rock: '#A0A5A9', // 바위 (밝은 회색)
   rockDark: '#6C6E68', // 바위 그늘 (진한 회색)
   moss: '#4B9F4A', // 바위 위 이끼 (초록)
@@ -78,10 +96,12 @@ const FLOWER_COLORS = ['#C91A09', '#F4F4F4', '#E4ADC8', '#5A93DB', '#FF698F', '#
 // 네 모서리 배치표
 // 모서리 이름은 처음 카메라 기준: far = 화면 위쪽(멀리), near = 화면 아래쪽(가까이)
 // x: 왼쪽/오른쪽 끝에서 안쪽으로 몇 칸, z: 위/아래 끝에서 안쪽으로 몇 칸 (1 = 맨 끝 칸)
-// type: tree(둥근 나무) pine(소나무) rock(큰 바위) pebble(작은 돌) flower(꽃) bud(작은 꽃)
-//       mushroom(버섯) pond(연못) reeds(갈대) duck(오리, 연못 가운데에 둠)
+//    → 땅이 넓어지면 꾸미기도 모서리를 따라 바깥으로 옮겨 갑니다
+// from: 땅이 이 칸 수 이상일 때만 나옴 (없으면 처음부터). 모서리 빈터가 넓어질수록 하나씩 늘어나게 할 때 씀
+// type: tree(둥근 나무) pine(소나무) bush(덤불) rock(큰 바위) pebble(작은 돌) flower(꽃) bud(작은 꽃)
+//       mushroom(버섯) pond(연못, duck: true 면 오리가 떠다님) reeds(갈대)
 // flower, bud 는 color: '#C91A09' 처럼 꽃잎 색을 정할 수 있음 (없으면 FLOWER_COLORS 에서 고름)
-// tree 는 apples: true 를 붙이면 사과가 열림
+// tree 는 apples: true, bush 는 berries: true 를 붙이면 열매가 열림
 const DECOR_LAYOUT = {
   farRight: [
     { type: 'tree', x: 4, z: 4, apples: true },
@@ -91,6 +111,14 @@ const DECOR_LAYOUT = {
     { type: 'flower', x: 2, z: 14, color: '#E4ADC8' },
     { type: 'bud', x: 12, z: 2, color: '#5A93DB' },
     { type: 'pebble', x: 15, z: 2 },
+    { type: 'pebble', x: 6, z: 10, from: 60 },
+    { type: 'bush', x: 10, z: 7, berries: true, from: 64 },
+    { type: 'tree', x: 3, z: 16, from: 68 },
+    { type: 'bud', x: 18, z: 2, color: '#F4F4F4', from: 68 },
+    { type: 'tree', x: 13, z: 7, apples: true, from: 76 },
+    { type: 'flower', x: 2, z: 21, color: '#5A93DB', from: 76 },
+    { type: 'pebble', x: 8, z: 13, from: 80 },
+    { type: 'bush', x: 21, z: 2, from: 84 },
   ],
   farLeft: [
     { type: 'pine', x: 4, z: 4 },
@@ -100,14 +128,27 @@ const DECOR_LAYOUT = {
     { type: 'pebble', x: 13, z: 2 },
     { type: 'bud', x: 2, z: 15, color: '#F4F4F4' },
     { type: 'flower', x: 3, z: 14, color: '#FF698F' },
+    { type: 'bud', x: 5, z: 12, color: '#5A93DB', from: 60 },
+    { type: 'pine', x: 14, z: 3, from: 64 },
+    { type: 'mushroom', x: 10, z: 8, from: 68 },
+    { type: 'pine', x: 3, z: 17, from: 72 },
+    { type: 'rock', x: 18, z: 2, from: 76 },
+    { type: 'pine', x: 9, z: 12, from: 80 },
+    { type: 'bud', x: 6, z: 16, color: '#E4ADC8', from: 80 },
   ],
   nearRight: [
-    { type: 'pond', x: 5, z: 5 },
-    { type: 'duck', x: 5, z: 5 },
+    { type: 'pond', x: 5, z: 5, duck: true },
     { type: 'reeds', x: 2, z: 9 },
     { type: 'tree', x: 10, z: 3 },
     { type: 'flower', x: 3, z: 12, color: '#C91A09' },
     { type: 'bud', x: 14, z: 2, color: '#AC78BA' },
+    { type: 'bud', x: 7, z: 9, color: '#F4F4F4', from: 60 },
+    { type: 'bush', x: 3, z: 15, from: 64 },
+    { type: 'flower', x: 10, z: 8, color: '#F4F4F4', from: 68 },
+    { type: 'mushroom', x: 15, z: 4, from: 72 },
+    { type: 'tree', x: 3, z: 19, apples: true, from: 76 },
+    { type: 'reeds', x: 9, z: 11, from: 80 },
+    { type: 'pebble', x: 19, z: 2, from: 80 },
   ],
   nearLeft: [
     { type: 'rock', x: 4, z: 4 },
@@ -117,6 +158,12 @@ const DECOR_LAYOUT = {
     { type: 'flower', x: 7, z: 7, color: '#5A93DB' },
     { type: 'pebble', x: 2, z: 15 },
     { type: 'bud', x: 13, z: 2, color: '#C91A09' },
+    { type: 'pebble', x: 10, z: 6, from: 60 },
+    { type: 'bush', x: 8, z: 9, berries: true, from: 64 },
+    { type: 'pine', x: 16, z: 3, from: 68 },
+    { type: 'flower', x: 3, z: 17, color: '#FF698F', from: 72 },
+    { type: 'rock', x: 12, z: 9, from: 76 },
+    { type: 'tree', x: 4, z: 19, from: 80 },
   ],
 };
 
@@ -128,6 +175,7 @@ const CORNERS = {
   nearLeft: { sx: -1, sz: 1 },
 };
 
+const DEG = Math.PI / 180;
 const WATER_SINK = -0.62; // 물 블록을 땅속으로 내려서 윗면만 살짝 보이게 함
 const DUCK_FLOAT_Y = -0.15; // 오리가 물에 떠 있는 높이
 
@@ -168,6 +216,24 @@ const MODELS = {
     for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) out.push(block(dx, 4, dz, COLORS.leaf));
     square(1, true, (dx, dz) => out.push(block(dx, 5, dz, leaf())));
     out.push(block(0, 6, 0, COLORS.leaf), block(0, 7, 0, COLORS.leafLight));
+    return out;
+  },
+
+  // 덤불: 낮고 둥근 풀숲 (berries: true 면 연보라 열매가 몇 개)
+  bush(rng, { berries = false } = {}) {
+    const out = [];
+    square(1, false, (dx, dz) => {
+      const fruit = berries && (dx !== 0 || dz !== 0) && rng() < 0.25;
+      out.push(block(dx, 0, dz, fruit ? COLORS.berry : pick(rng, [COLORS.leaf, COLORS.leafLight])));
+    });
+    for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1]]) {
+      if (dx === 0 && dz === 0) {
+        out.push(block(dx, 1, dz, COLORS.leafLight));
+        continue;
+      }
+      if (rng() < 0.25) continue; // 윗단은 한두 칸 비워서 울퉁불퉁하게
+      out.push(block(dx, 1, dz, berries && rng() < 0.2 ? COLORS.berry : pick(rng, [COLORS.leafLight, COLORS.leaf])));
+    }
     return out;
   },
 
@@ -297,58 +363,117 @@ const DUCK_BLOCKS = [
 ];
 const DUCK_PATH = { radiusX: 1.0, radiusZ: 0.45, speed: 0.35, bob: 0.05 }; // 오리가 도는 길 (칸), 빠르기
 
-export function createArenaDecor({ scene, events, config }) {
-  const half = config.arena.size / 2;
-  const clearRadius = config.arena.spawnRadius + CLEAR_MARGIN;
-  const rng = createRandom(DECOR_SEED);
+export function createArenaDecor({ scene, events, config, land = null }) {
+  let time = 0;
+  let current = null; // 지금 보이는(쌓이는) 꾸미기: { size, figure, ducks, blockCount }
+  let pending = null; // 예전 꾸미기가 들어가는 동안 기다리는 새 꾸미기: { size, wait }
+  const leaving = []; // 땅속으로 들어가는 중인 예전 꾸미기: [{ figure, ducks, age }]
 
-  // ── 모서리 꾸미기 (블록 인형 하나로 한꺼번에 그림) ──
-  const voxels = [];
-  const ducks = [];
-  for (const [cornerName, items] of Object.entries(DECOR_LAYOUT)) {
-    const corner = CORNERS[cornerName];
-    if (!corner) continue;
-    for (const item of items) {
-      const center = itemCenter(item, corner, half);
-      if (item.type === 'duck') {
-        ducks.push(center);
-        continue;
-      }
-      const model = MODELS[item.type];
-      if (!model) {
-        console.warn(`꾸미기 종류 '${item.type}' 를 모릅니다 (${cornerName})`);
-        continue;
-      }
-      const blocks = model(rng, item).map((b) => ({
-        x: center.x + b.dx * corner.sx,
-        y: b.dy + 0.5 + b.sink,
-        z: center.z + b.dz * corner.sz,
-        level: b.dy,
-        hex: b.hex,
-      }));
-      if (!fitsOutsideField(blocks, half, clearRadius)) {
-        console.warn(`꾸미기 '${item.type}' (${cornerName}, x ${item.x}, z ${item.z}) 가 전장 원 안이나 바닥판 밖이라 뺐어요`);
-        continue;
-      }
-      voxels.push(...blocks);
+  const landSize = () => land?.size ?? config.arena.startSize;
+  const spawnRadiusFor = (size) =>
+    land && land.size === size ? land.spawnRadius : size / 2 - config.arena.spawnMargin;
+
+  // ── 모서리 꾸미기 (땅 크기 하나에 블록 인형 하나로 한꺼번에 그림) ──
+  function createLayout(size, buildSeconds) {
+    const plan = planDecor(size, spawnRadiusFor(size) + CLEAR_MARGIN);
+    const figure = plan.voxels.length
+      ? new BlockFigure(getVoxelBlueprint(`arena-decor|${size}|${plan.clearRadius}`, plan.voxels), scene)
+      : null;
+    figure?.build(buildSeconds, { dropHeight: DECOR_DROP_HEIGHT });
+    const duckBlueprint = getVoxelBlueprint(
+      'arena-decor-duck',
+      DUCK_BLOCKS.map((b) => ({ x: b.x, y: b.y, z: 0, hex: b.hex })),
+    );
+    const ducks = plan.ducks.map((duck) => {
+      const duckFigure = new BlockFigure(duckBlueprint, scene);
+      duckFigure.group.position.set(duck.x, DUCK_FLOAT_Y, duck.z);
+      duckFigure.build(buildSeconds * 0.6, { dropHeight: DECOR_DROP_HEIGHT });
+      return { figure: duckFigure, center: duck, phase: duck.phase };
+    });
+    return { size, figure, ducks, blockCount: plan.voxels.length + ducks.length * DUCK_BLOCKS.length };
+  }
+
+  // 땅 크기가 바뀌면: 지금 꾸미기는 땅속으로 들어가고, 잠깐 뒤 새 크기에 맞는 꾸미기가 쌓임
+  function setSize(size) {
+    if (pending) {
+      pending.size = size;
+      return;
+    }
+    if (current?.size === size) return;
+    if (current) {
+      leaving.push({ figure: current.figure, ducks: current.ducks, age: 0 });
+      current = null;
+      pending = { size, wait: DECOR_RESTACK_DELAY };
+    } else {
+      pending = { size, wait: 0 };
     }
   }
-  const decorFigure = voxels.length ? new BlockFigure(createVoxelBlueprint('decor', voxels, rng, half), scene) : null;
-  decorFigure?.build(DECOR_BUILD_SECONDS, { dropHeight: DECOR_DROP_HEIGHT });
 
-  const duckFigures = ducks.map((center) => {
-    const blueprint = createVoxelBlueprint(
-      'duck',
-      DUCK_BLOCKS.map((b) => ({ x: b.x, y: b.y + 0.5, z: 0, level: b.y, hex: b.hex })),
-      rng,
-      half,
-    );
-    const figure = new BlockFigure(blueprint, scene);
-    figure.group.position.set(center.x, DUCK_FLOAT_Y, center.z);
-    figure.build(DECOR_BUILD_SECONDS * 0.6, { dropHeight: DECOR_DROP_HEIGHT });
-    return { figure, center, phase: rng() * Math.PI * 2 };
-  });
-  let time = 0;
+  function updateLayouts(dt) {
+    if (pending) {
+      pending.wait -= dt;
+      if (pending.wait <= 0) {
+        current = createLayout(pending.size, DECOR_RESTACK_SECONDS);
+        pending = null;
+      }
+    }
+    current?.figure?.update(dt);
+    if (current) updateDucks(current.ducks, dt);
+    for (let i = leaving.length - 1; i >= 0; i--) {
+      const old = leaving[i];
+      old.age += dt;
+      if (old.age >= DECOR_SINK_SECONDS) {
+        old.figure?.dispose();
+        for (const duck of old.ducks) duck.figure.dispose();
+        leaving.splice(i, 1);
+      } else {
+        sinkLayout(old);
+      }
+    }
+  }
+
+  // 위층부터 차례로 작아지며 땅속으로 쏙 (블록 하나하나 자기 자리에서 작아짐)
+  function sinkLayout({ figure, ducks, age }) {
+    const stagger = DECOR_SINK_SECONDS * 0.4;
+    const span = DECOR_SINK_SECONDS - stagger;
+    if (figure) {
+      const positions = figure.blueprint.positions;
+      const rows = Math.max(1, figure.blueprint.rows);
+      const shown = figure.bodies.count;
+      for (let slot = 0; slot < shown; slot++) {
+        // 아무 블록도 떼어 내지 않았으므로 칸 번호 = 설계도 블록 번호
+        const level = positions[slot * 3 + 1] - 0.5;
+        const delay = (1 - clamp01((level + 1) / rows)) * stagger;
+        const p = clamp01((age - delay) / span);
+        const s = Math.max(0.001, 1 - p * p);
+        figure.setPose(slot, 0, -DECOR_SINK_DEPTH * p, 0, 0, s, s, s);
+      }
+      figure.commit();
+    }
+    const p = clamp01(age / DECOR_SINK_SECONDS);
+    for (const duck of ducks) {
+      duck.figure.group.scale.setScalar(Math.max(0.001, 1 - p * p));
+      duck.figure.group.position.y = DUCK_FLOAT_Y - DECOR_SINK_DEPTH * p;
+    }
+  }
+
+  // 오리: 연못 위를 작은 타원으로 돌며 둥실둥실
+  function updateDucks(ducks, dt) {
+    for (const duck of ducks) {
+      duck.figure.update(dt);
+      const a = duck.phase + time * DUCK_PATH.speed;
+      const group = duck.figure.group;
+      group.position.set(
+        duck.center.x + Math.cos(a) * DUCK_PATH.radiusX,
+        DUCK_FLOAT_Y + Math.sin(time * 2.6 + duck.phase) * DUCK_PATH.bob,
+        duck.center.z + Math.sin(a) * DUCK_PATH.radiusZ,
+      );
+      // 가는 방향(타원의 접선)을 바라봄
+      group.rotation.y = Math.atan2(-Math.cos(a) * DUCK_PATH.radiusZ, -Math.sin(a) * DUCK_PATH.radiusX);
+    }
+  }
+
+  current = createLayout(landSize(), DECOR_BUILD_SECONDS);
 
   // ── 경고 표시 ──
   // 화살표 블록: u = 성 쪽으로 몇 칸, v = 옆으로 몇 칸, step = 꼬리(0)에서 화살촉까지 몇 번째 줄
@@ -359,12 +484,12 @@ export function createArenaDecor({ scene, events, config }) {
       arrowCells.push({ u: (ARROW.length - 1) / 2 - r, v: c - (row.length - 1) / 2, step: ARROW.length - 1 - r });
     }
   });
-  const warningRadius = config.arena.spawnRadius + WARNING.radiusOffset;
   const warningCapacity = WARNING.maxShown * arrowCells.length;
   const warningBatch = createBlockBatch(warningCapacity);
   scene.add(warningBatch.bodies, warningBatch.studs);
-  const warnings = []; // { angle, cos, sin, age }
+  const warnings = []; // { angle, drawAngle, targetAngle, age, life, radius, targetRadius }
   let warningSlots = 0;
+  let stones = { size: -1, list: [] }; // 화살표가 피해 갈 돌바닥·타워 자리 (땅 크기가 바뀔 때만 다시 계산)
 
   const baseColor = new THREE.Color(WARNING.color);
   const flashColor = new THREE.Color(WARNING.flashColor);
@@ -375,11 +500,46 @@ export function createArenaDecor({ scene, events, config }) {
   const scale = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
 
+  // 화살표 가운데까지의 거리: 지금 땅에서 적이 나타나는 거리 기준
+  function warningRadius() {
+    return spawnRadiusFor(landSize()) + WARNING.radiusOffset;
+  }
+
+  function currentStones() {
+    const size = landSize();
+    if (stones.size !== size) stones = { size, list: WARNING.avoidStone ? stoneFootprints(config, size) : [] };
+    return stones.list;
+  }
+
+  // 화살표가 타워 자리·돌바닥과 겹치지 않는, 원래 방향에서 가장 가까운 각도 (없으면 원래 방향)
+  function clearAngle(angle, radius) {
+    const list = currentStones();
+    if (list.length === 0) return angle;
+    const steps = Math.round(WARNING.maxNudgeDeg);
+    for (let i = 0; i <= steps; i++) {
+      if (arrowIsClear(list, angle + i * DEG, radius)) return angle + i * DEG;
+      if (i > 0 && arrowIsClear(list, angle - i * DEG, radius)) return angle - i * DEG;
+    }
+    return angle;
+  }
+
+  function arrowIsClear(list, angle, radius) {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    for (const { u, v } of arrowCells) {
+      const along = radius - u;
+      if (isUnderStone(list, cos * along - sin * v, sin * along + cos * v)) return false;
+    }
+    return true;
+  }
+
   // seconds: 보이는 시간 (Infinity 면 다음 소식이 올 때까지 계속)
   function showWarnings(directions = [], seconds = WARNING.seconds) {
+    const radius = warningRadius();
     for (const angle of directions) {
       if (warnings.length >= WARNING.maxShown) warnings.shift();
-      warnings.push({ angle, cos: Math.cos(angle), sin: Math.sin(angle), age: 0, life: seconds });
+      const drawAngle = clearAngle(angle, radius);
+      warnings.push({ angle, drawAngle, targetAngle: drawAngle, age: 0, life: seconds, radius, targetRadius: radius });
     }
   }
 
@@ -389,8 +549,14 @@ export function createArenaDecor({ scene, events, config }) {
       if (warnings[i].age >= warnings[i].life) warnings.splice(i, 1);
     }
     if (warnings.length === 0 && warningSlots === 0) return;
+    const list = currentStones();
+    const follow = 1 - Math.exp(-dt * WARNING.slideSpeed);
     let slot = 0;
-    for (const warning of warnings) slot = writeWarning(warning, slot);
+    for (const warning of warnings) {
+      warning.radius += (warning.targetRadius - warning.radius) * follow;
+      warning.drawAngle += (warning.targetAngle - warning.drawAngle) * follow;
+      slot = writeWarning(warning, slot, list);
+    }
     warningSlots = slot;
     warningBatch.bodies.count = slot;
     warningBatch.studs.count = slot;
@@ -401,18 +567,24 @@ export function createArenaDecor({ scene, events, config }) {
   }
 
   // 화살표: 꼬리부터 톡톡 튀어나오고, 노란 불빛이 꼬리에서 화살촉(성 쪽)으로 지나가며 번쩍이고, 끝에 작아지며 사라짐
-  function writeWarning({ angle, cos, sin, age, life }, slot) {
-    rotation.setFromAxisAngle(up, -angle);
+  // (비켜설 자리가 없어서 돌과 겹치는 블록은 그리지 않음)
+  function writeWarning({ drawAngle, age, life, radius }, slot, list) {
+    const cos = Math.cos(drawAngle);
+    const sin = Math.sin(drawAngle);
+    rotation.setFromAxisAngle(up, -drawAngle);
     const fadeOut = clamp01((life - age) / 0.35);
     const rows = ARROW.length;
     for (const { u, v, step } of arrowCells) {
+      const along = radius - u;
+      const x = cos * along - sin * v;
+      const z = sin * along + cos * v;
+      if (list.length > 0 && isUnderStone(list, x, z)) continue;
       const pop = easeOutBack(clamp01((age - step * 0.05) / 0.3));
       const size = Math.max(0.001, pop * fadeOut);
       const phase = fract(age * WARNING.chaseSpeed - step / rows);
       const pulse = phase < 0.3 ? Math.sin((Math.PI * phase) / 0.3) : 0;
       color.copy(baseColor).lerp(flashColor, pulse);
-      const along = warningRadius - u;
-      position.set(cos * along - sin * v, 0.5 * size + pulse * WARNING.lift * fadeOut, sin * along + cos * v);
+      position.set(x, 0.5 * size + pulse * WARNING.lift * fadeOut, z);
       scale.set(size, size, size);
       matrix.compose(position, rotation, scale);
       warningBatch.bodies.setMatrixAt(slot, matrix);
@@ -429,22 +601,6 @@ export function createArenaDecor({ scene, events, config }) {
     updateWarnings(0);
   }
 
-  // 오리: 연못 위를 작은 타원으로 돌며 둥실둥실
-  function updateDucks(dt) {
-    for (const duck of duckFigures) {
-      duck.figure.update(dt);
-      const a = duck.phase + time * DUCK_PATH.speed;
-      const group = duck.figure.group;
-      group.position.set(
-        duck.center.x + Math.cos(a) * DUCK_PATH.radiusX,
-        DUCK_FLOAT_Y + Math.sin(time * 2.6 + duck.phase) * DUCK_PATH.bob,
-        duck.center.z + Math.sin(a) * DUCK_PATH.radiusZ,
-      );
-      // 가는 방향(타원의 접선)을 바라봄
-      group.rotation.y = Math.atan2(-Math.cos(a) * DUCK_PATH.radiusZ, -Math.sin(a) * DUCK_PATH.radiusX);
-    }
-  }
-
   // 쉬는 시간: 다음 웨이브 방향을 웨이브가 시작될 때까지 보여 줌 → 시작하면 잠깐 더 번쩍이고 사라짐
   events.on('wavePreview', ({ directions }) => {
     warnings.length = 0;
@@ -454,20 +610,86 @@ export function createArenaDecor({ scene, events, config }) {
     warnings.length = 0;
     showWarnings(directions);
   });
+  // 땅이 넓어지면: 꾸미기를 새 모서리로 옮기고, 떠 있는 화살표는 새 출발선으로 미끄러져 감
+  events.on('landGrown', ({ size, spawnRadius }) => {
+    const radius = (spawnRadius ?? spawnRadiusFor(size)) + WARNING.radiusOffset;
+    for (const warning of warnings) {
+      warning.targetRadius = radius;
+      warning.targetAngle = clearAngle(warning.angle, radius);
+    }
+    setSize(size);
+  });
 
   return {
     update(dt) {
       time += dt;
-      decorFigure?.update(dt);
-      updateDucks(dt);
+      updateLayouts(dt);
       updateWarnings(dt);
     },
     showWarnings,
     clear,
+    setSize,
+    get size() {
+      return pending ? pending.size : (current?.size ?? landSize());
+    },
     get blockCount() {
-      return voxels.length + duckFigures.length * DUCK_BLOCKS.length;
+      return current?.blockCount ?? 0;
     },
   };
+}
+
+// 땅 크기 하나에 놓일 꾸미기 계산 (그리지는 않음, 시험할 때도 씀)
+// → { voxels: [{ x, y, z, hex }] (아래층부터 쌓이는 순서), ducks: [{ x, z, phase }], placed, skipped, clearRadius }
+// skipped: 그 크기에서 빠진 꾸미기 [{ corner, item, reason }] ('later' = from 크기 전, 'field' = 원 안이나 바닥판 밖)
+export function planDecor(size, clearRadius) {
+  const half = size / 2;
+  const items = [];
+  const ducks = [];
+  const skipped = [];
+  Object.entries(DECOR_LAYOUT).forEach(([cornerName, list], cornerIndex) => {
+    const corner = CORNERS[cornerName];
+    if (!corner) {
+      console.warn(`꾸미기 모서리 이름 '${cornerName}' 을 모릅니다 (farRight, farLeft, nearRight, nearLeft 중 하나)`);
+      return;
+    }
+    list.forEach((item, itemIndex) => {
+      if (item.from && size < item.from) {
+        skipped.push({ corner: cornerName, item, reason: 'later' });
+        return;
+      }
+      const model = MODELS[item.type];
+      if (!model) {
+        console.warn(`꾸미기 종류 '${item.type}' 를 모릅니다 (${cornerName})`);
+        return;
+      }
+      // 꾸미기마다 자기 난수를 써서, 땅 크기가 바뀌어도 같은 나무는 같은 모양
+      const rng = createRandom(DECOR_SEED * 7919 + cornerIndex * 1009 + itemIndex * 101);
+      const center = itemCenter(item, corner, half);
+      const blocks = model(rng, item).map((b) => ({
+        x: center.x + b.dx * corner.sx,
+        y: b.dy + b.sink,
+        z: center.z + b.dz * corner.sz,
+        level: b.dy,
+        hex: b.hex,
+      }));
+      if (!fitsOutsideField(blocks, half, clearRadius)) {
+        skipped.push({ corner: cornerName, item, reason: 'field' });
+        return;
+      }
+      items.push(...blocks);
+      if (item.type === 'pond' && item.duck) ducks.push({ x: center.x, z: center.z, phase: rng() * Math.PI * 2 });
+    });
+  });
+
+  // 아래층부터 쌓이게, 같은 층 안에서는 섞어서 (네 모서리가 함께 자라남)
+  const order = createRandom(DECOR_SEED + size * 31);
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(order() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  items.sort((a, b) => a.level - b.level);
+  const voxels = items.map(({ x, y, z, hex }) => ({ x, y, z, hex }));
+  return { voxels, ducks, placed: voxels.length, skipped, clearRadius };
 }
 
 // ── 아래는 내부에서 쓰는 도구 ──
@@ -499,39 +721,45 @@ function itemCenter(item, corner, half) {
 }
 
 function fitsOutsideField(blocks, half, clearRadius) {
-  return blocks.every(
-    (b) => Math.hypot(b.x, b.z) > clearRadius && Math.abs(b.x) < half && Math.abs(b.z) < half,
-  );
+  return blocks.every((b) => Math.hypot(b.x, b.z) > clearRadius && Math.abs(b.x) < half && Math.abs(b.z) < half);
 }
 
-// 블록 목록 → BlockFigure 가 쓰는 설계도 (아래층부터 쌓이게, 같은 층 안에서는 섞어서)
-function createVoxelBlueprint(key, voxels, rng, half) {
-  const list = voxels.slice();
-  for (let i = list.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [list[i], list[j]] = [list[j], list[i]];
+// 화살표가 파고들면 안 되는 돌 자리: 성 돌바닥 + 지금 땅 크기에서 열린 타워 자리
+// (타워 자리 위치는 towers.js 와 같은 규칙: 각도 (k + 0.5) × 360° ÷ 개수, 바닥판 돌기 줄에 맞춤)
+function stoneFootprints(config, size) {
+  const list = [];
+  const platform = config.castle?.platformSize;
+  if (platform) list.push({ x: 0, z: 0, half: platform / 2 });
+  const pads = config.towerPads;
+  if (!pads) return list;
+  const rings = pads.rings ?? [{ radius: pads.radius, count: pads.count, landSize: 0 }];
+  for (const ring of rings) {
+    if ((ring.landSize ?? 0) > size) continue;
+    for (let k = 0; k < ring.count; k++) {
+      const angle = ((k + 0.5) * Math.PI * 2) / ring.count;
+      list.push({
+        x: snapToStuds(Math.cos(angle) * ring.radius, pads.size, size),
+        z: snapToStuds(Math.sin(angle) * ring.radius, pads.size, size),
+        half: pads.size / 2,
+      });
+    }
   }
-  list.sort((a, b) => a.level - b.level);
+  return list;
+}
 
-  const count = list.length;
-  const positions = new Float32Array(count * 3);
-  const cells = new Int16Array(count * 3);
-  const colors = new Array(count);
-  const colorCache = new Map();
-  let rows = 1;
-  list.forEach((voxel, i) => {
-    positions[i * 3] = voxel.x;
-    positions[i * 3 + 1] = voxel.y;
-    positions[i * 3 + 2] = voxel.z;
-    cells[i * 3] = Math.floor(voxel.x + half);
-    cells[i * 3 + 1] = voxel.level;
-    cells[i * 3 + 2] = Math.floor(voxel.z + half);
-    if (!colorCache.has(voxel.hex)) colorCache.set(voxel.hex, new THREE.Color(voxel.hex));
-    colors[i] = colorCache.get(voxel.hex);
-    rows = Math.max(rows, voxel.level + 1);
-  });
-  const size = half * 2;
-  return { key, columns: size, rows, depth: size, count, positions, cells, colors, width: size, height: rows };
+function snapToStuds(value, padSize, arenaSize) {
+  const studOffset = arenaSize % 2 === 0 ? 0.5 : 0;
+  const offset = (studOffset + (padSize - 1) / 2) % 1;
+  return Math.round(value - offset) + offset;
+}
+
+// 비스듬히 놓인 화살표 블록이 돌 자리 가장자리로 삐져나오지 않게 반 칸 넉넉히
+function isUnderStone(stones, x, z) {
+  for (const stone of stones) {
+    const reach = stone.half + 0.6;
+    if (Math.abs(x - stone.x) < reach && Math.abs(z - stone.z) < reach) return true;
+  }
+  return false;
 }
 
 // 늘 같은 순서로 나오는 난수 (꾸미기가 열 때마다 똑같이 보이게)

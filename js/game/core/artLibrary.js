@@ -11,6 +11,7 @@
 //   ART_ROLES                그림을 쓸 수 있는 자리 목록
 
 import { drawCastle } from '../art/castleArt.js';
+import { pixelate } from '../../image/pixelator.js';
 import { TOWER_ART } from '../art/towerArt.js';
 import { MONSTER_ART } from '../art/monsterArt.js';
 
@@ -52,7 +53,9 @@ export async function createArtLibrary() {
       const saved = readStorage(STORAGE_PREFIX + id);
       if (!saved) return;
       try {
-        custom.set(id, await loadImage(saved));
+        const image = await loadImage(saved);
+        if (!makesBlocks(image)) throw new Error('블록이 안 생기는 그림');
+        custom.set(id, image);
       } catch {
         removeStorage(STORAGE_PREFIX + id);
       }
@@ -70,6 +73,7 @@ export async function createArtLibrary() {
     key: (id) => `${id}@${custom.has(id) ? 'custom' : 'default'}${versions.get(id) ?? 0}`,
     hasCustom: (id) => custom.has(id),
     async setCustom(id, image) {
+      if (!makesBlocks(image)) throw new Error('그림 선이 너무 가늘어서 블록이 생기지 않아요. 색이 칠해진 그림을 써 주세요.');
       const small = shrink(image, MAX_SAVED_SIZE);
       custom.set(id, small);
       versions.set(id, (versions.get(id) ?? 0) + 1);
@@ -81,6 +85,18 @@ export async function createArtLibrary() {
       removeStorage(STORAGE_PREFIX + id);
     },
   };
+}
+
+// 작게 블록으로 바꿔도 블록이 몇 개는 생기는 그림인지 확인 (선만 그린 그림은 블록이 0개가 될 수 있음)
+const CHECK_COLUMNS = 8;
+const MIN_BLOCKS = 4;
+export function makesBlocks(image) {
+  try {
+    const grid = pixelate(image, CHECK_COLUMNS, { maxRows: 40, alphaThreshold: 0.5 });
+    return grid.cells.filter(Boolean).length >= MIN_BLOCKS;
+  } catch {
+    return false;
+  }
 }
 
 function shrink(image, maxSize) {

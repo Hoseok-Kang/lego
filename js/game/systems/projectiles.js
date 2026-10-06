@@ -152,6 +152,7 @@ export function createProjectileManager({ scene, events, enemies, debris }) {
   }
 
   // ── 매 장면마다 ──
+  let lastDrawn = 0;
   function update(dt) {
     let i = 0;
     while (i < count) {
@@ -164,20 +165,18 @@ export function createProjectileManager({ scene, events, enemies, debris }) {
       draw(i, r);
       i++;
     }
-    batch.bodies.count = count;
-    batch.studs.count = count;
-    batch.bodies.instanceMatrix.needsUpdate = true;
-    batch.studs.instanceMatrix.needsUpdate = true;
+    shockwaves.update(dt);
+    if (count === 0 && lastDrawn === 0) return; // 날아가는 게 없으면 그래픽 카드로 보낼 것도 없음
+    lastDrawn = count;
+    const mesh = batch.bodies; // 몸통과 돌기가 한 덩어리
+    mesh.count = count;
+    mesh.visible = count > 0;
+    mesh.instanceMatrix.needsUpdate = true;
     if (colorsDirty) {
-      for (let k = 0; k < count; k++) {
-        batch.bodies.setColorAt(k, records[k].color);
-        batch.studs.setColorAt(k, records[k].color);
-      }
-      batch.bodies.instanceColor.needsUpdate = true;
-      batch.studs.instanceColor.needsUpdate = true;
+      for (let k = 0; k < count; k++) mesh.setColorAt(k, records[k].color);
+      mesh.instanceColor.needsUpdate = true;
       colorsDirty = false;
     }
-    shockwaves.update(dt);
   }
 
   // 따라가기: 몬스터가 살아 있으면 지금 위치를, 쓰러졌으면 마지막으로 본 위치를 향해 날아감

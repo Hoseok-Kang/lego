@@ -33,9 +33,9 @@ export class BlockFigure {
     parent.add(this.group);
 
     const batch = createBlockBatch(blueprint.count, { castShadow });
-    this.bodies = batch.bodies;
-    this.studs = batch.studs;
-    this.group.add(this.bodies, this.studs);
+    this.bodies = batch.bodies; // 블록 묶음 (몸통과 돌기가 한 덩어리)
+    this.studs = batch.studs; // 예전 코드와 맞추려고 남겨 둔 같은 묶음
+    this.group.add(this.bodies);
 
     this.alive = blueprint.count; // 남아 있는 블록 수
     this.slotBlock = new Int32Array(blueprint.count); // 그리는 칸 → 설계도 블록 번호
@@ -48,13 +48,11 @@ export class BlockFigure {
       this.slotBlock[i] = i;
       this.occupied.add(cellKey(blueprint.cells, i));
       this.bodies.setColorAt(i, blueprint.colors[i]);
-      this.studs.setColorAt(i, blueprint.colors[i]);
       this.setFinal(i);
     }
     this.setVisibleCount(blueprint.count);
     this.commit();
     this.bodies.instanceColor.needsUpdate = true;
-    this.studs.instanceColor.needsUpdate = true;
 
     this.animator = null;
     this.isBuilt = true;
@@ -132,7 +130,6 @@ export class BlockFigure {
     this.tintAmount = amount;
     for (let slot = 0; slot < this.alive; slot++) this.paintSlot(slot);
     this.bodies.instanceColor.needsUpdate = true;
-    this.studs.instanceColor.needsUpdate = true;
   }
 
   // 떨어져 나갔던 블록을 아래쪽부터 n개 골라 위에서 하나씩 떨어뜨려 제자리에 다시 쌓음
@@ -161,7 +158,6 @@ export class BlockFigure {
     this.setVisibleCount(this.alive);
     this.commit();
     this.bodies.instanceColor.needsUpdate = true;
-    this.studs.instanceColor.needsUpdate = true;
     return picked.length;
   }
 
@@ -175,7 +171,6 @@ export class BlockFigure {
   dispose() {
     this.group.removeFromParent();
     this.bodies.dispose();
-    this.studs.dispose();
   }
 
   // ── 아래는 내부에서 쓰는 기능 ──
@@ -187,7 +182,6 @@ export class BlockFigure {
 
   setVisibleCount(n) {
     this.bodies.count = n;
-    this.studs.count = n;
   }
 
   setPose(slot, dx, dy, dz, tilt, scaleX, scaleY, scaleZ) {
@@ -198,7 +192,6 @@ export class BlockFigure {
     scale.set(scaleX, scaleY, scaleZ);
     matrix.compose(position, rotation, scale);
     this.bodies.setMatrixAt(slot, matrix);
-    this.studs.setMatrixAt(slot, matrix);
   }
 
   setFinal(slot) {
@@ -207,14 +200,12 @@ export class BlockFigure {
 
   commit() {
     this.bodies.instanceMatrix.needsUpdate = true;
-    this.studs.instanceMatrix.needsUpdate = true;
   }
 
   paintSlot(slot) {
     tmpColor.copy(this.blueprint.colors[this.slotBlock[slot]]);
     if (this.tintColor) tmpColor.lerp(this.tintColor, this.tintAmount);
     this.bodies.setColorAt(slot, tmpColor);
-    this.studs.setColorAt(slot, tmpColor);
   }
 
   updateRestore(dt) {
@@ -275,12 +266,10 @@ export class BlockFigure {
 
     const last = this.alive - 1;
     if (slot !== last) {
-      for (const mesh of [this.bodies, this.studs]) {
-        mesh.getMatrixAt(last, matrix);
-        mesh.setMatrixAt(slot, matrix);
-        mesh.getColorAt(last, tmpColor);
-        mesh.setColorAt(slot, tmpColor);
-      }
+      this.bodies.getMatrixAt(last, matrix);
+      this.bodies.setMatrixAt(slot, matrix);
+      this.bodies.getColorAt(last, tmpColor);
+      this.bodies.setColorAt(slot, tmpColor);
       this.slotBlock[slot] = this.slotBlock[last];
     }
     this.alive = last;
@@ -291,7 +280,6 @@ export class BlockFigure {
     this.setVisibleCount(this.alive);
     this.commit();
     this.bodies.instanceColor.needsUpdate = true;
-    this.studs.instanceColor.needsUpdate = true;
   }
 }
 

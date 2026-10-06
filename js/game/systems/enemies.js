@@ -4,13 +4,18 @@
 // 몬스터 종류별 체력·속도·공격력·돈은 gameConfig.js 의 enemies 에서 바꿉니다.
 // 움직임의 크기·빠르기(통통 튀기, 날갯짓, 쿵쿵 걷기)는 아래 '움직임 설정' 숫자를 바꾸면 됩니다.
 //
+// 몬스터가 나타나는 거리(땅이 넓어지면 멀어짐)와 피해 다닐 타워 자리 목록은 game.js 가 알려 줍니다
+// (getSpawnRadius, getPads). 박쥐는 타워 자리 위로 날아서 지나갑니다.
+//
 // 할 수 있는 일
 //   enemies.spawn(종류, { angle, hpScale })      몬스터 한 마리 등장 → 몬스터
 //                                                angle: 나타나는 방향(라디안), hpScale: 체력 배율
+//                                                (그 방향에 타워 자리가 있으면 옆으로 살짝 비켜서 나타남)
 //   enemies.update(dt, { cameraYaw })            매 장면마다 움직이기
 //   enemies.damage(몬스터, 피해, { slow, slowSeconds, from })
 //                                                한 마리 때리기 (slow: 느려지는 정도 0~1, from: 맞은 쪽 위치)
 //   enemies.damageArea(위치, 반지름, 피해, { from })  그 둘레 안의 몬스터 모두 때리기 (대포)
+//   enemies.slowAll(느려지는 정도, 초)             살아 있는 몬스터 모두 느리게 (얼려라 스킬) → 몇 마리
 //   enemies.list()                               살아 있는 몬스터 목록 (읽기만 하세요)
 //   enemies.aliveCount()                         살아 있는 몬스터 수
 //   enemies.clear()                              모두 바로 지우기 (다시 하기)
@@ -23,6 +28,7 @@
 //   state      'arriving'(몸 만드는 중) | 'walking'(걷는 중) | 'attacking'(성 공격 중) | 'dead'
 //   alive      살아 있는지              slowLeft  느려진 채로 남은 시간(초)
 //   figure     블록 인형 (blockFigure.js)
+//   assembling true 인 동안(대장이 잔해로 모이는 중)은 움직이지 않고 맞지도 않음 (bossAssembly.js 가 정함)
 
 import * as THREE from '../../lib/three.js';
 import { BlockFigure } from '../core/blockFigure.js';
@@ -76,11 +82,18 @@ const SLIDE = 0.8; // 앞이 막혔을 때 옆으로 비켜 가는 정도
 const ATTACKER_WEIGHT = 40; // 성을 공격 중인 몬스터는 이만큼 무거워서 잘 안 밀림
 const PAD_LOOKAHEAD = 6; // 타워 자리를 몇 칸 앞에서부터 피하기 시작할지
 const PAD_STEER = 2; // 타워 자리를 피해 옆으로 트는 세기
-const PAD_GAP_MARGIN = 0.4; // 타워 자리 사이 길은 늘 이만큼 남겨 둠 (큰 몬스터도 지나가게)
+const PAD_AVOID_SHARE = 0.7; // 타워 자리 가운데에서 (자리 한 변 × 이 값 + 몸 반지름) 안으로는 들어가지 않음
+const LANE_LOOKAHEAD = 5; // 타워 자리 고리에 이만큼(칸) 가까워지면 가장 가까운 길목(자리와 자리 사이) 쪽으로 틀기 시작
+const LANE_GAIN = 1.4; // 길목 쪽으로 트는 세기
+const LANE_MAX_STEER = 2.5; // 한 번에 옆으로 트는 최대 세기
+const PAD_BODY_SHARE = 0.4; // 타워 자리 위로는 몸 반지름 × 이 값까지만 걸칠 수 있음 (가운데로는 못 들어감)
+const PAD_GAP_MARGIN = 0.4; // 이웃한 두 타워 자리 사이 한가운데 길은 늘 이 폭의 2배만큼 비워 둠 (대장도 꼭 지나가게)
+const SPAWN_SHIFT_STEP = 0.25; // 나타날 곳이 타워 자리에 걸리면 이 거리(칸)씩 옆으로 옮겨 봄
+const SPAWN_SHIFT_MAX = 0.6; // 최대 이 각도(라디안)까지 옮겨 봄
 
 const TAU = Math.PI * 2;
 
-export function createEnemyManager({ scene, events, debris, castle, art, config }) {
+export function createEnemyManager({ scene, events, debris, castle, art, config, getSpawnRadius = null, getPads = null }) {
   const root = new THREE.Group();
   root.name = 'enemies';
   scene.add(root);
@@ -91,9 +104,12 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
   let nextId = 1;
   let lastYaw = 0;
 
-  const pads = createPadList(config.towerPads);
-  const padAvoidBase = config.towerPads.size * 0.7;
-  const gapHalfWidth = config.towerPads.radius * Math.sin(Math.PI / config.towerPads.count);
+  // 몬스터가 나타나는 거리와 타워 자리 목록 (game.js 가 알려 주지 않으면 설정값으로)
+  const spawnRadiusNow = getSpawnRadius ?? (() => defaultSpawnRadius(config));
+  const padSource = getPads ?? createConfigPadSource(config);
+  const maxEnemyRadius = Math.max(...Object.values(config.enemies).map((type) => type.columns / 2));
+  let pads = []; // 피해 다닐 타워 자리 (padSource 목록이 바뀔 때만 다시 만듦)
+  let padSourceList = null;
   const look = { y: 0, sx: 1, sy: 1, rz: 0, lean: 0 }; // 매 장면 재사용하는 자세 값
   const view = { cos: 1, sin: 0 }; // 카메라 방향 (화면 오른쪽 = (cos, 0, -sin))
 
@@ -106,6 +122,116 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     return getBlueprint(art.key(artId), art.get(artId), { columns: type.columns, depth: type.depth });
   }
 
+  // ── 타워 자리 목록 맞추기 ──
+  // 자리가 늘거나 줄었을 때만 피하기 정보를 다시 계산함 (매 장면 불러도 가벼움)
+  function syncPads() {
+    const list = padSource() ?? [];
+    if (list === padSourceList) return;
+    const same = padSourceList !== null && samePadList(list, padSourceList);
+    padSourceList = list;
+    if (!same) {
+      pads = createPadObstacles(list, maxEnemyRadius);
+      lanes = createLaneRings(list);
+    }
+  }
+
+  // 타워 자리 고리마다 '길목'(이웃한 두 자리 사이 한가운데) 각도 목록을 만듦. 바깥 고리부터.
+  let lanes = [];
+  function createLaneRings(list) {
+    const byRing = new Map();
+    for (const pad of list) {
+      const radius = Math.round(Math.hypot(pad.x, pad.z));
+      if (!byRing.has(radius)) byRing.set(radius, { radius, half: (pad.size ?? 5) / 2, angles: [] });
+      byRing.get(radius).angles.push(Math.atan2(pad.z, pad.x));
+    }
+    const rings = [];
+    for (const ring of byRing.values()) {
+      ring.angles.sort((a, b) => a - b);
+      const count = ring.angles.length;
+      ring.lanes = ring.angles.map((angle, i) => {
+        const next = i + 1 < count ? ring.angles[i + 1] : ring.angles[0] + Math.PI * 2;
+        return (angle + next) / 2;
+      });
+      rings.push(ring);
+    }
+    return rings.sort((a, b) => b.radius - a.radius);
+  }
+
+  // 다음에 지나갈 타워 자리 고리의 가장 가까운 길목 쪽으로 트는 양 (+ 는 왼쪽)
+  function laneSteer(enemy) {
+    const { position } = enemy;
+    const r = Math.hypot(position.x, position.z);
+    if (r < 1e-3) return 0;
+    for (const ring of lanes) {
+      const reach = ring.half + enemy.radius;
+      if (r > ring.radius + reach + LANE_LOOKAHEAD) continue; // 아직 멀었음
+      if (r < ring.radius - 0.5) continue; // 이미 이 고리 안쪽으로 들어옴 → 다음(안쪽) 고리를 봄
+      const theta = Math.atan2(position.z, position.x);
+      let diff = Infinity;
+      for (const lane of ring.lanes) {
+        const d = wrapAngle(lane - theta);
+        if (Math.abs(d) < Math.abs(diff)) diff = d;
+      }
+      const arc = diff * r; // 길목까지 옆으로 남은 거리 (+: 각도가 커지는 쪽)
+      const ahead = Math.max(1, r - ring.radius + 1);
+      // 옆 방향(px, pz)은 각도가 작아지는 쪽이라서 부호를 뒤집음
+      return Math.max(-LANE_MAX_STEER, Math.min(LANE_MAX_STEER, (-arc / ahead) * LANE_GAIN));
+    }
+    return 0;
+  }
+
+  // 자리 가운데에서 (ux, uz) 방향으로 이 거리 안에는 몸 가운데가 들어가지 않음 (몸 크기만큼 둥글게 피함).
+  // 단, 가까운 이웃 자리 쪽으로는 두 자리 한가운데 선 앞에서 멈춤 → 이웃한 자리 사이에는 늘 곧은 길이 남아서
+  // 대장처럼 큰 몬스터도 꼭 성까지 갈 수 있음 (그 길을 지날 때는 몸이 자리 가장자리에 조금 걸쳐 보일 수 있음)
+  function hardRadius(pad, bodyRadius, ux, uz) {
+    let limit = pad.avoid + bodyRadius;
+    const neighbours = pad.neighbours;
+    for (let i = 0; i < neighbours.length; i++) {
+      const next = neighbours[i];
+      const facing = ux * next.ux + uz * next.uz;
+      if (facing <= 0 || next.cap >= limit * facing) continue;
+      limit = next.cap / facing; // 이 방향으로 가다가 한가운데 선(에서 여유만큼 앞)에 닿는 거리
+    }
+    return limit;
+  }
+
+  // 나타날 곳이 타워 자리에 걸리면 옆으로 조금씩 옮겨서 비어 있는 곳을 찾음
+  function clearSpawnAngle(angle, distance, bodyRadius) {
+    if (pads.length === 0) return angle;
+    let best = angle;
+    let bestRoom = -Infinity;
+    const angleStep = SPAWN_SHIFT_STEP / Math.max(1, distance);
+    const steps = Math.ceil(SPAWN_SHIFT_MAX / angleStep);
+    for (let step = 0; step <= steps; step++) {
+      for (let sign = 1; sign >= -1; sign -= 2) {
+        if (step === 0 && sign < 0) continue;
+        const tryAngle = angle + sign * step * angleStep;
+        const room = spawnRoom(Math.cos(tryAngle) * distance, Math.sin(tryAngle) * distance, bodyRadius);
+        if (room >= 0) return tryAngle;
+        if (room > bestRoom) {
+          bestRoom = room;
+          best = tryAngle;
+        }
+      }
+    }
+    return best;
+  }
+
+  // 그 자리에 섰을 때 가장 가까운 타워 자리 둘레까지 남는 거리 (음수면 걸림)
+  function spawnRoom(x, z, bodyRadius) {
+    let room = Infinity;
+    for (const pad of pads) {
+      const dx = x - pad.x;
+      const dz = z - pad.z;
+      const distance = Math.hypot(dx, dz);
+      if (distance >= pad.avoid + bodyRadius) continue;
+      const ux = distance < 1e-4 ? pad.outX : dx / distance;
+      const uz = distance < 1e-4 ? pad.outZ : dz / distance;
+      room = Math.min(room, distance - hardRadius(pad, bodyRadius, ux, uz));
+    }
+    return room;
+  }
+
   // ── 등장 ──
   function spawn(typeId, { angle = Math.random() * TAU, hpScale = 1 } = {}) {
     const type = config.enemies[typeId];
@@ -115,9 +241,13 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     }
     const blueprint = prepareBlueprint(typeId);
     const figure = new BlockFigure(blueprint, root);
-    const spawnRadius = config.arena.spawnRadius;
+    const spawnRadius = spawnRadiusNow();
     const maxHp = type.hp * hpScale;
     const radius = type.columns / 2;
+    if (type.motion !== 'fly') {
+      syncPads();
+      angle = clearSpawnAngle(angle, spawnRadius, radius);
+    }
     const enemy = {
       id: nextId++,
       typeId,
@@ -142,8 +272,6 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
       gait: Math.random(), // 걸음 진행 (1 = 한 걸음)
       flap: Math.random() * TAU,
       side: Math.random() < 0.5 ? -1 : 1, // 길이 막혔을 때 비켜 갈 쪽
-      padAvoid: padAvoidBase + radius,
-      padHard: Math.min(padAvoidBase + radius, gapHalfWidth - PAD_GAP_MARGIN),
       attackTimer: 0,
       lungeTime: -1,
       hitTime: 0,
@@ -163,6 +291,7 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
   function update(dt, { cameraYaw = lastYaw } = {}) {
     lastYaw = cameraYaw;
     compact();
+    syncPads();
     const cheering = Boolean(castle.isDestroyed);
     for (let i = 0; i < live.length; i++) think(live[i], dt, cheering);
     separate(dt);
@@ -177,6 +306,11 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     updateSlow(enemy, dt);
     const pace = 1 - enemy.slow;
     enemy.flap += dt * pace * FLAP_SPEED;
+    if (enemy.assembling) {
+      // 대장이 잔해로 모이는 중: 제자리에서 기다림 (다 모이면 아래에서 'walking' 으로 바뀜)
+      enemy.velocity.set(0, 0, 0);
+      return;
+    }
 
     if (enemy.state === 'arriving') {
       if (enemy.flying) enemy.gait += dt / enemy.cycleSeconds; // 몸이 모이는 동안에도 둥실둥실
@@ -204,7 +338,7 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     // 성 쪽 방향에 옆으로 트는 양(steer)을 더함
     const px = -heading.z;
     const pz = heading.x;
-    const steer = enemy.flying ? FLY_WEAVE * Math.sin(Math.PI * enemy.gait + enemy.side) : padSteer(enemy, px, pz);
+    const steer = enemy.flying ? FLY_WEAVE * Math.sin(Math.PI * enemy.gait + enemy.side) : laneSteer(enemy);
     const vx = heading.x + px * steer;
     const vz = heading.z + pz * steer;
     const length = Math.hypot(vx, vz) || 1;
@@ -226,9 +360,11 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
 
   // 앞에 타워 자리가 있으면 옆으로 비켜 가는 양 (+ 는 왼쪽)
   function padSteer(enemy, px, pz) {
-    const { position, heading, padAvoid } = enemy;
+    const { position, heading } = enemy;
     let steer = 0;
-    for (const pad of pads) {
+    for (let i = 0; i < pads.length; i++) {
+      const pad = pads[i];
+      const padAvoid = pad.avoid + enemy.radius;
       const rx = pad.x - position.x;
       const rz = pad.z - position.z;
       const along = rx * heading.x + rz * heading.z;
@@ -312,13 +448,13 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     }
     for (let i = 0; i < count; i++) {
       const enemy = live[i];
-      if (enemy.alive && !enemy.flying) keepOffPads(enemy);
+      if (enemy.alive && !enemy.flying && !enemy.assembling) keepOffPads(enemy);
     }
   }
 
   function weightOf(enemy) {
     const weight = enemy.radius * enemy.radius;
-    return enemy.state === 'attacking' ? weight * ATTACKER_WEIGHT : weight;
+    return enemy.state === 'attacking' || enemy.assembling ? weight * ATTACKER_WEIGHT : weight;
   }
 
   function shove(enemy, nx, nz, amount) {
@@ -338,22 +474,24 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     position.z += pz * side * amount * SLIDE;
   }
 
+  // 타워 자리 위로 올라서지 않게 밀어냄 (이웃 자리 사이에는 늘 길이 남음: hardRadius)
   function keepOffPads(enemy) {
     const position = enemy.position;
-    const hard = enemy.padHard;
-    for (const pad of pads) {
+    for (let i = 0; i < pads.length; i++) {
+      const pad = pads[i];
       const dx = position.x - pad.x;
       const dz = position.z - pad.z;
+      const full = pad.avoid + enemy.radius;
       const distanceSq = dx * dx + dz * dz;
-      if (distanceSq >= hard * hard) continue;
+      if (distanceSq >= full * full) continue;
       const distance = Math.sqrt(distanceSq);
-      if (distance < 1e-4) {
-        position.x = pad.x + pad.outX * hard;
-        position.z = pad.z + pad.outZ * hard;
-      } else {
-        position.x = pad.x + (dx / distance) * hard;
-        position.z = pad.z + (dz / distance) * hard;
-      }
+      const ux = distance < 1e-4 ? pad.outX : dx / distance;
+      const uz = distance < 1e-4 ? pad.outZ : dz / distance;
+      // 몸 가운데가 자리 위로 올라서지만 않게 (몸 가장자리는 조금 걸칠 수 있음 → 좁은 길목에서 갇히지 않음)
+      const hard = Math.min(hardRadius(pad, enemy.radius, ux, uz), pad.size * 0.5 + enemy.radius * PAD_BODY_SHARE);
+      if (distance >= hard) continue;
+      position.x = pad.x + ux * hard;
+      position.z = pad.z + uz * hard;
     }
   }
 
@@ -397,6 +535,8 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     const pulse = enemy.hitTime / HIT_PULSE_SECONDS;
     const grow = 1 + HIT_PULSE_SCALE * pulse * pulse;
     const group = enemy.figure.group;
+    // 옆으로 기울면 넓은 몸의 아래 모서리가 땅에 파묻히므로 그만큼 들어 올림 (땅 위 몬스터만)
+    if (!enemy.flying) look.y += Math.abs(Math.sin(look.rz)) * enemy.figure.width * 0.5 * look.sx;
     group.position.set(enemy.position.x + offsetX, look.y, enemy.position.z + offsetZ);
     group.rotation.set(0, yaw, look.rz);
     group.scale.set(look.sx * grow, look.sy * grow, look.sx * grow);
@@ -461,7 +601,7 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
 
   // ── 피해 ──
   function damage(enemy, amount, { slow = 0, slowSeconds = 0, from = null } = {}) {
-    if (!enemy || !enemy.alive || !(amount > 0)) return;
+    if (!enemy || !enemy.alive || enemy.assembling || !(amount > 0)) return;
     enemy.hp = Math.max(0, enemy.hp - amount);
     if (enemy.hp <= 0) {
       kill(enemy, amount);
@@ -480,7 +620,7 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     let hits = 0;
     for (let i = 0; i < live.length; i++) {
       const enemy = live[i];
-      if (!enemy.alive) continue;
+      if (!enemy.alive || enemy.assembling) continue;
       const dx = enemy.position.x - point.x;
       const dz = enemy.position.z - point.z;
       const reach = radius + enemy.radius * 0.5;
@@ -505,6 +645,19 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     needsCompact = true;
     events.emit('enemyHit', { enemy, damage: amount, position });
     events.emit('enemyKilled', { enemy, gold: enemy.type.gold, position: position.clone() });
+  }
+
+  // 살아 있는 몬스터 모두 느리게 (얼려라 스킬) → 느려진 몬스터 수
+  function slowAll(slow, seconds) {
+    if (!(slow > 0) || !(seconds > 0)) return 0;
+    let count = 0;
+    for (let i = 0; i < live.length; i++) {
+      const enemy = live[i];
+      if (!enemy.alive) continue;
+      applySlow(enemy, slow, seconds);
+      count += 1;
+    }
+    return count;
   }
 
   // 느려짐: 시간은 새로 채우고, 더 센 느려짐을 유지
@@ -567,6 +720,7 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
     update,
     damage,
     damageArea,
+    slowAll,
     list,
     aliveCount: () => aliveTotal,
     clear,
@@ -574,16 +728,69 @@ export function createEnemyManager({ scene, events, debris, castle, art, config 
   };
 }
 
-// 타워 자리 위치 (towers.js 와 같은 규칙: 성 둘레, 성의 축 사이)
-function createPadList({ count, radius }) {
-  const pads = [];
-  for (let k = 0; k < count; k++) {
-    const angle = ((k + 0.5) * TAU) / count;
-    const outX = Math.cos(angle);
-    const outZ = Math.sin(angle);
-    pads.push({ x: outX * radius, z: outZ * radius, outX, outZ });
+// 피해 다닐 타워 자리 정보: 위치, 피하는 거리, 가까운 이웃 자리 쪽 길 폭
+// list: [{ x, z, size }] (towers.padPositions())
+function createPadObstacles(list, maxEnemyRadius) {
+  const obstacles = list.map((pad) => {
+    const out = Math.hypot(pad.x, pad.z);
+    return {
+      x: pad.x,
+      z: pad.z,
+      outX: out > 1e-4 ? pad.x / out : 1, // 성 반대쪽 방향 (자리 한가운데에 몬스터가 있을 때 밀어낼 쪽)
+      outZ: out > 1e-4 ? pad.z / out : 0,
+      size: pad.size ?? 5,
+      avoid: (pad.size ?? 5) * PAD_AVOID_SHARE,
+      neighbours: [],
+    };
+  });
+  // 두 자리 사이 길: 두 자리 가운데 사이 거리의 절반 - 여유. 몸을 이보다 크게 피하면 길이 막히는 이웃만 기억함
+  for (let i = 0; i < obstacles.length; i++) {
+    const a = obstacles[i];
+    for (let j = i + 1; j < obstacles.length; j++) {
+      const b = obstacles[j];
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const distance = Math.hypot(dx, dz);
+      if (distance < 1e-4) continue;
+      const cap = Math.max(0, distance / 2 - PAD_GAP_MARGIN);
+      const ux = dx / distance;
+      const uz = dz / distance;
+      if (cap < a.avoid + maxEnemyRadius) a.neighbours.push({ ux, uz, cap });
+      if (cap < b.avoid + maxEnemyRadius) b.neighbours.push({ ux: -ux, uz: -uz, cap });
+    }
   }
-  return pads;
+  return obstacles;
+}
+
+function samePadList(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].x !== b[i].x || a[i].z !== b[i].z || a[i].size !== b[i].size) return false;
+  }
+  return true;
+}
+
+// game.js 가 타워 자리 목록을 알려 주지 않을 때: 처음 땅 크기에서 열리는 고리의 자리 (towers.js 와 같은 규칙)
+function createConfigPadSource(config) {
+  const padConfig = config.towerPads;
+  const startSize = config.arena.startSize ?? config.arena.size ?? 0;
+  const rings = padConfig.rings ?? [{ radius: padConfig.radius, count: padConfig.count, landSize: 0 }];
+  const list = [];
+  for (const ring of rings) {
+    if ((ring.landSize ?? 0) > startSize) continue;
+    for (let k = 0; k < ring.count; k++) {
+      const angle = ((k + 0.5) * TAU) / ring.count;
+      list.push({ x: Math.cos(angle) * ring.radius, z: Math.sin(angle) * ring.radius, size: padConfig.size });
+    }
+  }
+  return () => list;
+}
+
+// game.js 가 나타나는 거리를 알려 주지 않을 때: 처음 땅 절반 - 여유
+function defaultSpawnRadius(config) {
+  const arena = config.arena;
+  if (arena.spawnRadius) return arena.spawnRadius;
+  return (arena.startSize ?? arena.size ?? 64) / 2 - (arena.spawnMargin ?? 3);
 }
 
 // 한 걸음(한 번 뛰기)에 걸리는 시간: 몸이 클수록 조금 느림
@@ -613,4 +820,8 @@ function lungeCurve(u) {
   }
   const b = (u - LUNGE_HIT_SHARE) / (1 - LUNGE_HIT_SHARE);
   return 1 - b * b * (3 - 2 * b);
+}
+
+function wrapAngle(angle) {
+  return Math.atan2(Math.sin(angle), Math.cos(angle));
 }

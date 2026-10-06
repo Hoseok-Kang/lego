@@ -26,6 +26,7 @@ export function createStackAnimator(meshes, motion, { onLand, onComplete } = {})
     done = count === 0;
     tilts = Float32Array.from({ length: count }, () => (Math.random() * 2 - 1) * motion.maxTilt);
     meshes.setVisibleCount(0);
+    if (count === 0) onComplete?.(); // 쌓을 블록이 없으면 바로 끝 (기다리다 멈추지 않게)
   }
 
   function update(dt) {

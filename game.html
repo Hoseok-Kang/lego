@@ -20,14 +20,24 @@
 <!-- ── 3D 전장 (그림판은 프로그램이 여기에 넣습니다) ── -->
 <div id="arena" class="arena" aria-label="성 지키기 전장"></div>
 <p id="bootMessage" class="boot-message">블록을 꺼내는 중…</p>
-<p class="arena-hint">끌어서 돌려 보기 · 휠이나 두 손가락으로 확대 · 타워 자리를 눌러 짓기</p>
+<p class="arena-hint">끌어서 돌려 보기 · 휠·두 손가락으로 확대 · 빈 자리를 눌러 짓기</p>
 
 <!-- ── 위쪽 정보판 (js/game/ui/hud.js) ── -->
 <div class="hud">
   <header class="hud-top" aria-label="게임 상황">
-    <div class="hud-card hud-wave">
-      <span class="hud-label">웨이브</span>
-      <span class="hud-wave-count"><strong id="hudWave" class="hud-big">0</strong><span class="hud-of">/ <span id="hudWaveTotal">10</span></span></span>
+    <div class="hud-side">
+      <div class="hud-card hud-wave">
+        <span class="hud-label">웨이브</span>
+        <span class="hud-wave-count"><strong id="hudWave" class="hud-big">0</strong><span class="hud-of">/ <span id="hudWaveTotal">10</span></span></span>
+      </div>
+      <!-- 땅 넓이: 웨이브를 막을 때마다 넓어짐 -->
+      <div id="hudLandCard" class="hud-card hud-stat hud-land">
+        <span class="mini-plate" aria-hidden="true"></span>
+        <span class="hud-stat-text">
+          <span class="hud-label">땅</span>
+          <strong class="hud-big"><span id="hudLand">56</span><small class="hud-unit">칸</small></strong>
+        </span>
+      </div>
     </div>
 
     <div id="hudHp" class="hud-card hud-hp">
@@ -48,7 +58,7 @@
           <strong id="hudGold" class="hud-big">0</strong>
         </span>
       </div>
-      <div class="hud-card hud-stat">
+      <div class="hud-card hud-stat hud-enemies">
         <span class="mini-slime" aria-hidden="true"></span>
         <span class="hud-stat-text">
           <span class="hud-label"><span class="label-long">남은 </span>몬스터</span>
@@ -72,6 +82,35 @@
 
 <!-- 몬스터를 쓰러뜨리면 떠오르는 "+6" 같은 글자 -->
 <div id="floatLayer" class="float-layer" aria-hidden="true"></div>
+
+<!-- ── 스킬 단추 (js/game/ui/hud.js) ── -->
+<!-- 스킬 이름은 gameConfig.js 의 skills 에서 가져옵니다. 잠긴 스킬은 보상 카드로 열리기 전까지 숨어 있습니다. -->
+<div id="skillBar" class="skill-bar" hidden>
+  <!-- 땅을 눌러야 하는 스킬을 겨누는 중일 때 보이는 안내 (data-skill 이 같은 줄이 보이고, 없으면 data-skill="" 줄) -->
+  <p id="skillHint" class="skill-hint" role="status" hidden>
+    <span class="skill-hint-text" data-skill="blockDrop">땅을 눌러 블록을 떨어뜨리세요</span>
+    <span class="skill-hint-text" data-skill="">땅을 눌러 쓸 곳을 고르세요</span>
+    <span class="skill-hint-sub">단추를 다시 누르면 취소</span>
+  </p>
+  <div id="skillButtons" class="skill-buttons" role="group" aria-label="스킬"></div>
+</div>
+
+<!-- 스킬 단추 하나의 모양 -->
+<template id="skillTemplate">
+  <button class="skill-btn" type="button" data-state="ready">
+    <span class="skill-icon block-icon" aria-hidden="true"></span>
+    <span class="skill-name"></span>
+    <span class="skill-cool" aria-hidden="true"><span class="skill-cool-num"></span></span>
+    <kbd class="skill-key" aria-hidden="true"></kbd>
+  </button>
+</template>
+
+<!-- 쓸 수 없는 스킬 단추를 눌렀을 때 잠깐 뜨는 알림 (data-skill 이 같은 줄, 없으면 data-skill="" 줄) -->
+<template id="skillIdleTemplate">
+  <span data-skill="freeze">몬스터가 나타나면 쓸 수 있어요</span>
+  <span data-skill="repair">성이 다치면 쓸 수 있어요</span>
+  <span data-skill="">지금은 쓸 필요가 없어요</span>
+</template>
 
 <!-- ── 아래쪽 조작 버튼 ── -->
 <nav class="hud-controls" aria-label="게임 조작">
@@ -142,10 +181,40 @@
     <p class="menu-note note-max">가장 강한 타워예요</p>
   </section>
 
+  <!-- 성 둘레 노란 빈 자리를 눌렀을 때 -->
+  <section id="socketPanel" class="menu-panel" hidden>
+    <h2 class="menu-title">성 부품 붙이기</h2>
+    <p class="menu-sub"><span id="socketKind">성 모서리</span>에 무엇을 붙일까요?</p>
+    <ul id="partChoices" class="tower-choices"></ul>
+  </section>
+
+  <!-- 성에 붙인 부품을 눌렀을 때 (부품은 성의 일부라서 팔 수 없음) -->
+  <section id="partPanel" class="menu-panel" data-upgrade="ready" hidden>
+    <div class="menu-head">
+      <span id="partIcon" class="block-icon" aria-hidden="true"></span>
+      <div>
+        <h2 id="partName" class="menu-title">망루</h2>
+        <p class="level-line"><span>레벨 <span id="partLevel">1</span>/<span id="partMaxLevel">3</span></span> <span id="partLevelStuds" class="level-studs" aria-hidden="true"></span></p>
+      </div>
+    </div>
+    <dl class="part-effects">
+      <div><dt>지금</dt><dd id="partEffect"></dd></div>
+      <div id="partNextLine" class="part-next"><dt>강화하면</dt><dd id="partNextEffect"></dd></div>
+    </dl>
+    <button id="partUpgradeBtn" class="btn btn-primary" type="button">
+      <span class="when-ready btn-line">강화 <span class="price"><span class="coin" aria-hidden="true"></span><span id="partUpgradeCost" class="price-text">72</span></span></span>
+      <span class="when-max">최고 레벨</span>
+      <span class="when-wait">짓는 중</span>
+    </button>
+    <p class="menu-note note-short"><span id="partUpgradeShort">20</span>골드가 더 있으면 강화할 수 있어요</p>
+    <p class="menu-note note-wait">다 지으면 강화할 수 있어요</p>
+    <p class="menu-note note-max">가장 높이 쌓은 부품이에요</p>
+  </section>
+
   <span class="menu-tail" aria-hidden="true"></span>
 </div>
 
-<!-- 타워 목록 한 줄의 모양 (이름·설명·값은 gameConfig.js 에서 가져옵니다) -->
+<!-- 타워·성 부품 목록 한 줄의 모양 (이름·설명·값은 gameConfig.js 에서 가져옵니다. '무료'는 보상 카드로 받은 무료 부품) -->
 <template id="towerChoiceTemplate">
   <li>
     <button class="tower-choice" type="button">
@@ -156,6 +225,7 @@
       </span>
       <span class="choice-price">
         <span class="price"><span class="coin" aria-hidden="true"></span><span class="choice-cost"></span></span>
+        <span class="choice-free">무료</span>
         <span class="choice-missing"><span class="choice-missing-value"></span> 모자라요</span>
       </span>
     </button>
@@ -173,8 +243,9 @@
     </div>
     <h1 id="startTitle" class="overlay-title">블록 성 지키기</h1>
     <ol class="howto">
-      <li>타워 자리를 눌러 타워 짓기</li>
-      <li>몬스터는 맞을 때마다 블록이 떨어져요</li>
+      <li>타워 자리나 성 둘레 노란 자리를 눌러 짓기</li>
+      <li>웨이브를 막으면 카드 한 장 고르기 · 땅도 넓어져요</li>
+      <li>아래 스킬 단추로 블록을 떨어뜨려요</li>
       <li>성이 무너지기 전에 10웨이브를 막아요</li>
     </ol>
     <div class="overlay-actions">
@@ -226,6 +297,38 @@
   </div>
 </section>
 
+<!-- ── 웨이브 보상 카드 (js/game/ui/cardPicker.js) ── -->
+<!-- 카드 이름·설명은 gameConfig.js 의 cards, 카드 종류 이름(타워·성·돈·스킬)은 cardPicker.js 맨 위에서 바꿉니다. -->
+<section id="cardPicker" class="card-picker" role="dialog" aria-modal="true" aria-labelledby="cardPickerKicker cardPickerTitle" hidden>
+  <div class="card-picker-inner">
+    <header class="card-picker-head">
+      <p id="cardPickerKicker" class="card-picker-kicker">웨이브 <span id="cardPickerWave">1</span> 보상</p>
+      <h2 id="cardPickerTitle" class="card-picker-title">카드 한 장을 고르세요</h2>
+    </header>
+    <ul id="cardList" class="card-list"></ul>
+    <p class="card-picker-hint">
+      <span class="hint-touch">카드를 눌러서 골라요</span>
+      <span class="hint-keys">카드를 누르거나 숫자 키(1, 2, 3)로 골라요</span>
+    </p>
+  </div>
+</section>
+
+<!-- 보상 카드 한 장의 모양 -->
+<template id="rewardCardTemplate">
+  <li class="card-slot">
+    <button class="reward-card" type="button">
+      <span class="card-band">
+        <span class="card-icon block-icon" aria-hidden="true"></span>
+        <span class="card-category"></span>
+        <kbd class="card-key" aria-hidden="true"></kbd>
+      </span>
+      <strong class="card-name"></strong>
+      <span class="card-desc"></span>
+      <span class="card-pick" aria-hidden="true">이 카드 고르기</span>
+    </button>
+  </li>
+</template>
+
 <!-- ── 내 그림 넣기 창 (js/game/ui/artUpload.js) ── -->
 <dialog id="artDialog" class="art-dialog" aria-labelledby="artTitle">
   <div class="art-sheet">
@@ -248,9 +351,9 @@
               <canvas id="artPreviewImage" class="art-canvas" width="160" height="160"></canvas>
               <figcaption>올린 사진</figcaption>
             </figure>
-            <figure>
+            <figure id="artPreviewBlocksFigure">
               <canvas id="artPreviewBlocks" class="art-canvas" width="160" height="160"></canvas>
-              <figcaption>블록으로 바꾸면</figcaption>
+              <figcaption>블록으로 바꾸면 <span id="artBlockCount" class="art-block-count"></span></figcaption>
             </figure>
           </div>
         </div>

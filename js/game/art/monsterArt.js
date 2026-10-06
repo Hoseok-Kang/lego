@@ -81,25 +81,26 @@ const GOLEM = {
   },
 };
 
-// 대장 골렘: 진한 빨강 큰 몸, 휘어진 뿔, 노란 왕관과 허리띠 (가로 15칸)
+// 대장 골렘: 진한 빨강 큰 몸, 휘어진 뿔, 노란 왕관과 허리띠 (가로 11칸, 키가 커서 타워 사이를 지나갈 수 있음)
 const BOSS = {
   rows: [
-    'H....C.C.C....H',
-    'HS...CCCCC...SH',
-    '.SS.KKKKKKK.SS.',
-    '..SKrrrrrrrKS..',
-    '...KRYYRYYRK...',
-    '...KRRRRRRRK...',
-    '...KRWRWRWRK...',
-    '.KKKKKKKKKKKKK.',
-    'KrrrBrrrrrBrrrK',
-    'KRRBBRRRRRBBRRK',
-    'KRRKBRRRRRBKRRK',
-    'KRRKBCCCCCBKRRK',
-    'KBBKBRRRRRBKBBK',
-    'KKKKKRRKRRKKKKK',
-    '....KBBKBBK....',
-    '...KKKKKKKKK...',
+    'H..C.C.C..H',
+    'HS.CCCCC.SH',
+    '.SKKKKKKKS.',
+    '..KrrrrrK..',
+    '..KYYRYYK..',
+    '..KRRRRRK..',
+    '..KWRWRWK..',
+    '.KKKKKKKKK.',
+    'KrrBrrrBrrK',
+    'KRBBRRRBBRK',
+    'KRKBRRRBKRK',
+    'KRKBCCCBKRK',
+    'KBKBRRRBKBK',
+    'KKKRRKRRKKK',
+    '..KRRKRRK..',
+    '..KBBKBBK..',
+    '.KKKK.KKKK.',
   ],
   legend: {
     K: '#1B2A34', // 테두리 (검정)

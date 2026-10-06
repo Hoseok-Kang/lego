@@ -8,6 +8,7 @@
 //   camera.worldToScreen(위치) → { x, y, visible }      화면 위 좌표 (글자 띄우기, 메뉴 위치에 씀)
 //   camera.yaw                                         지금 돌아간 각도 (블록 인형이 카메라를 보게 할 때 씀)
 //   camera.shake(세기)                                  화면 흔들기
+//   camera.setFitRadius(반지름)                          화면에 다 들어오게 맞출 원 크기 (땅이 넓어지면 천천히 물러남)
 
 import * as THREE from '../../lib/three.js';
 
@@ -16,9 +17,11 @@ const TAP_MOVE_PX = 8;
 const TAP_MS = 450;
 
 export function createGameCamera(camera, element, config) {
-  const pitch = config.pitchDeg * DEG;
+  // 세로로 긴 화면(휴대폰)에서는 더 위에서 내려다봐서 전장이 화면을 더 채우게 함
+  const portraitPitch = (config.portraitPitchDeg ?? config.pitchDeg) * DEG;
+  let pitch = config.pitchDeg * DEG;
   const target = new THREE.Vector3(0, 1.5, 0);
-  const goal = { yaw: config.yawDeg * DEG, zoom: 1 };
+  const goal = { yaw: config.yawDeg * DEG, zoom: 1, fitRadius: config.fitRadius ?? 30 };
   const current = { ...goal };
   let shakeAmount = 0;
   let shakeTime = 0;
@@ -31,9 +34,12 @@ export function createGameCamera(camera, element, config) {
   const projected = new THREE.Vector3();
 
   function update(dt) {
+    const wantPitch = camera.aspect < 0.8 ? portraitPitch : config.pitchDeg * DEG;
+    pitch += (wantPitch - pitch) * (1 - Math.exp(-dt * 6));
     const follow = 1 - Math.exp(-dt * 10);
     current.yaw += (goal.yaw - current.yaw) * follow;
     current.zoom += (goal.zoom - current.zoom) * follow;
+    current.fitRadius += (goal.fitRadius - current.fitRadius) * (1 - Math.exp(-dt * 2));
 
     const distance = fitDistance() * current.zoom;
     const cosPitch = Math.cos(pitch);
@@ -57,7 +63,7 @@ export function createGameCamera(camera, element, config) {
   function fitDistance() {
     const halfV = Math.tan((camera.fov * DEG) / 2);
     const halfH = halfV * camera.aspect;
-    const radius = config.fitRadius;
+    const radius = current.fitRadius;
     const needV = (radius * Math.sin(pitch) + 4) / halfV;
     const needH = radius / halfH;
     return Math.max(needV, needH);
@@ -120,6 +126,14 @@ export function createGameCamera(camera, element, config) {
     if (pointers.size === 0) press = null;
   };
   element.addEventListener('pointerup', release);
+  // 휴대폰에서 탭하면 손가락을 뗀 뒤 '클릭'이 한 번 더 생기는데, 그 사이 뜬 메뉴 버튼이 눌리지 않게 막음
+  element.addEventListener(
+    'touchend',
+    (event) => {
+      if (event.cancelable) event.preventDefault();
+    },
+    { passive: false },
+  );
   element.addEventListener('pointercancel', release);
 
   element.addEventListener(
@@ -148,6 +162,10 @@ export function createGameCamera(camera, element, config) {
     },
     get yaw() {
       return current.yaw;
+    },
+    setFitRadius(radius, { instant = false } = {}) {
+      goal.fitRadius = radius;
+      if (instant) current.fitRadius = radius;
     },
     resetView() {
       goal.yaw = config.yawDeg * DEG;

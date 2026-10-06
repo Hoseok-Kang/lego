@@ -1,21 +1,28 @@
 // 내 그림 넣기 창
 // 사진 한 장을 골라(파일 고르기 · 창에 끌어다 놓기 · 붙여넣기) 성, 타워, 몬스터 중 어디에 쓸지 정합니다.
-// 사진이 블록으로 바뀌면 어떻게 보일지 바로 옆에 미리 보여 줍니다.
+// 사진이 블록으로 바뀌면 어떻게 보일지(블록 몇 개인지도) 바로 옆에 미리 보여 줍니다.
+// 선만 그린 그림처럼 블록이 거의 생기지 않는 그림은 [적용] 을 막고 이유를 알려 줍니다.
 // 문구와 틀은 game.html 의 #artDialog 와 #artRoleTemplate, 모양은 css/game.css 의 '9. 내 그림 넣기 창' 에 있습니다.
 //
-//   const artUpload = createArtUpload({ roles, hasCustom(id), onApply(roleId, 그림), onReset(roleId) })
+//   const artUpload = createArtUpload({ roles, hasCustom(id), onApply(roleId, 그림), onReset(roleId), onOpenChange(열림) })
 //   artUpload.open()    창 열기
 //   artUpload.close()   창 닫기
+//   artUpload.isOpen    열려 있는지
 //   roles: [{ id, label }]   그림을 쓸 수 있는 자리 목록 (core/artLibrary.js 의 ART_ROLES)
+//   onOpenChange(true/false) 창이 열리고 닫힐 때마다 불림 (게임은 창이 열린 동안 잠깐 멈춤). 없어도 됨
 // [적용] 을 누르면 await onApply(자리, 그림) 이 끝난 뒤 창이 닫힙니다.
+// onApply 가 실패하면(throw) 그 안내 글(한글이면)을 창 아래에 보여 줍니다.
 
 import { decodeImage } from '../../image/imageLoader.js';
 import { pixelate } from '../../image/pixelator.js';
 import { quantizeGrid } from '../../bricks/colorMatcher.js';
 import { BRICK_COLORS } from '../../bricks/brickColors.js';
 import { GAME } from '../gameConfig.js';
+import { defaultMaxRows } from '../core/blueprints.js';
+import { makesBlocks } from '../core/artLibrary.js';
 
 const MAX_FILE_MB = 30; // 이보다 큰 사진은 받지 않음
+const MIN_BLOCKS = 4; // 블록으로 바꿨을 때 이보다 적게 생기면 쓸 수 없는 그림 (선만 그린 그림 등)
 
 // 자리 목록을 묶어 보여 줄 제목 (자리 id 가 이 글자로 시작하면 그 묶음에 들어감)
 const ROLE_GROUPS = [
@@ -31,9 +38,10 @@ const MESSAGES = {
   tooBig: `사진이 너무 커요. ${MAX_FILE_MB}MB보다 작은 사진을 올려 주세요.`,
   unreadable: '이 사진은 열 수 없어요. JPG나 PNG로 바꿔서 다시 올려 주세요.',
   applyFailed: '그림을 바꾸지 못했어요. 다른 사진으로 다시 해 보세요.',
+  tooThin: '그림 선이 너무 가늘어서 블록이 생기지 않아요. 색이 칠해진 그림을 써 주세요.',
 };
 
-export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
+export function createArtUpload({ roles, hasCustom, onApply, onReset, onOpenChange }) {
   const el = (id) => document.getElementById(id);
   const ui = {
     dialog: el('artDialog'),
@@ -45,6 +53,8 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
     preview: el('artPreview'),
     previewImage: el('artPreviewImage'),
     previewBlocks: el('artPreviewBlocks'),
+    previewBlocksFigure: el('artPreviewBlocksFigure'),
+    blockCount: el('artBlockCount'),
     pickBtn: el('artPickBtn'),
     repickBtn: el('artRepickBtn'),
     fileInput: el('artFileInput'),
@@ -58,6 +68,10 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
     roleId: roles[0]?.id ?? null,
     busy: false,
     dragDepth: 0,
+    blocks: 0, // 미리보기에서 생긴 블록 수
+    imageMakesBlocks: true, // 게임의 그림 보관함 기준으로도 블록이 생기는지 (사진마다 한 번 확인)
+    tooThin: false,
+    open: false,
   };
 
   // ── 자리 목록 만들기 ──
@@ -120,24 +134,38 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
   // ── 창 열기/닫기 ──
   function open() {
     refreshRoleStatus();
-    showError('');
+    showError(state.tooThin ? MESSAGES.tooThin : '');
     updateApply();
     if (ui.dialog.open) return;
     if (typeof ui.dialog.showModal === 'function') ui.dialog.showModal();
     else ui.dialog.setAttribute('open', '');
-    (state.image ? ui.applyBtn : ui.pickBtn).focus({ preventScroll: true });
+    setOpen(true);
+    const focusTarget = state.image && !ui.applyBtn.disabled ? ui.applyBtn : state.image ? ui.repickBtn : ui.pickBtn;
+    focusTarget.focus({ preventScroll: true });
   }
 
   function close() {
     if (!ui.dialog.open) return;
     if (typeof ui.dialog.close === 'function') ui.dialog.close();
     else ui.dialog.removeAttribute('open');
+    onClosed(); // 'close' 소식은 조금 늦게 오므로 바로 알림 (두 번 불려도 괜찮음)
   }
 
-  ui.dialog.addEventListener('close', () => {
+  // 창이 닫힐 때 (닫기 단추, Esc, 바깥 누르기 모두)
+  function onClosed() {
     state.dragDepth = 0;
     ui.drop.classList.remove('is-dragging');
-  });
+    setOpen(false);
+  }
+
+  // 열림/닫힘이 바뀔 때만 게임에 알림
+  function setOpen(open) {
+    if (open === state.open) return;
+    state.open = open;
+    onOpenChange?.(open);
+  }
+
+  ui.dialog.addEventListener('close', onClosed);
   ui.closeBtn.addEventListener('click', close);
   ui.cancelBtn.addEventListener('click', close);
 
@@ -224,16 +252,19 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
     ui.empty.hidden = hasImage;
     ui.preview.hidden = !hasImage;
     ui.repickBtn.hidden = !hasImage;
+    state.imageMakesBlocks = hasImage ? makesBlocks(image) : true;
     if (hasImage) {
       drawImagePreview();
       drawBlockPreview();
+    } else {
+      setBlockCount(0, false);
     }
     updateApply();
   }
 
   // ── 적용 ──
   ui.applyBtn.addEventListener('click', async () => {
-    if (!state.image || !state.roleId || state.busy) return;
+    if (!state.image || !state.roleId || state.busy || state.tooThin) return;
     setBusy(true);
     try {
       await onApply?.(state.roleId, state.image);
@@ -241,9 +272,9 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
       setImage(null);
       setBusy(false);
       close();
-    } catch {
+    } catch (error) {
       setBusy(false);
-      showError(MESSAGES.applyFailed);
+      showError(applyErrorText(error));
     }
   });
 
@@ -254,7 +285,23 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
   }
 
   function updateApply() {
-    ui.applyBtn.disabled = state.busy || !state.image || !state.roleId;
+    ui.applyBtn.disabled = state.busy || !state.image || !state.roleId || state.tooThin;
+  }
+
+  // 미리보기 블록 수 표시 + 너무 적으면 [적용] 막고 이유 보여 주기
+  function setBlockCount(count, hasImage) {
+    state.blocks = count;
+    const tooThin = hasImage && (count < MIN_BLOCKS || !state.imageMakesBlocks);
+    ui.blockCount.textContent = hasImage ? `블록 ${count.toLocaleString('ko-KR')}개` : '';
+    ui.previewBlocksFigure?.classList.toggle('is-thin', tooThin);
+    if (tooThin !== state.tooThin) {
+      state.tooThin = tooThin;
+      if (tooThin) showError(MESSAGES.tooThin);
+      else if (ui.error.textContent === MESSAGES.tooThin) showError('');
+    } else if (tooThin && ui.error.textContent === '') {
+      showError(MESSAGES.tooThin);
+    }
+    updateApply();
   }
 
   function showError(text) {
@@ -280,8 +327,11 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
     const { ctx, size } = prepareCanvas(ui.previewBlocks);
     let grid;
     try {
-      grid = quantizeGrid(pixelate(state.image, previewColumns(state.roleId), { maxRows: 80, alphaThreshold: 0.5 }), BRICK_COLORS);
+      const columns = previewColumns(state.roleId);
+      const maxRows = defaultMaxRows(String(state.roleId), columns); // 게임과 같은 세로 제한
+      grid = quantizeGrid(pixelate(state.image, columns, { maxRows, alphaThreshold: 0.5 }), BRICK_COLORS);
     } catch {
+      setBlockCount(0, true);
       return;
     }
     const { columns, rows: gridRows, cells } = grid;
@@ -289,10 +339,12 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
     const left = Math.round((size - cell * columns) / 2);
     const top = Math.round((size - cell * gridRows) / 2);
     const stud = cell * 0.28;
+    let count = 0;
     for (let y = 0; y < gridRows; y++) {
       for (let x = 0; x < columns; x++) {
         const colorIndex = cells[y * columns + x];
         if (colorIndex === null || colorIndex === undefined) continue;
+        count += 1;
         const px = left + x * cell;
         const py = top + y * cell;
         ctx.fillStyle = BRICK_COLORS[colorIndex].hex;
@@ -308,9 +360,22 @@ export function createArtUpload({ roles, hasCustom, onApply, onReset }) {
         }
       }
     }
+    setBlockCount(count, true);
   }
 
-  return { open, close };
+  return {
+    open,
+    close,
+    get isOpen() {
+      return state.open;
+    },
+  };
+}
+
+// 적용이 실패했을 때 보여 줄 글: 한글로 된 안내면 그대로, 아니면(프로그램 오류) 일반 안내
+function applyErrorText(error) {
+  const message = typeof error?.message === 'string' ? error.message.trim() : '';
+  return /[가-힣]/.test(message) ? message : MESSAGES.applyFailed;
 }
 
 // 미리보기 그림판을 화면 밀도에 맞게 비우고 준비
