@@ -4,7 +4,7 @@
 // (잔해가 가득 차면 새 조각은 잠깐 뒤에 작아지며 사라집니다)
 //
 //   debris.burst(blocks, { from, power, upward })   blocks: [{ position, color }] (BlockFigure.removeBlocks 결과)
-//   debris.spawn(position, color, velocity)         조각 하나 띄우기
+//   debris.spawn(position, color, velocity, { lifetime, settle })  조각 하나 띄우기 (settle: false 면 잔해로 남지 않음)
 //   debris.takeRubble(n)                            바닥에 남은 잔해 n개를 가져감 → [{ position, quaternion, color }]
 //   debris.setGroundHeight((x, z) => 높이)           바닥 높이 알려 주기 (성 돌바닥·타워 자리 위는 1)
 //   debris.update(dt)
@@ -35,6 +35,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
   const spin = new Float32Array(capacity * 3);
   const age = new Float32Array(capacity);
   const life = new Float32Array(capacity);
+  const canSettle = new Uint8Array(capacity); // 1이면 바닥에 멈췄을 때 잔해로 남음 (스킬 반짝이 등은 0)
   let count = 0;
 
   // 바닥에 남은 잔해
@@ -52,7 +53,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
   const color = new THREE.Color();
   const unit = new THREE.Vector3(1, 1, 1);
 
-  function spawn(at, blockColor, velocity, { lifetime = lifeSeconds } = {}) {
+  function spawn(at, blockColor, velocity, { lifetime = lifeSeconds, settle = true } = {}) {
     if (count >= capacity) return; // 너무 많으면 새 조각은 생략
     const i = count++;
     pos.set([at.x, at.y, at.z], i * 3);
@@ -61,6 +62,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
     spin.set([(Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14], i * 3);
     age[i] = 0;
     life[i] = lifetime * (0.75 + Math.random() * 0.5);
+    canSettle[i] = settle ? 1 : 0;
     mesh.setColorAt(i, blockColor);
     colorsDirty = true;
   }
@@ -87,7 +89,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
       const b = i * 3;
       const floor = groundHeight(pos[b], pos[b + 2]) + HALF;
       const resting = vel[b + 1] === 0 && Math.abs(vel[b]) + Math.abs(vel[b + 2]) < SETTLE_SPEED;
-      if (resting && age[i] > SETTLE_AGE && pos[b + 1] <= floor + 0.01 && rubbleCount < rubbleCapacity) {
+      if (resting && canSettle[i] && age[i] > SETTLE_AGE && pos[b + 1] <= floor + 0.01 && rubbleCount < rubbleCapacity) {
         settle(i, floor);
         continue;
       }
@@ -101,7 +103,9 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
       pos[b + 2] += vel[b + 2] * dt;
       if (pos[b + 1] < floor) {
         pos[b + 1] = floor;
-        vel[b + 1] = Math.abs(vel[b + 1]) < 1.5 ? 0 : -vel[b + 1] * 0.35;
+        // 한 장면이 길면(느린 기기·빠른 속도) 한 번에 더 빨리 떨어지므로 '멈춤' 기준도 같이 키움
+        const restSpeed = Math.max(1.5, gravity * dt * 1.6);
+        vel[b + 1] = Math.abs(vel[b + 1]) < restSpeed ? 0 : -vel[b + 1] * 0.35;
         vel[b] *= 0.6;
         vel[b + 2] *= 0.6;
         spin[b] *= 0.5;
@@ -189,6 +193,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
       for (const arr of [pos, vel, rot, spin]) arr.copyWithin(i * 3, last * 3, last * 3 + 3);
       age[i] = age[last];
       life[i] = life[last];
+      canSettle[i] = canSettle[last];
       mesh.getColorAt(last, color);
       mesh.setColorAt(i, color);
       colorsDirty = true;

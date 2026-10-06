@@ -226,7 +226,7 @@ export function createSkills({ scene, events, enemies, castle, debris, modifiers
       const distance = Math.sqrt(Math.random()) * reach;
       spot.set(Math.cos(angle) * distance, 4 + Math.random() * 6, Math.sin(angle) * distance);
       velocity.set((Math.random() - 0.5) * 3, 2 + Math.random() * 3, (Math.random() - 0.5) * 3);
-      debris.spawn(spot, pick(colors.freeze), velocity, { lifetime: EFFECT_LIFETIME });
+      debris.spawn(spot, pick(colors.freeze), velocity, { lifetime: EFFECT_LIFETIME, settle: false });
     }
     const point = new THREE.Vector3(0, 0, 0);
     waves.start(point, { fromRadius: 2, toRadius: reach, hex: FREEZE_WAVE_COLOR, seconds: FREEZE_WAVE_SECONDS, thin: true });
@@ -262,7 +262,7 @@ export function createSkills({ scene, events, enemies, castle, debris, modifiers
       const distance = reach * (0.55 + Math.random() * 0.4);
       spot.set(Math.cos(angle) * distance, PLATFORM_TOP + 0.6, Math.sin(angle) * distance);
       velocity.set(0, 7 + Math.random() * 5, 0);
-      debris.spawn(spot, pick(colors.repair), velocity, { lifetime: EFFECT_LIFETIME + 0.15 });
+      debris.spawn(spot, pick(colors.repair), velocity, { lifetime: EFFECT_LIFETIME + 0.15, settle: false });
     }
     const point = new THREE.Vector3(0, PLATFORM_TOP, 0);
     waves.start(point, { fromRadius: reach * 0.6, toRadius: reach + 1, hex: REPAIR_WAVE_COLOR, seconds: REPAIR_WAVE_SECONDS, thin: true });
@@ -422,7 +422,7 @@ export function createSkills({ scene, events, enemies, castle, debris, modifiers
         .set(Math.cos(angle), 0, Math.sin(angle))
         .multiplyScalar(side * (0.6 + Math.random() * 0.6))
         .addScaledVector(up, upward * (0.6 + Math.random() * 0.6));
-      debris.spawn(spot, pick(palette), velocity, { lifetime: EFFECT_LIFETIME });
+      debris.spawn(spot, pick(palette), velocity, { lifetime: EFFECT_LIFETIME, settle: false });
     }
   }
 

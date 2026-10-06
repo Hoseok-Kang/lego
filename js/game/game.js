@@ -36,6 +36,7 @@ import { createBuildMenu } from './ui/buildMenu.js';
 import { createCardPicker } from './ui/cardPicker.js';
 import { createOverlays } from './ui/overlays.js';
 import { createArtUpload } from './ui/artUpload.js';
+import { measureScreenInsets } from './ui/screenInsets.js';
 
 export async function createGame({ container }) {
   const events = createEvents();
@@ -200,7 +201,12 @@ export async function createGame({ container }) {
   view.onTap(({ point, clientX, clientY }) => {
     if (!['break', 'wave'].includes(state.phase)) return;
     if (skills.targeting) {
-      if (point && skills.cast(skills.targeting, point)) hud.setSkills(skills.list());
+      const half = land.size / 2 - 1;
+      if (!point || Math.max(Math.abs(point.x), Math.abs(point.z)) > half) {
+        hud.toast('땅 위를 눌러 주세요'); // 땅 밖을 누르면 겨누기를 그대로 두고 다시 고르게 함
+        return;
+      }
+      if (skills.cast(skills.targeting, point)) hud.setSkills(skills.list());
       return;
     }
     const socket = point ? castleParts.socketAt(point) : null;
@@ -368,8 +374,13 @@ export async function createGame({ container }) {
     const repaired = castle.hp < castle.maxHp;
     if (repaired) castle.repair(repairAmount);
     hud.toast(`웨이브 ${wave} 막았어요! 보너스 +${bonus}${repaired ? ' · 성 수리' : ''}`);
-    land.grow();
-    showRewardCards(wave);
+    // 땅이 넓어지는 모습과 '새 타워 자리' 안내를 먼저 보여 준 뒤 보상 카드를 띄움
+    state.phase = 'reward';
+    closeMenu();
+    skills.cancelTarget();
+    const growing = land.grow();
+    if (growing) later(GAME.arena.growSeconds + 0.6, () => showRewardCards(wave));
+    else showRewardCards(wave);
   });
   events.on('landGrown', ({ size }) => {
     const added = towers.unlockRings(size);
@@ -381,11 +392,16 @@ export async function createGame({ container }) {
 
   // ── 보상 카드 ──
   function showRewardCards(wave) {
-    state.phase = 'reward';
+    if (state.phase !== 'reward') return; // 그사이 성이 무너졌거나 다시 시작했으면 안 띄움
     closeMenu();
     skills.cancelTarget();
     const unlockedSkills = skills.list().filter((item) => item.unlocked).map((item) => item.id);
-    state.offeredCards = deck.draw(GAME.cards.choices, { unlockedSkills });
+    const emptySockets = { corner: 0, side: 0 };
+    for (let i = 0; i < GAME.castleParts.sockets.length; i++) {
+      const info = castleParts.socketInfo(i);
+      if (!info.part) emptySockets[info.kind] += 1;
+    }
+    state.offeredCards = deck.draw(GAME.cards.choices, { unlockedSkills, emptySockets });
     if (state.offeredCards.length === 0) {
       startBreak(GAME.waves.breakSeconds);
       return;
@@ -504,10 +520,24 @@ export async function createGame({ container }) {
     hud.setSkills(skills.list());
   }
 
+  // 위쪽 정보판·아래 단추가 가리는 높이를 가끔 다시 재서 카메라에 알려 줌 (화면을 돌리거나 스킬 단추가 생기면 바뀜)
+  const INSET_CHECK_SECONDS = 0.5;
+  let insetCheck = 0;
+  function refreshInsets(realDt) {
+    insetCheck -= realDt;
+    if (insetCheck > 0) return;
+    insetCheck = INSET_CHECK_SECONDS;
+    view.setInsets(measureScreenInsets());
+  }
+  stage.onResize(() => {
+    insetCheck = 0; // 화면 크기가 바뀌면 다음 장면에서 바로 다시 잼
+  });
+
   // ── 매 장면마다 ──
   function update(realDt) {
     const frozen = state.paused || state.artOpen;
     const dt = frozen ? 0 : realDt * GAME.speedOptions[state.speedIndex];
+    refreshInsets(realDt);
     view.update(realDt);
     const yaw = view.yaw;
     tickTimers(frozen ? 0 : realDt);
@@ -529,7 +559,7 @@ export async function createGame({ container }) {
       enemies.update(dt, { cameraYaw: yaw });
       guard.update(dt);
       projectiles.update(dt);
-      skills.update(dt);
+      if (state.phase !== 'reward') skills.update(dt); // 카드를 고르는 동안에는 스킬이 충전되지 않음
       bossAssembly.update(dt);
     }
     towers.update(dt, { cameraYaw: yaw });
@@ -542,6 +572,7 @@ export async function createGame({ container }) {
 
   // ── 시작 ──
   view.setFitRadius(land.size / 2 + GAME.camera.fitMargin, { instant: true });
+  view.setInsets(measureScreenInsets());
   towers.unlockRings(land.size);
   padCache = towers.padPositions();
   hud.setGold(economy.gold);

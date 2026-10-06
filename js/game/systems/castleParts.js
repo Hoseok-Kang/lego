@@ -700,7 +700,12 @@ export function createCastleParts({ scene, events, castle, enemies, projectiles,
       }
     }
     if (best === null) return null;
-    return castleInFront(bestDistance) ? null : best;
+    // 성 그림 뒤에 가려진 '빈' 자리는 그림을 눌러도 열림 (카메라를 돌리지 않아도 뒤쪽 자리를 쓸 수 있게)
+    return castleInFront(bestDistance) && socketByIndex(best).part ? null : best;
+  }
+
+  function socketByIndex(index) {
+    return sockets.find((socket) => socket.index === index);
   }
 
   function socketBox(socket) {

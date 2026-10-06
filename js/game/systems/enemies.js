@@ -660,11 +660,13 @@ export function createEnemyManager({ scene, events, debris, castle, art, config,
     return count;
   }
 
-  // 느려짐: 시간은 새로 채우고, 더 센 느려짐을 유지
+  // 느려짐: 더 센 느려짐이 걸려 있으면 약한 느려짐은 그 시간을 늘리지 못함
+  // (얼음 타워가 계속 맞혀도 '얼려라' 스킬이 정해진 시간보다 길어지지 않게)
   function applySlow(enemy, slow, seconds) {
-    enemy.slow = enemy.slowLeft > 0 ? Math.max(enemy.slow, slow) : slow;
-    enemy.slow = Math.min(0.95, enemy.slow);
-    enemy.slowLeft = Math.max(enemy.slowLeft, seconds);
+    const strength = Math.min(0.95, slow);
+    if (enemy.slowLeft > 0 && strength < enemy.slow) return;
+    enemy.slowLeft = strength > enemy.slow || enemy.slowLeft <= 0 ? seconds : Math.max(enemy.slowLeft, seconds);
+    enemy.slow = strength;
     updateSlow(enemy, 0);
   }
 

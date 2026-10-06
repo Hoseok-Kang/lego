@@ -2252,6 +2252,11 @@ body.is-aiming .arena-canvas {
     width: max-content;
   }
 
+  /* 스킬을 겨누는 동안에는 안내 문구와 겹치지 않게 잠깐 숨김 */
+  body.is-aiming .countdown {
+    visibility: hidden;
+  }
+
   .menu-sub {
     display: none;
   }

@@ -59,6 +59,7 @@
 | `js/game/systems/economy.js` | 돈 | 돈 계산 방식 |
 | `js/game/audio/gameSounds.js` | 효과음 (파일 없이 만들어 냄) | 소리 바꾸기 |
 | `js/game/ui/*.js` | 위쪽 정보판, 건설 메뉴, 시작/결과 화면, 내 그림 넣기 | 화면 동작 |
+| `js/game/ui/screenInsets.js` | 정보판·단추가 가리는 높이 재기 (카메라가 그 사이에 전장을 맞춤) | 전장이 화면에 들어오는 여백 |
 | `game.html` | 화면에 보이는 글자 | 문구 바꾸기 |
 | `css/game.css` | 화면 색과 배치 | 색, 크기, 글꼴 |
 | `js/game/core/*.js` | 블록 인형, 부서진 조각, 카메라 등 공통 부품 | 거의 바꿀 일 없음 |

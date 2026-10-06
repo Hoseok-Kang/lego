@@ -38,17 +38,24 @@ export function createCardDeck({ config, random = Math.random }) {
   }
 
   // 지금 나올 수 있는 카드인지
-  function isAvailable(card, unlockedSkills) {
+  // emptySockets: 빈 성 부품 자리 수 { corner, side } (없으면 확인 안 함) → 지을 자리가 없는 '무료 부품'·'할인' 카드는 안 나옴
+  function isAvailable(card, unlockedSkills, emptySockets) {
     if (!((card.weight ?? 1) > 0)) return false;
     if (card.maxPicks !== undefined && timesPicked(card.id) >= card.maxPicks) return false;
     const skillId = card.effect?.unlockSkill;
     if (skillId && unlockedSkills.includes(skillId)) return false;
+    if (emptySockets) {
+      const freeType = card.effect?.freePart;
+      const kind = freeType ? config.castleParts?.types?.[freeType]?.socket : null;
+      if (kind && !(emptySockets[kind] > 0)) return false;
+      if (card.effect?.add?.partDiscount && !(emptySockets.corner + emptySockets.side > 0)) return false;
+    }
     return true;
   }
 
   // weight 에 따라 한 장씩 뽑고, 뽑은 카드는 빼고 다시 뽑음 (같은 카드가 두 번 나오지 않게)
-  function draw(count = config.cards.choices, { unlockedSkills = [] } = {}) {
-    const candidates = pool.filter((card) => isAvailable(card, unlockedSkills ?? []));
+  function draw(count = config.cards.choices, { unlockedSkills = [], emptySockets = null } = {}) {
+    const candidates = pool.filter((card) => isAvailable(card, unlockedSkills ?? [], emptySockets));
     const drawn = [];
     while (drawn.length < count && candidates.length > 0) {
       const index = pickIndex(candidates);
