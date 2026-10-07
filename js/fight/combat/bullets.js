@@ -1,18 +1,19 @@
 // 총알 (내 블록 총 + 미친토끼 총이 같이 씀)
 // 총알은 작은 블록 하나. 날아가는 방향으로 빙글 돌고, 뒤로 작은 블록 몇 개와 흐려지는 꼬리가 따라갑니다.
 // 매 장면 '지난 자리 → 새 자리' 선분 전체로 맞았는지 계산해서, 빨라도 토끼·벽을 뚫고 지나가지 않습니다.
-//   - 총알 하나는 토끼 한 마리만 맞힘. 구르는 중(무적)인 토끼는 그냥 지나감, 맞은 직후 무적이면 '톡' 막힘
+//   - 총알 하나는 토끼 한 마리만 맞힘. 점프 중(공중, 무적)인 토끼는 발밑으로 그냥 지나감, 맞은 직후 무적이면 '톡' 막힘
 //   - 벽·나무·바위에 맞으면 불꽃 + 총알 블록이 튕겨 나감, 나무 상자는 부서짐 (props.damageCrate)
 //     소식 bulletBlocked { position, surface: 'wall'|'crate'|'tree'|'deflect', kind: 장애물 종류 그대로 }
 //     (바위 → 'wall', 나무 울타리 → 'tree')
 //   - 칼을 휘두르면 그 부채꼴 안의 적 총알이 지워짐 (deflect)
 //
 //   const bullets = createBullets(scene, { collision, props, debris, fx, events })
-//   bullets.fire({ from, dir, speed, damage, range, team, hex, knockback, origin }) → 총알 | null
+//   bullets.fire({ from, dir, speed, damage, range, team, hex, knockback, origin, settleY }) → 총알 | null
 //       from: 총구 위치 (Vector3, 높이 ≈ 5), dir: { x, z } 방향, team: 'player' | 'enemy', hex: 블록 색
 //       origin (없어도 됨): 쏜 토끼 가운데 { x, z }. 주면 총알은 '토끼 가운데에서 dir 쪽으로 난 길' 을 날아감
 //               (맞았는지는 이 길로 계산, 총구에서 나온 총알 모습은 몇 칸 안에 이 길로 스르륵 모임)
 //               → 손에 든 총이 옆에 있어도 겨눈 곳에 맞고, 코앞의 적·벽도 정확히 맞음
+//       settleY (없어도 됨): 점프 중에 쏠 때 총알이 날아갈 높이. 공중의 총구에서 나온 총알 모습이 같은 몇 칸 안에 이 높이로 내려옴
 //   bullets.update(dt, fighters)       fighters: 내 토끼 + 미친토끼 목록 (죽은 토끼는 알아서 건너뜀)
 //   bullets.deflect(origin, facing, 부채꼴각도, 닿는거리, team) → 지운 수   team 이 아닌 총알만 지움
 //   bullets.clear()                    (다시 하기)
@@ -35,7 +36,7 @@ const BOUNCE_LIFE = 0.5; // 튕긴 총알 블록이 사라지기까지 (초, 잔
 const DEFLECT_HEX = '#F4F4F4'; // 칼에 막힌 총알 불꽃 색
 const DEFLECT_NEAR = 1.5; // 칼 휘두르는 토끼에 이보다 가까운 총알은 방향 상관없이 막음
 const CRATE_SEARCH = 4; // 상자 장애물에 주인이 없을 때 이 거리 안의 상자를 찾음
-const PASS_MEMORY = 4; // 총알 하나가 기억하는 '피한(구른) 토끼' 수
+const PASS_MEMORY = 4; // 총알 하나가 기억하는 '피한(점프한) 토끼' 수
 
 export function createBullets(scene, { collision = null, props = null, debris = null, fx = null, events = null } = {}) {
   const look = createBulletLook(scene, CAPACITY); // 총알 모양 (bulletLook.js)
@@ -69,11 +70,12 @@ export function createBullets(scene, { collision = null, props = null, debris = 
   function placeVisual(r) {
     const merge = mergeOf(r);
     r.position.x = r.lx + r.ox * merge;
+    r.position.y = r.baseY + r.oy * merge;
     r.position.z = r.lz + r.oz * merge;
   }
 
   // ── 쏘기 ──
-  function fire({ from, dir, speed = 40, damage = 0, range = 40, team = 'enemy', hex = '#F2CD37', knockback = 0, origin = null }) {
+  function fire({ from, dir, speed = 40, damage = 0, range = 40, team = 'enemy', hex = '#F2CD37', knockback = 0, origin = null, settleY = null }) {
     if (!from || !dir) return null;
     const length = Math.hypot(dir.x, dir.z);
     if (length < 1e-6) return null;
@@ -95,6 +97,8 @@ export function createBullets(scene, { collision = null, props = null, debris = 
     r.ox = from.x - r.lx; // 총구 ↔ 계산용 길 차이 (날아가며 0 이 됨)
     r.oz = from.z - r.lz;
     r.position.set(from.x, from.y ?? 5, from.z);
+    r.baseY = settleY ?? r.position.y; // 공중에서 쏜 총알: 날아가며 settleY 높이로 모임
+    r.oy = r.position.y - r.baseY;
     r.speed = Math.max(0.01, speed);
     r.damage = damage;
     r.range = Math.max(0.01, range);
@@ -148,7 +152,7 @@ export function createBullets(scene, { collision = null, props = null, debris = 
       if (hit.hit) tWall = hit.distance / segLength;
     }
 
-    // 토끼: 벽보다 먼저 닿는 가장 가까운 토끼 (구르는 토끼는 지나감)
+    // 토끼: 벽보다 먼저 닿는 가장 가까운 토끼 (점프 중인 토끼는 발밑으로 지나감)
     for (let guard = 0; guard <= PASS_MEMORY; guard++) {
       let best = null;
       let bestT = tWall;
@@ -165,7 +169,7 @@ export function createBullets(scene, { collision = null, props = null, debris = 
       const px = sx + segX * bestT;
       const pz = sz + segZ * bestT;
       if (best.invulnerable?.() && best.extraInvulnerable?.()) {
-        // 구르는 중: 그냥 지나감 (이 총알은 이 토끼를 다시 맞히지 않음)
+        // 점프 중(공중): 발밑으로 그냥 지나감 (이 총알은 이 토끼를 다시 맞히지 않음)
         if (r.passed.length < PASS_MEMORY) r.passed.push(best);
         else break;
         continue;
@@ -323,6 +327,8 @@ function createRecord() {
     lz: 0,
     ox: 0, // 보이는 총알 = 계산용 위치 + 이 차이 × (모이는 정도)
     oz: 0,
+    baseY: 0, // 보이는 높이 = baseY + oy × (모이는 정도) (점프 중에 쏜 총알이 내려옴)
+    oy: 0,
     passed: [],
   };
 }

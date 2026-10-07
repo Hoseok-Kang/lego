@@ -8,15 +8,17 @@
 //
 //   const weapons = createPlayerWeapons({ bullets, fx, events, getEnemies, props })
 //       getEnemies() → 미친토끼 목록 (fighter), props: 상자 부수기용 (없으면 bullets.props 를 씀)
-//   weapons.update(dt, { holding, pressed, position, facing, muzzle, target }) → frame
+//   weapons.update(dt, { holding, pressed, position, facing, muzzle, target, settleY, lift }) → frame
 //       holding: 공격 버튼을 누르고 있음, pressed: 이번 장면에 막 누름
 //       position: 내 토끼 발밑 (Vector3), facing: 바라보는 각도, muzzle: 총구 세상 위치 (Vector3)
 //       target: 겨눈 곳 { x, z } | null (조준 도움: 바라보는 쪽에서 조금 벗어나 있어도 그쪽으로 쏨)
+//       settleY: 점프 중에 쏠 때 총알이 날아가며 내려올 높이 (없으면 총구 높이 그대로 날아감)
+//       lift: 내 토끼가 땅에서 떠 있는 높이 (점프 중 칼 자국을 칼 높이에 그리게, 없으면 0)
 //       총알은 총구에서 나오지만, 맞는 계산은 '토끼 가운데 → 겨눈 쪽' 길로 함 (bullets.fire 의 origin)
 //       frame = { recoil 0~1, swing -1|0~1, swingSide ±1, hitStop 초, lunge 앞으로 나가는 빠르기,
 //                 swingFacing 휘두르는 방향, fired 쐈는지, swung 휘두르기 시작했는지, hits 이번에 맞힌 수 }
 //   weapons.switchTo('blaster'|'sword') → 바뀌었는지 ; weapons.cycle() ; weapons.reload()
-//   weapons.cancelSwing()                  (구르기 시작할 때)
+//   weapons.cancelSwing()                  휘두르기를 바로 멈춤 (점프해도 휘두르기는 이어져서 지금은 쓰는 곳 없음)
 //   weapons.reset()                        (다시 하기)
 //   weapons.info() → { id, name, ammo, magazine, reloading, reloadProgress }   (HUD 에 그대로 넘기기)
 //   weapons.current ('blaster'|'sword') / ammo / magazine / reloading / reloadProgress 0~1 / swinging / swingFacing
@@ -110,7 +112,7 @@ export function createPlayerWeapons({ bullets, fx = null, events, getEnemies = (
     if (fireCooldown < 0) fireCooldown = 0; // 너무 밀린 박자는 버림 (한 장면에 한 발까지만)
   }
 
-  function shoot({ position, facing, muzzle, target }) {
+  function shoot({ position, facing, muzzle, target, settleY = null }) {
     ammo -= 1;
     recoil = 1;
     // 총알 길은 토끼 가운데에서 시작 (bullets.js 의 origin). 겨눈 곳이 있으면 그쪽으로
@@ -136,6 +138,7 @@ export function createPlayerWeapons({ bullets, fx = null, events, getEnemies = (
       team: 'player',
       hex: BLASTER.bulletColor,
       knockback: BLASTER.knockback,
+      settleY,
     });
     fx?.muzzleFlash?.(muzzle, angle, BLASTER.bulletColor);
     events.emit('shot', { team: 'player', weapon: 'blaster', position: copy(muzzle) });
@@ -164,12 +167,12 @@ export function createPlayerWeapons({ bullets, fx = null, events, getEnemies = (
     frame.swung = true;
   }
 
-  function advanceSwing(dt, { position }) {
+  function advanceSwing(dt, { position, lift = 0 }) {
     swingTime += dt;
     const k = Math.min(1, swingTime / SWORD.swingSeconds);
     if (!slashShown && k >= SLASH_AT) {
       slashShown = true;
-      fx?.slashArc?.(position, swingFacing, SWORD.arcDeg * DEG, SWORD.range, swingSide);
+      fx?.slashArc?.(position, swingFacing, SWORD.arcDeg * DEG, SWORD.range, swingSide, lift);
     }
     const rel = bladeRel(k);
     // 지난 장면 칼날 ~ 지금 칼날 사이 부채꼴만 검사 → 칼날이 지나가는 순서대로 맞음

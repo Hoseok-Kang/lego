@@ -1,6 +1,6 @@
-/* 펑펑 토끼 무기 칸 (컴퓨터 화면 오른쪽 아래, js/fight/ui/hud.js 의 setWeapon · setRollReady)
-   [1 블록 총: 탄 수 + 노란 탄 알갱이 + 장전 고리] [2 블록 칼] [구르기 준비 칩]
-   휴대폰에서는 숨기고 무기 바꾸기·구르기 단추가 같은 일을 합니다 (css/fight-touch.css).
+/* 펑펑 토끼 무기 칸 (컴퓨터 화면 오른쪽 아래, js/fight/ui/hud.js 의 setWeapon · setJumpReady)
+   [1 블록 총: 탄 수 + 노란 탄 알갱이 + 장전 고리] [2 블록 칼] [점프 준비 칩]
+   휴대폰에서는 숨기고 무기 바꾸기·점프 단추가 같은 일을 합니다 (css/fight-touch.css).
    색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다. */
 
 .weapon-bar {
@@ -155,8 +155,8 @@
   box-shadow: none;
 }
 
-/* 구르기 준비 칩: 다시 구를 수 있을 때까지 차오름 */
-.roll-chip {
+/* 점프 준비 칩: 다시 점프할 수 있을 때까지 차오름 (공중에서는 비어 있음) */
+.jump-chip {
   position: relative;
   display: flex;
   align-items: center;
@@ -172,30 +172,30 @@
   font-size: 15px;
 }
 
-.roll-chip > :not(.roll-fill) {
+.jump-chip > :not(.jump-fill) {
   position: relative;
 }
 
-.roll-fill {
+.jump-fill {
   position: absolute;
   inset: 0 auto 0 0;
   width: calc(var(--ready, 1) * 100%);
   background: color-mix(in srgb, var(--pink) 28%, transparent);
 }
 
-.roll-chip[data-ready="true"] {
+.jump-chip[data-ready="true"] {
   border-color: var(--pink);
 }
 
-.roll-chip[data-ready="true"] .roll-fill {
+.jump-chip[data-ready="true"] .jump-fill {
   background: color-mix(in srgb, var(--pink) 22%, transparent);
 }
 
-.roll-chip[data-ready="false"] {
+.jump-chip[data-ready="false"] {
   color: var(--muted);
 }
 
-.roll-chip .icon {
+.jump-chip .icon {
   width: 18px;
   height: 18px;
 }

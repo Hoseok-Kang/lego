@@ -4,8 +4,9 @@
 //   const fx = createEffects(scene, { pitchDeg })   pitchDeg: 카메라 내려다보는 각도 ('!' 를 카메라 쪽으로 눕힘)
 //   fx.muzzleFlash(위치, facing, 색)         총구에서 번쩍 + 불티
 //   fx.hitSpark(위치, 색)                    맞은 자리에 작은 불티
-//   fx.slashArc(위치, facing, 부채꼴각도, 닿는거리, 방향 ±1)   칼 휘두른 자리에 반투명한 띠 (약 0.2초)
+//   fx.slashArc(위치, facing, 부채꼴각도, 닿는거리, 방향 ±1, 올림 = 0)   칼 휘두른 자리에 반투명한 띠 (약 0.2초)
 //                                            위치 높이(y)가 0.5 보다 낮으면 칼 높이 SLASH_HEIGHT 에 그림
+//                                            올림: 그 높이에 더할 칸 (점프 중에 휘두르면 내 토끼가 떠 있는 높이)
 //   fx.popRing(위치, 크기 = 1)               토끼가 '펑' 할 때 퍼지는 고리 + 연기 + 색종이
 //   fx.telegraph(위치, 반지름, 초) → { cancel(), done }   바닥에 빨간 원이 차오름 (망치 내려치기 예고)
 //   fx.alert(followFn, 초, 올림 = 19)        머리 위 빨간 '!' (followFn() → Vector3, 바닥 위치(y<1)면 '올림' 칸 위로,
@@ -100,8 +101,8 @@ export function createEffects(scene, { pitchDeg = FIGHT.camera.pitchDeg } = {}) 
     }
   }
 
-  function slashArc(position, facing, arcRad, range, side = 1) {
-    const y = position.y >= 0.5 ? position.y : SLASH_HEIGHT;
+  function slashArc(position, facing, arcRad, range, side = 1, lift = 0) {
+    const y = (position.y >= 0.5 ? position.y : SLASH_HEIGHT) + Math.max(0, lift || 0);
     slashes.spawn(position.x, y, position.z, facing, arcRad, range, side);
     // 띠 바깥 테두리를 따라 반짝이 몇 개
     const dir = side < 0 ? -1 : 1;

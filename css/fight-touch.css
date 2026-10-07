@@ -1,7 +1,7 @@
 /* 펑펑 토끼 휴대폰 조작 꾸미기 (js/fight/ui/touchControls.js 가 쓰는 모양)
    휴대폰에서만 보입니다 (body.touch-mode — js/fight/core/input.js 가 붙임).
    - 왼쪽 반: 손가락을 대면 그 자리에 '움직이기 막대'가 나타남
-   - 오른손 엄지 근처: 공격(구르기 왼쪽) · 구르기 · 장전, 그 위에 총⇄칼 바꾸기 단추
+   - 오른손 엄지 근처: 공격(점프 왼쪽) · 점프 · 장전, 그 위에 총⇄칼 바꾸기 단추
      공격 단추는 누르고 있으면 자동 조준 공격, 누른 채 끌면 그쪽으로 공격
    움직이기 막대가 쉬고 있을 때 서 있는 자리는 아래 --idle-x / --idle-y, 단추 자리는 각 단추의 right / bottom 에서 바꿉니다.
    색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다. */
@@ -120,7 +120,7 @@ body.overlay-open .touch-controls,
   display: none;
 }
 
-/* ── 단추 (공격 · 구르기 · 장전 · 총⇄칼) ── */
+/* ── 단추 (공격 · 점프 · 장전 · 총⇄칼) ── */
 .touch-btn {
   position: fixed;
   display: grid;
@@ -159,20 +159,20 @@ body.overlay-open .touch-controls,
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.25);
 }
 
-/* 구르기: 가장 크게, 오른쪽 아래 구석 */
-.touch-btn--roll {
+/* 점프: 가장 크게, 오른쪽 아래 구석 */
+.touch-btn--jump {
   --size: 80px;
   right: calc(var(--edge-right) + 12px);
   bottom: calc(var(--edge-bottom) + 22px);
   background: var(--berry);
 }
 
-.touch-btn--roll .icon {
+.touch-btn--jump .icon {
   width: 32px;
   height: 32px;
 }
 
-/* 다시 구를 수 있을 때까지 고리가 차오름 (--ready 0 ~ 1, hud.js 가 정함) */
+/* 다시 점프할 수 있을 때까지 고리가 차오름 (--ready 0 ~ 1, hud.js 가 정함. 공중에서는 비어 있음) */
 .touch-ring {
   position: absolute;
   inset: -10px;
@@ -183,11 +183,11 @@ body.overlay-open .touch-controls,
   pointer-events: none;
 }
 
-.touch-btn--roll[data-ready="false"] {
+.touch-btn--jump[data-ready="false"] {
   filter: saturate(0.4) brightness(0.92);
 }
 
-/* 공격: 구르기 왼쪽, 크게. 지금 든 무기 그림 + 남은 탄
+/* 공격: 점프 왼쪽, 크게. 지금 든 무기 그림 + 남은 탄
    누르고 있으면 자동 조준 공격, 끌면 안쪽 손잡이가 손가락을 따라가고 그쪽으로 공격 */
 .touch-btn--attack {
   --size: 84px;
@@ -344,7 +344,7 @@ body.overlay-open .touch-controls,
   text-shadow: none;
 }
 
-/* 장전: 구르기 위쪽 */
+/* 장전: 점프 위쪽 */
 .touch-btn--reload {
   --size: 58px;
   right: calc(var(--edge-right) + 22px);
@@ -378,7 +378,7 @@ body.overlay-open .touch-controls,
     --idle-y: calc(100dvh - var(--edge-bottom) - 84px);
   }
 
-  .touch-btn--roll {
+  .touch-btn--jump {
     --size: 74px;
     bottom: calc(var(--edge-bottom) + 14px);
   }

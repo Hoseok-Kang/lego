@@ -1,6 +1,7 @@
 // 당근 (먹으면 체력 회복 + 터졌던 귀 블록이 다시 쌓임)
 // 미친토끼가 터지거나 상자가 부서지면 당근이 '톡' 튀어나와 통통 튀고, 바닥 위에 둥실 떠서 빙글 돕니다.
 // 내 토끼가 가까이 오면 입으로 쏙 빨려 들어가며 먹힙니다. (체력이 가득이면 먹지 않고 남겨 둠)
+// 점프해서 공중에 떠 있을 때는 먹지 않고, 땅에 내려오면 먹습니다.
 // 당근 모양은 propArt.js 의 'carrot' (블록), 발밑에는 노랗게 빛나는 동그라미.
 //
 //   const pickups = createPickups(scene, { events, collision, fx })   collision·fx 는 없어도 됨
@@ -186,7 +187,7 @@ export function createPickups(scene, { events, collision = null, fx = null } = {
   }
 
   function canEat(r, player) {
-    if (!player || !player.alive || r.age < EAT_DELAY) return false;
+    if (!player || !player.alive || player.jumping || r.age < EAT_DELAY) return false;
     const health = player.health;
     if (health && health.hp >= health.maxHp) return false; // 체력이 가득이면 남겨 둠
     const reach = FIGHT.carrots.radius + (player.radius || 0);

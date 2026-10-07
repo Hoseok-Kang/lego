@@ -2,7 +2,8 @@
 // 소리 파일 없이 브라우저(Web Audio)가 직접 만드는 '음'과 '쉬익' 잡음을 겹쳐서 장난감 같은 소리를 냅니다.
 // 소리 하나하나의 모양은 fightSoundBank.js, 소리를 켜고 끄는 장치는 fightSounds.js 에 있습니다.
 //
-//   tone(kit, { type, freq, to, glide, at, attack, hold, decay, volume, vibrato, filter })   음 하나 (freq → to 로 미끄러짐)
+//   tone(kit, { type, freq, to, glide, at, attack, hold, decay, volume, vibrato, vibratoRate, filter })   음 하나 (freq → to 로 미끄러짐)
+//       vibrato: 떨림 크기 (freq 의 비율), vibratoRate: 1초에 떨리는 횟수 (기본 6, 크게 하면 용수철 '보잉')
 //   noise(kit, { at, attack, hold, decay, volume, filter, freq, to, glide, q })              쉬익 잡음 + 필터 (딸깍, 펑, 우르르)
 //   melody(kit, [['C5', 시작 초, 길이 초], ...], { type, volume, filter, vibrato })          짧은 노래
 //   clatter(kit, { at, count, spread, volume, low, high })                                   블록이 와르르 떨어지는 딸깍딸깍
@@ -13,7 +14,7 @@
 // kit = { ctx, out, noise, t (시작 시각), pitch (높낮이 배수), end, last }
 
 // 음 하나: 오실레이터 + (필터) + 크기 변화
-export function tone(kit, { type = 'triangle', freq, to = null, glide = 0.1, at = 0, attack = 0.005, hold = 0, decay = 0.2, volume = 1, vibrato = 0, filter = null }) {
+export function tone(kit, { type = 'triangle', freq, to = null, glide = 0.1, at = 0, attack = 0.005, hold = 0, decay = 0.2, volume = 1, vibrato = 0, vibratoRate = 6, filter = null }) {
   const { ctx } = kit;
   const t = kit.t + at;
   const end = t + attack + hold + decay + 0.02;
@@ -23,7 +24,7 @@ export function tone(kit, { type = 'triangle', freq, to = null, glide = 0.1, at 
   if (to) osc.frequency.exponentialRampToValueAtTime(clampFrequency(to * kit.pitch, ctx), t + glide);
   if (vibrato) {
     const lfo = ctx.createOscillator();
-    lfo.frequency.value = 6;
+    lfo.frequency.value = vibratoRate;
     const depth = ctx.createGain();
     depth.gain.setValueAtTime(0, t);
     depth.gain.linearRampToValueAtTime(freq * vibrato, t + attack + hold * 0.5 + 0.05);

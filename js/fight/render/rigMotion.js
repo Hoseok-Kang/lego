@@ -2,6 +2,11 @@
 // 깡충 뛰기 박자, 귀가 출렁이는 용수철, 부드럽게 따라가기 같은 작은 계산들을 모아 둡니다.
 //
 //   createHop()          깡충 뛰기 박자 → hop.step(dt, 움직임 0~1) 뒤에 hop.height / squash / stretch / air / landed / tookOff
+//   점프 한 번의 모양 (player.js 는 높이에, rabbitRig.js 는 몸짓에 같이 씀). k = 점프 진행 0~1
+//     jumpHeight(k) → 0~1 (꼭대기 1)   처음 JUMP_CROUCH 동안은 땅에서 웅크렸다가 포물선으로 날아오름
+//     jumpCrouch(k) → 0~1              뛰기 직전 웅크림 (누른 순간 가장 깊고, 뛰어오를 때 풀림)
+//     jumpInAir(k)  → 참/거짓          웅크림이 끝나고 발이 땅에서 떨어졌는지
+//     jumpRise(k)   → 1 ~ -1           1 = 막 뛰어오름, 0 = 꼭대기(웅크리는 동안도 0), -1 = 땅에 닿기 직전 (오르내리는 빠르기)
 //   createSpring(k, c)   용수철 하나 → s.step(dt, 목표) , s.kick(세기) , s.x(지금 값)
 //   approach(지금, 목표, 빠르기, dt) → 새 값    (목표 쪽으로 부드럽게 다가감)
 //   wrapAngle(각도) → -π~π                     ease 함수들: easeOutCubic, easeInOutSine
@@ -12,6 +17,7 @@ const HOP_RATE_FULL = 5; // 최고 속도일 때 1초에 깡충 뛰는 횟수
 const HOP_RATE_SLOW = 2.8; // 아주 천천히 걸을 때 1초에 깡충 뛰는 횟수
 const HOP_CONTACT = 0.26; // 한 번 뛰는 동안 땅에 닿아 있는 비율 (이때 꾹 눌림)
 const SPRING_STEP = 1 / 90; // 용수철 계산 한 걸음 (작을수록 안정적)
+const JUMP_CROUCH = 0.1; // 점프 시간 중 처음 이 비율은 땅에서 살짝 웅크림 (뛰기 전 준비, 그동안도 안 맞음)
 
 export function createHop() {
   const hop = {
@@ -65,6 +71,30 @@ export function createHop() {
     },
   };
   return hop;
+}
+
+// ── 점프 모양 ──
+// 웅크림이 끝난 뒤 공중에서 어디쯤인지 (0 = 막 뛰어오름 ~ 1 = 땅에 닿음)
+function jumpFlight(k) {
+  return clamp((k - JUMP_CROUCH) / (1 - JUMP_CROUCH), 0, 1);
+}
+
+export function jumpHeight(k) {
+  if (k <= JUMP_CROUCH) return 0;
+  const f = jumpFlight(k);
+  return 4 * f * (1 - f);
+}
+
+export function jumpCrouch(k) {
+  return k >= 0 && k < JUMP_CROUCH ? Math.cos(((Math.PI / 2) * k) / JUMP_CROUCH) : 0;
+}
+
+export function jumpInAir(k) {
+  return k >= JUMP_CROUCH;
+}
+
+export function jumpRise(k) {
+  return jumpInAir(k) ? 1 - 2 * jumpFlight(k) : 0;
 }
 
 // 출렁이는 용수철 (귀, 고개)

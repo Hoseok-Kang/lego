@@ -202,7 +202,7 @@ body:not(.hud-on) .crosshair,
   color: #8be36f;
 }
 
-/* 장전!, 구르기 같은 안내 */
+/* 장전! 같은 안내 */
 .float-text[data-kind="info"] {
   font-size: 18px;
   color: #ffffff;

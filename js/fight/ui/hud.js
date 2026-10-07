@@ -1,15 +1,15 @@
 // 정보판 (싸우는 동안 화면에 떠 있는 것들)
 // 왼쪽 위: 내 토끼 얼굴 + 분홍 체력 막대 + 숫자. 얼굴의 귀 블록도 체력만큼만 남아요 (게임 속 토끼처럼!)
 // 가운데 위: 남은 미친토끼 '3 / 5'. 오른쪽 위: 소리 · 멈춤 단추
-// 오른쪽 아래(컴퓨터): 무기 칸 [1 블록 총 탄 수·장전 고리] [2 블록 칼] + 구르기 준비
-// 휴대폰: 공격 단추에 지금 무기 그림과 남은 탄, 총⇄칼 단추에 지금 무기 표시, 구르기 단추에 준비 고리 (css/fight-touch.css)
+// 오른쪽 아래(컴퓨터): 무기 칸 [1 블록 총 탄 수·장전 고리] [2 블록 칼] + 점프 준비
+// 휴대폰: 공격 단추에 지금 무기 그림과 남은 탄, 총⇄칼 단추에 지금 무기 표시, 점프 단추에 준비 고리 (css/fight-touch.css)
 // 마우스를 따라다니는 조준점, 체력이 적으면 화면 가장자리가 두근두근 빨갛게.
 //
 //   const hud = createHud({ sounds })   sounds: fightSounds.js (있으면 소리 단추가 저절로 켜고 끔. 없어도 됨)
 //   hud.setHp(체력, 최대)                 체력 막대·숫자·귀 블록 (줄면 카드가 흔들림)
 //   hud.setEnemies(남은 수, 전체)          '미친토끼 3 / 5' (줄면 통 튀어 오름)
 //   hud.setWeapon({ id, name, ammo, magazine, reloading, reloadProgress })   weapons.info() 를 그대로
-//   hud.setRollReady(0~1)                다시 구를 수 있을 때까지 차오름 (1 = 준비)
+//   hud.setJumpReady(0~1)                다시 점프할 수 있을 때까지 차오름 (1 = 준비, 공중에서는 0)
 //   hud.flashDamage()                    내 토끼가 맞았을 때 화면 가장자리 빨갛게 번쩍
 //   hud.show(참/거짓)                     정보판 보이기 (body 에 hud-on 을 붙여 마우스 화살표를 숨김)
 //   hud.setSound(켜짐)                    소리 단추 모양 맞추기
@@ -43,21 +43,21 @@ export function createHud({ sounds = null } = {}) {
     ammo: el('hudAmmo'),
     magazine: el('hudMagazine'),
     pips: el('hudAmmoPips'),
-    roll: el('hudRoll'),
+    jump: el('hudJump'),
     sound: el('soundBtn'),
     crosshair: el('crosshair'),
     vignette: el('hurtVignette'),
     touchSwap: el('touchSwap'),
     touchAttack: el('touchAttack'),
     touchAmmo: el('touchAmmo'),
-    touchRoll: document.querySelector('.touch-btn--roll'),
+    touchJump: document.querySelector('.touch-btn--jump'),
     touchReload: document.querySelector('.touch-btn--reload'),
   };
   const slots = [...document.querySelectorAll('.weapon-slot[data-weapon]')];
   const blasterSlot = slots.find((slot) => slot.dataset.weapon === 'blaster') ?? null;
   const earBlocks = EAR_POP_ORDER.map(([side, index]) => ui.me?.querySelectorAll(`.ear--${side} i`)[index] ?? null);
 
-  const last = { hp: null, max: null, ratio: 1, alive: null, total: null, weapon: null, ammo: null, magazine: null, reloading: null, reload: -1, low: null, roll: -1 };
+  const last = { hp: null, max: null, ratio: 1, alive: null, total: null, weapon: null, ammo: null, magazine: null, reloading: null, reload: -1, low: null, jump: -1 };
   let pips = [];
   let kickTimer = 0;
 
@@ -165,12 +165,12 @@ export function createHud({ sounds = null } = {}) {
     pips = nodes;
   }
 
-  // ── 구르기 준비 ──
-  function setRollReady(value) {
+  // ── 점프 준비 ──
+  function setJumpReady(value) {
     const ready = Math.round(Math.min(1, Math.max(0, value)) * 40) / 40;
-    if (ready === last.roll) return;
-    last.roll = ready;
-    for (const node of [ui.roll, ui.touchRoll]) {
+    if (ready === last.jump) return;
+    last.jump = ready;
+    for (const node of [ui.jump, ui.touchJump]) {
       if (!node) continue;
       node.style.setProperty('--ready', String(ready));
       node.dataset.ready = String(ready >= 1);
@@ -231,7 +231,7 @@ export function createHud({ sounds = null } = {}) {
     setHp,
     setEnemies,
     setWeapon,
-    setRollReady,
+    setJumpReady,
     flashDamage,
     show,
     setSound,

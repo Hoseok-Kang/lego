@@ -6,7 +6,8 @@
 //   망치 토끼 느릿느릿 쫓아옴 → 가까우면 바닥에 빨간 원(fx.telegraph) 이 차오름(windup) → 쾅!(slam)
 //             원 안의 내 토끼는 크게 밀려나며 아픔 + 원 안 나무 상자도 맞음 + 땅 블록이 튀고 충격 고리 + 화면 흔들림
 //             → 멍함(recover, 반격 기회) → 잠깐 쉼(cooldown)
-//   공격하는 동안은 내 토끼 쪽을 바라봄. 칼 토끼는 준비 끝 무렵 방향을 정해서, 옆으로 피하거나 구르면 피할 수 있음.
+//   공격하는 동안은 내 토끼 쪽을 바라봄. 칼 토끼는 준비 끝 무렵 방향을 정해서, 옆으로 피하거나 점프하면 피할 수 있음.
+//   점프 중인 내 토끼는 찌르기·망치에 맞지 않음 (takeDamage 가 막음: 칼은 공중 밑으로 헛찔러 그 찌르기는 끝, 망치 원 안이어도 무사)
 //
 //   updateFight(enemy, ctx, dt) → 이번에 걸은 빠르기 (몸짓용, 서 있으면 0)
 //   enterChase(enemy) / cancelAttack(enemy)   (enemyActions.js 에 있는 것을 그대로 내보냄)
@@ -126,7 +127,7 @@ function circleWhileWaiting(e, ctx, dt) {
   return speed;
 }
 
-// 칼끝(몸 앞) 에서 hitRadius 안에 내 토끼가 있으면 찌름 (구르는 중이면 안 맞고, 돌진 동안 다시 해 봄)
+// 칼끝(몸 앞) 에서 hitRadius 안에 내 토끼가 있으면 찌름 (점프 중이면 헛찔러 그 찌르기는 끝, 맞은 직후 무적이면 돌진 동안 다시 해 봄)
 function tryStab(e, ctx) {
   const c = e.cfg;
   const ai = e.ai;
@@ -135,7 +136,11 @@ function tryStab(e, ctx) {
   const tipZ = e.position.z + ai.lungeZ * e.radius;
   if (Math.hypot(p.position.x - tipX, p.position.z - tipZ) > c.hitRadius) return;
   const result = p.takeDamage({ amount: c.damage, from: e.position, knockback: STAB_KNOCKBACK, kind: 'melee' });
-  if (!result.hit) return;
+  if (!result.hit) {
+    // 점프한 토끼 밑으로 헛찌름 → 이번 찌르기는 끝 (내려온 뒤에 남은 돌진으로 다시 찌르지 않음)
+    if (p.jumping) ai.struck = true;
+    return;
+  }
   ai.struck = true;
   e.spark.set((tipX + p.position.x) / 2, STAB_HEIGHT, (tipZ + p.position.z) / 2);
   ctx.fx?.hitSpark?.(e.spark, STAB_SPARK_HEX);

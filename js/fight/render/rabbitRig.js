@@ -1,5 +1,5 @@
 // 토끼 몸짓 (귀엽고 통통 튀는 움직임)
-// 블록 인형(voxelFigure.js) 위에 깡충 뛰기, 귀 출렁임, 숨쉬기, 무기 들기, 칼 휘두르기, 구르기,
+// 블록 인형(voxelFigure.js) 위에 깡충 뛰기, 귀 출렁임, 숨쉬기, 무기 들기, 칼 휘두르기, 큰 점프,
 // 공격 준비(웅크리며 빨갛게 떨기), 맞았을 때 반짝이며 뒤로 젖히기, 어지러워 비틀거리기를 입힙니다.
 // 몸 전체 움직임은 이 파일, 귀·팔·무기·발·꼬리 자세는 rigLimbs.js 가 맡습니다.
 //
@@ -11,8 +11,11 @@
 //   rig.setWeapon(무기설계도|null)     손에 든 무기 바꾸기 (weaponArt.js 의 createWeaponModel 결과)
 //   rig.update(dt, pose)              매 장면 한 번. pose = {
 //       position (Vector3, 발밑), facing (바라보는 각도), move 0~1 (빠르기 비율), aiming (조준 중),
-//       roll -1 | 0~1 (구르기 진행), swing -1 | 0~1 (칼 휘두르기 진행), swingSide ±1 (휘두르는 방향),
+//       jump -1 | 0~1 (점프 진행), altitude (점프 높이, 세상 칸 — 인형 크기 scale 로 알아서 바꿈),
+//       land 0~1 (점프 착지 직후 1 → 0, 납작 눌림), swing -1 | 0~1 (칼 휘두르기 진행), swingSide ±1 (휘두르는 방향),
 //       windup 0~1 (공격 준비), recoil 0~1 (총 반동), hurt 0~1 (맞은 직후), stunned (어지러움) }
+//     점프: 살짝 웅크렸다 길쭉하게 솟고, 발은 쏙 접고, 귀는 오를 때 뒤로 날리다 꼭대기에서 앞으로 털썩,
+//           나아가는 쪽으로 기울고, 내려오면 납작 눌렸다 출렁 (몸 전체가 진짜로 떠오름 → 그림자는 땅에 남음)
 //     windup 이 크다가 갑자기 0 이 되면 '내려치기/찌르기' 모션이 저절로 나옵니다.
 //   rig.muzzleWorld(out) / rig.weaponTipWorld(out) / rig.handWorld(out)   총구·무기 끝·손의 세상 위치
 //   rig.popBlocks(n) / rig.restoreBlocks(n) / rig.explode()              귀 블록 떼기·다시 붙이기·펑
@@ -25,7 +28,7 @@
 import * as THREE from '../../lib/three.js';
 import { createVoxelFigure } from './voxelFigure.js';
 import { createRigLimbs } from './rigLimbs.js';
-import { createHop, approach, wrapAngle, clamp, easeInOutSine } from './rigMotion.js';
+import { createHop, approach, wrapAngle, clamp, jumpCrouch, jumpInAir, jumpRise } from './rigMotion.js';
 
 // 부위 연결: 귀는 머리에, 머리·팔·꼬리는 몸에 붙음 (발은 몸 밖에 따로)
 const PARENTS = { earL: 'head', earR: 'head', head: 'body', armL: 'body', armR: 'body', tail: 'body' };
@@ -35,8 +38,16 @@ const LAND_SQUASH = 0.2; // 착지할 때 꾹 눌리는 정도
 const AIR_STRETCH = 0.12; // 뛰어오를 때 길쭉해지는 정도
 const HOP_TILT = 0.12; // 뛰는 동안 몸이 앞뒤로 까딱하는 각도
 const BREATH = 0.022; // 가만히 있을 때 숨쉬기 크기
-const ROLL_SHRINK = 0.84; // 구를 때 몸을 공처럼 오므리는 크기
-const ROLL_LIFT = 2.2; // 구를 때 귀가 땅에 박히지 않게 살짝 띄우는 높이
+const JUMP_CROUCH_SQUASH = 0.24; // 점프 직전 웅크리는 정도
+const JUMP_STRETCH = 0.2; // 점프해서 솟아오를 때 길쭉해지는 정도 (내려올 때는 반만)
+const JUMP_TILT = 0.14; // 점프: 오를 때 고개를 들고, 내려올 때 앞으로 숙이는 각도
+const JUMP_LEAN = 0.3; // 점프: 날아가는 쪽으로 몸이 기우는 최대 각도
+const JUMP_LEAN_SPEED = 16; // 이 빠르기(초당 칸)로 날면 JUMP_LEAN 만큼 다 기욺
+const JUMP_LEAN_LAND = -0.35; // 점프: 땅에 닿을 때 기울기 (JUMP_LEAN 의 비율, 음수 = 살짝 뒤로 → 머리가 아니라 발부터 디딤)
+const JUMP_LAND_SQUASH = 0.34; // 점프 착지: 납작해지는 정도 (넓적해졌다가 출렁출렁 돌아옴)
+const JUMP_LAND_WOBBLE = 2.5; // 점프 착지: 출렁이는 횟수 (반 번 단위)
+const JUMP_TAKEOFF_KICK = 1.6; // 뛰어오를 때 귀가 뒤로 휙 젖혀지는 세기 (깡충 = 1)
+const JUMP_LAND_KICK = 1.5; // 내려올 때 귀가 앞으로 털썩하는 세기 (깡충 = 1)
 const HURT_LEAN = 0.42; // 맞았을 때 뒤로 젖히는 각도
 const WINDUP_CROUCH = 0.2; // 공격 준비할 때 웅크리는 정도
 const WINDUP_SHAKE = 0.14; // 공격 준비할 때 덜덜 떠는 크기 (칸)
@@ -59,13 +70,11 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     hand.at[1] - fig.pivots[handPart][1],
     hand.at[2] - fig.pivots[handPart][2],
   );
-  const centerY = coreCenter(modelDef); // 구를 때 도는 중심 높이 (모델 좌표)
   for (const name of ['armL', 'armR', handPart]) if (parts[name]) parts[name].rotation.order = 'YXZ';
 
   const limbs = createRigLimbs(fig, handPart);
   const hop = createHop();
   const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-  const pivotOffset = new THREE.Vector3();
 
   // 무기
   let weaponNode = null;
@@ -89,9 +98,13 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     prevWindup: 0,
     release: 0,
     lean: 0,
+    wasJumping: false,
+    prevLand: 0,
+    leanFwd: 0, // 점프 중 날아가는 쪽 기울기 (앞뒤, 옆) — 부드럽게 따라감
+    leanSide: 0,
   };
   const frame = {
-    dt: 0, t: 0, move: 0, air: 0, speed: 0, accelFwd: 0, yawRate: 0, rolling: false, swinging: false,
+    dt: 0, t: 0, move: 0, air: 0, speed: 0, accelFwd: 0, yawRate: 0, jumping: false, jumpAir: false, rise: 0, crouch: 0, land: 0, swinging: false,
     swing: 0, swingSide: 1, windup: 0, slamming: false, recoil: 0, hurt: 0, stunned: false, aiming: false, calm: true,
   };
 
@@ -118,14 +131,16 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     const t = s.time;
     const position = pose.position;
     const facing = pose.facing ?? 0;
-    const roll = pose.roll ?? -1;
-    const rolling = roll >= 0;
+    const jump = pose.jump ?? -1;
+    const jumping = jump >= 0;
+    const altitude = jumping ? Math.max(0, pose.altitude ?? 0) : 0;
+    const land = clamp(pose.land ?? 0, 0, 1);
     const swing = pose.swing ?? -1;
     const windup = clamp(pose.windup ?? 0, 0, 1);
     const recoil = clamp(pose.recoil ?? 0, 0, 1);
     const hurt = clamp(pose.hurt ?? 0, 0, 1);
-    const stunned = !!pose.stunned && !rolling;
-    const move = rolling || stunned ? 0 : clamp(pose.move ?? 0, 0, 1);
+    const stunned = !!pose.stunned && !jumping;
+    const move = jumping || stunned ? 0 : clamp(pose.move ?? 0, 0, 1);
 
     // 빠르기·도는 빠르기 (귀가 따라 출렁이게)
     let accelFwd = 0;
@@ -148,9 +163,18 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     s.prevFacing = facing;
     s.facing = facing;
 
+    // 큰 점프 시작·착지: 깡충 박자는 처음부터, 귀가 휙 / 털썩
+    if (jumping && !s.wasJumping) {
+      hop.reset();
+      limbs.kickTakeoff(JUMP_TAKEOFF_KICK);
+    }
+    s.wasJumping = jumping;
+    if (land > s.prevLand + 0.3) limbs.kickLanding(JUMP_LAND_KICK);
+    s.prevLand = land;
+
     // 깡충 뛰기 + 출렁이는 순간들
     hop.step(dt, move);
-    if (hop.landed) {
+    if (hop.landed && !jumping) {
       limbs.kickLanding(hop.amp);
       onLand?.(position, hop.amp * scale);
     }
@@ -171,8 +195,12 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     f.speed = Math.min(1, Math.hypot(s.velX, s.velZ) / (RUN_SPEED * scale));
     f.accelFwd = accelFwd;
     f.yawRate = s.yawRate;
-    f.rolling = rolling;
-    f.swinging = swing >= 0 && !rolling;
+    f.jumping = jumping;
+    f.jumpAir = jumping && jumpInAir(jump);
+    f.rise = jumping ? jumpRise(jump) : 0;
+    f.crouch = jumping ? jumpCrouch(jump) : 0;
+    f.land = land;
+    f.swinging = swing >= 0;
     f.swing = swing;
     f.swingSide = pose.swingSide < 0 ? -1 : 1;
     f.windup = windup;
@@ -181,7 +209,7 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     f.hurt = hurt;
     f.stunned = stunned;
     f.aiming = !!pose.aiming;
-    f.calm = move < 0.05 && !rolling && !f.swinging && windup === 0 && !stunned && hurt === 0;
+    f.calm = move < 0.05 && !jumping && land === 0 && !f.swinging && windup === 0 && !stunned && hurt === 0;
     const gun = holdsGun;
 
     // ── 뿌리: 위치·방향·눌림 ──
@@ -190,25 +218,39 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     sy -= WINDUP_CROUCH * windup + 0.1 * hurt + 0.06 * recoil;
     if (release > 0) sy -= 0.16 * Math.sin(Math.PI * Math.min(1, (1 - release) * 2.2)) * (gun ? 0.3 : 1);
     if (stunned) sy -= 0.05;
-    let uniform = scale;
     let pitch = HOP_TILT * hop.tilt + 0.07 * move;
     let yaw = facing;
     let rz = 0;
-    let lift = HOP_HEIGHT * hop.height;
-    let pivotY = 0;
+    // altitude 는 세상 칸 → 인형 칸으로 (아래에서 scale 을 곱해 다시 세상 칸이 됨)
+    const lift = HOP_HEIGHT * hop.height + altitude / (scale || 1);
     let jitterX = 0;
     let jitterZ = 0;
 
-    if (rolling) {
-      // 앞구르기: 몸 가운데를 중심으로 한 바퀴, 공처럼 오므림
-      pitch = Math.PI * 2 * easeInOutSine(roll);
-      uniform *= 1 - (1 - ROLL_SHRINK) * Math.sin(Math.PI * Math.min(1, roll * 1.4));
-      lift = ROLL_LIFT * Math.sin(Math.PI * roll);
-      pivotY = centerY;
-      sy = 1;
+    // ── 점프: 웅크림 → 길쭉하게 솟음 → 꼭대기 → 내려옴, 날아가는 쪽으로 기욺 ──
+    let leanFwd = 0;
+    let leanSide = 0;
+    if (jumping) {
+      sy -= JUMP_CROUCH_SQUASH * f.crouch;
+      sy += JUMP_STRETCH * (f.rise > 0 ? f.rise : -0.5 * f.rise);
+      pitch += -JUMP_TILT * f.rise + 0.12 * f.crouch; // 웅크릴 때는 살짝 앞으로 숙임
+      // 바라보는 쪽 기준 앞뒤·옆 빠르기 → 그쪽으로 기욺 (뒤를 겨누며 앞으로 뛰어도 나는 쪽으로)
+      const fwdV = s.velX * Math.sin(facing) + s.velZ * Math.cos(facing);
+      const sideV = s.velX * Math.cos(facing) - s.velZ * Math.sin(facing);
+      const air = f.jumpAir ? 1 : 0;
+      // 기울기 모양: 솟을 때 나는 쪽으로 쑥 → 꼭대기에서 줄고 → 내려오며 발이 앞으로 (JUMP_LEAN_LAND)
+      const shape = air * (JUMP_LEAN_LAND + ((1 - JUMP_LEAN_LAND) * (1 + f.rise)) / 2);
+      leanFwd = JUMP_LEAN * clamp(fwdV / JUMP_LEAN_SPEED, -1, 1) * shape;
+      leanSide = -JUMP_LEAN * clamp(sideV / JUMP_LEAN_SPEED, -1, 1) * shape;
     }
+    s.leanFwd = approach(s.leanFwd, leanFwd, 14, dt);
+    s.leanSide = approach(s.leanSide, leanSide, 14, dt);
+    pitch += s.leanFwd;
+    rz += s.leanSide;
+    // 점프 착지: 납작·넓적하게 꾹 → 길쭉하게 살짝 → 다시 조금 납작 … 출렁이며 제자리
+    if (land > 0) sy -= JUMP_LAND_SQUASH * Math.pow(land, 1.5) * Math.cos(JUMP_LAND_WOBBLE * Math.PI * (1 - land));
+
     s.lean = approach(s.lean, -HURT_LEAN * Math.pow(hurt, 0.7) - (gun ? 0.05 : 0.14) * windup - 0.07 * recoil, 22, dt);
-    if (!rolling) pitch += s.lean;
+    pitch += s.lean;
     if (release > 0 && !gun) pitch += 0.32 * Math.sin(Math.PI * Math.min(1, (1 - release) * 1.6));
     if (f.swinging) pitch += 0.1 * Math.sin(Math.PI * swing);
     if (windup > 0) {
@@ -216,7 +258,7 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
       jitterZ = Math.cos(t * 71) * WINDUP_SHAKE * windup * scale;
     }
     if (stunned) {
-      rz = Math.sin(t * 5.5) * 0.17;
+      rz += Math.sin(t * 5.5) * 0.17;
       yaw += Math.sin(t * 3.1) * 0.25;
     }
 
@@ -224,14 +266,9 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     const sxz = 1 / Math.sqrt(sy);
     euler.set(pitch, yaw, rz, 'YXZ');
     root.quaternion.setFromEuler(euler);
-    root.scale.set(uniform * sxz, uniform * sy, uniform * sxz);
-    // 구를 때는 몸 가운데를 중심으로 돌도록 위치를 보정
-    pivotOffset.set(0, pivotY * uniform * sy, 0).applyQuaternion(root.quaternion);
-    root.position.set(
-      position.x + jitterX - pivotOffset.x,
-      (position.y || 0) + (lift + pivotY) * scale - pivotOffset.y,
-      position.z + jitterZ - pivotOffset.z,
-    );
+    root.scale.set(scale * sxz, scale * sy, scale * sxz);
+    // 발밑이 뿌리: 점프하면 몸 전체가 진짜로 떠오름 (그림자는 햇빛 따라 땅에 남음)
+    root.position.set(position.x + jitterX, (position.y || 0) + lift * scale, position.z + jitterZ);
 
     limbs.update(f);
 
@@ -256,6 +293,8 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
     s.hasPrev = false;
     s.velX = s.velZ = s.prevFwd = s.yawRate = 0;
     s.release = s.prevWindup = s.prevHurt = s.lean = 0;
+    s.wasJumping = false;
+    s.prevLand = s.leanFwd = s.leanSide = 0;
     fig.setFlash(0);
     fig.setVisible(true);
   }
@@ -291,19 +330,4 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
       return weaponNode;
     },
   };
-}
-
-// 구를 때 도는 중심 높이: 귀를 뺀 몸(발~머리) 가운데
-function coreCenter(modelDef) {
-  let min = Infinity;
-  let max = -Infinity;
-  for (const name of ['footL', 'footR', 'body', 'head']) {
-    const part = modelDef.parts[name];
-    if (!part) continue;
-    for (const v of part.voxels) {
-      min = Math.min(min, v.y - 0.5);
-      max = Math.max(max, v.y + 0.5);
-    }
-  }
-  return Number.isFinite(min) ? (min + max) / 2 : (modelDef.height || 16) * 0.35;
 }

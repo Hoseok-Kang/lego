@@ -67,7 +67,7 @@ export function createEnemies(scene, { collision, bullets, fx = null, debris, ev
       },
     });
     const body = createFighterBody({ team: 'enemy', rig, maxHp: cfg.maxHp, radius: cfg.radius, debris, fx, events, view });
-    const pose = { position: body.position, facing: 0, move: 0, aiming: false, roll: -1, swing: -1, swingSide: 1, windup: 0, recoil: 0, hurt: 0, stunned: false };
+    const pose = { position: body.position, facing: 0, move: 0, aiming: false, jump: -1, swing: -1, swingSide: 1, windup: 0, recoil: 0, hurt: 0, stunned: false };
     const e = Object.assign(body, {
       kind,
       name: cfg.name,

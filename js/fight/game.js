@@ -266,7 +266,7 @@ export function createFightGame({ container, capture = false }) {
   // 컴퓨터에서 블록 총을 들고 있으면 총구 → 마우스 쪽 흐린 점선
   function updateAimLine() {
     const s = input.state;
-    const show = state.phase === 'play' && player.alive && !s.usingTouch && !!s.aimPoint && player.weapons.current === 'blaster' && !player.rolling;
+    const show = state.phase === 'play' && player.alive && !s.usingTouch && !!s.aimPoint && player.weapons.current === 'blaster';
     fx.aimLine(player.muzzle, s.aimPoint, show);
   }
 
@@ -274,7 +274,7 @@ export function createFightGame({ container, capture = false }) {
     hud.setHp(player.health.hp, player.health.maxHp);
     hud.setEnemies(enemies.aliveCount(), enemies.total);
     hud.setWeapon(player.weapons.info());
-    hud.setRollReady(player.rollReady ?? 1);
+    hud.setJumpReady(player.jumpReady ?? 1);
   }
 
   // 창을 벗어나면 저절로 멈춤 (녹화 모드는 제외)

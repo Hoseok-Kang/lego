@@ -7,7 +7,7 @@
 // 소리 목록
 //   pew 블록 총 · enemyPew 미친토끼 총 · swish 칼 휘두르기 · clink 총알 튕김(쨍) · thock 맞음(톡)
 //   ouch 내 토끼가 맞음(앗!) · pop 귀 블록 톡 · bigPop 토끼가 펑! (가장 신나는 소리) · tick 총알이 벽에 딱
-//   reload 장전 딸깍-착 · ready 장전 끝 · dry 빈 총 딸깍 · roll 데굴 휙 · alert 미친토끼 '!' 찍
+//   reload 장전 딸깍-착 · ready 장전 끝 · dry 빈 총 딸깍 · jump 점프 보잉 · land 착지 콩 · alert 미친토끼 '!' 찍
 //   windup 공격 준비 끼이익 · slam 망치 쾅 · crate 나무 상자 똑 · crateBreak 상자 와장창
 //   munch 당근 와작와작 · start 시작 띠링 · win 승리 빰빠밤 · lose 슬픈 뿌우 · click 단추 딸깍
 //
@@ -177,15 +177,28 @@ export const FIGHT_SOUNDS = {
     },
   },
 
-  // 데굴 구르기 '휘릭' + 착지
-  roll: {
-    volume: 0.55,
+  // 점프 '보잉~' (장난감 용수철처럼 통통 떨리며 올라감)
+  jump: {
+    volume: 0.5,
     gap: 150,
     vary: 0.06,
     make(kit) {
-      noise(kit, { filter: 'bandpass', freq: 450, to: 2000, glide: 0.2, q: 1, attack: 0.05, decay: 0.2, volume: 1 });
-      tone(kit, { type: 'sine', freq: 300, to: 620, glide: 0.18, decay: 0.16, volume: 0.12 });
-      tone(kit, { type: 'sine', at: 0.27, freq: 170, to: 90, glide: 0.06, decay: 0.08, volume: 0.35 });
+      noise(kit, { filter: 'bandpass', freq: 1900, q: 3, decay: 0.018, volume: 0.5 }); // 발로 '톡' 차기
+      tone(kit, { type: 'sine', freq: 230, to: 720, glide: 0.2, attack: 0.004, decay: 0.24, volume: 0.6, vibrato: 0.09, vibratoRate: 24 });
+      tone(kit, { type: 'triangle', at: 0.01, freq: 460, to: 1440, glide: 0.18, decay: 0.12, volume: 0.14, vibrato: 0.06, vibratoRate: 24 });
+    },
+  },
+
+  // 착지 '콩' (말랑한 플라스틱 쿵 + 작은 딸깍)
+  land: {
+    volume: 0.5,
+    gap: 150,
+    vary: 0.07,
+    make(kit) {
+      tone(kit, { type: 'sine', freq: 160, to: 70, glide: 0.08, attack: 0.002, decay: 0.12, volume: 0.75 });
+      noise(kit, { filter: 'lowpass', freq: 700, decay: 0.05, volume: 0.45 });
+      noise(kit, { at: 0.012, filter: 'bandpass', freq: 3400, q: 4, decay: 0.012, volume: 0.55 });
+      tone(kit, { type: 'triangle', at: 0.012, freq: 2300, decay: 0.012, volume: 0.12 });
     },
   },
 

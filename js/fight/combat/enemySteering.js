@@ -340,9 +340,10 @@ export function moveEnemy(e, ctx, dirX, dirZ, speed, dt) {
 }
 
 // 내 토끼 몸을 파고들지 않게 (내 토끼는 player.js 가 알아서 밀려남, 미친토끼도 반쯤 비켜 줌)
+// 내 토끼가 점프해서 머리 위로 지나가는 동안은 비키지 않음
 function keepOffPlayer(e, ctx) {
   const p = ctx.player;
-  if (!p || !p.alive) return;
+  if (!p || !p.alive || p.jumping) return;
   const dx = e.position.x - p.position.x;
   const dz = e.position.z - p.position.z;
   const d = Math.hypot(dx, dz);

@@ -1,19 +1,23 @@
-// 내 토끼 (움직이기, 조준, 구르기, 무기 쓰기)
-// 누르는 쪽으로 '휙' 빨리 출발하고 빨리 멈춥니다. 마우스·조준 스틱 쪽을 바라보고, 구르는 동안은 맞지 않습니다.
+// 내 토끼 (움직이기, 조준, 점프, 무기 쓰기)
+// 누르는 쪽으로 '휙' 빨리 출발하고 빨리 멈춥니다. 마우스·조준 스틱 쪽을 바라봅니다.
+// 점프: 움직이던 쪽으로 깡충 (가만히 있으면 제자리에서 위로). 공중에 떠 있는 동안은 맞지 않고(총알은 발밑으로 지나감),
+//       공중에서도 쏘고 휘두를 수 있음. 벽·나무는 넘지 못하고, 미친토끼 위로는 넘어감.
 // 맞는 것·귀가 터지는 것·'펑'은 fighterBody.js 가 미친토끼와 똑같이 처리합니다.
 //
 //   const player = createPlayer(scene, { collision, bullets, fx, debris, events, view, getEnemies, props })
 //       props 는 없어도 됨 (칼로 상자 부수기용, 없으면 bullets 가 가진 props 를 씀)
 //   player            = fighter (team 'player', position, velocity, radius, facing, alive, takeDamage, heal …)
 //   player.update(dt, input) → 무기 frame { hitStop, fired, swung, hits, … }   매 장면 한 번
-//       input = { move:{x,z}, aimPoint, aimDir, fire, firePressed, autoAim, rollPressed, switchPressed, slot, reloadPressed }
+//       input = { move:{x,z}, aimPoint, aimDir, fire, firePressed, autoAim, jumpPressed, switchPressed, slot, reloadPressed }
 //       바라보는 쪽 정하기: aimDir > aimPoint > autoAim(가까운 미친토끼, 앞쪽을 조금 더 좋아함 — 뒤에 바짝 붙은 토끼도 쏨) > 걷는 쪽
 //   player.reset(x?, z?)               처음 자리(없으면 FIGHT.map.playerSpawn)·체력·무기로 (다시 하기)
 //   player.rig / player.weapons        블록 인형 몸짓 / 무기 (weapons.js)
-//   player.rolling (참/거짓) / player.rollReady (0~1, HUD 구르기 버튼) / player.muzzle (총구 위치 Vector3)
+//   player.jumping (참/거짓) / player.jumpProgress (0~1, 땅에 있으면 -1) / player.jumpReady (0~1, HUD 점프 고리)
+//   player.altitude (지금 발이 땅에서 떠 있는 높이, 칸) / player.muzzle (총구 위치 Vector3)
 //   player.hitStop                     이번 장면에 칼로 맞혀서 요청한 멈칫 시간 (초)
 //
-// 빠르기·구르기 숫자는 fightConfig.js 의 player 에서 바꿉니다. 아래는 손맛(보이는 느낌) 숫자.
+// 소식: jump { position } 뛰어오름, land { position } 땅에 내려옴
+// 빠르기·점프 숫자는 fightConfig.js 의 player 에서 바꿉니다. 아래는 손맛(보이는 느낌) 숫자.
 
 import * as THREE from '../../lib/three.js';
 import { FIGHT } from '../fightConfig.js';
@@ -21,24 +25,28 @@ import { createFighterBody } from './fighterBody.js';
 import { createPlayerWeapons } from './weapons.js';
 import { facingFromDir, turnToward, wrapAngle } from './combatMath.js';
 import { createRabbitRig } from '../render/rabbitRig.js';
+import { jumpHeight } from '../render/rigMotion.js';
 import { createRabbitModel } from '../art/rabbitArt.js';
 import { createWeaponModel } from '../art/weaponArt.js';
 
 const P = FIGHT.player;
-const ROLL = P.roll;
+const JUMP = P.jump;
 const TURN_RATE = 16; // 걷는 쪽으로 몸을 돌리는 빠르기 (라디안/초). 조준할 때는 바로 돎
 const STOP_BOOST = 1.5; // 멈추거나 방향을 바꿀 때 이만큼 더 빨리 (미끄러지지 않게)
 const RECOIL_PUSH = 2.4; // 총 한 발 쏠 때마다 뒤로 밀리는 빠르기
 const SHOT_SHAKE = 0.06; // 총 쏠 때 화면이 살짝 흔들리는 세기
 const SHOT_KICK = 0.22; // 총 쏠 때 화면이 쏘는 반대쪽으로 '톡' 밀리는 거리 (view.kick 이 있을 때)
 const HIT_SHAKE = 0.18; // 칼로 맞혔을 때 화면 흔들림
-const ROLL_BUFFER = 0.15; // 구르기를 조금 일찍 눌러도 기억해 두는 시간 (초)
-const ROLL_END_SPEED = 0.5; // 구르기 끝날 때 빠르기 비율 (부드럽게 이어 걷게)
+const JUMP_BUFFER = 0.15; // 점프를 조금 일찍 눌러도 기억해 두는 시간 (초)
+const LAND_KEEP = 0.55; // 땅에 내려올 때 남는 빠르기 비율 (꾹 디디며 살짝 멈칫)
+const TAKEOFF_DUST = 0.8; // 뛰어오를 때 발밑 먼지 크기
+const LAND_DUST = 1.7; // 내려올 때 발밑 먼지 크기 (깡충 먼지보다 크게 '퍽')
+const AIR_SHOT_HEIGHT = 5.2 * FIGHT.figureScale; // 공중에서 쏜 총알이 내려와 날아가는 높이 (땅에서 쏠 때 총구 높이쯤)
 const AUTO_AIM_RANGE = 40; // 자동 조준이 미친토끼를 찾는 거리
 const AIM_ASSIST = 0.2; // 조준 스틱 방향에서 이 각도(라디안) 안의 미친토끼에게 총알을 살짝 모아 줌
 const AIM_DEADZONE = 1.5; // 마우스가 내 토끼에 이보다 가까우면 방향을 바꾸지 않음
 const AIM_HOLD = 0.6; // 쏜 뒤 이 시간 동안은 총을 겨눈 자세 유지
-const BODY_PUSH = 0.5; // 미친토끼와 겹치면 이만큼씩 밀려남 (구를 때는 지나감)
+const BODY_PUSH = 0.5; // 미친토끼와 겹치면 이만큼씩 밀려남 (점프하면 위로 넘어감)
 const MOVE_EPS = 0.15; // 이보다 작은 스틱 입력은 '안 움직임'
 const HURT_FLASH_HEX = '#FF698F'; // 내 토끼가 맞으면 코랄색으로 반짝 (하양은 내 털색이라 안 보이고, 하양 = 나 로 남게)
 
@@ -65,10 +73,12 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
     hurtInvulnerable: P.hurtInvulnerable,
   });
 
-  let rollTime = -1; // -1 = 안 구름
-  let rollCooldown = 0;
-  let rollBuffer = 0;
-  const rollDir = { x: 0, z: 1 };
+  let jumpTime = -1; // -1 = 땅에 있음, 아니면 뛰어오른 뒤 지난 시간 (초)
+  let jumpCooldown = 0; // 내려온 뒤 다시 뛸 수 있을 때까지 남은 시간
+  let jumpBuffer = 0;
+  let landTime = 99; // 내려온 뒤 지난 시간 (착지 눌림 몸짓)
+  let altitude = 0;
+  const jumpVel = { x: 0, z: 0 }; // 뛰어오를 때 정한 공중 빠르기
   let sinceFire = 99;
   let pushBack = 0; // 반동으로 뒤로 밀리는 빠르기 (다음 장면에 적용)
   let lunge = 0;
@@ -83,7 +93,9 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
     facing: Math.PI,
     move: 0,
     aiming: false,
-    roll: -1,
+    jump: -1,
+    altitude: 0,
+    land: 0,
     swing: -1,
     swingSide: 1,
     windup: 0,
@@ -93,8 +105,8 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
   };
   const idleFrame = { recoil: 0, swing: -1, swingSide: 1, hitStop: 0, lunge: 0, swingFacing: 0, fired: false, swung: false, hits: 0 };
 
-  // 구르는 동안은 맞지 않음 (처음 ROLL.invulnerable 초)
-  body.extraInvulnerable = () => rollTime >= 0 && rollTime < ROLL.invulnerable;
+  // 점프하는 동안(웅크림부터 내려올 때까지)은 맞지 않음
+  body.extraInvulnerable = () => jumpTime >= 0;
 
   function syncWeaponModel(force = false) {
     if (!force && shownWeapon === weapons.current) return;
@@ -126,30 +138,32 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
     return best;
   }
 
-  function startRoll(mx, mz) {
+  // 뛰어오르기: 움직이던 쪽으로 휙 (가만히 있으면 제자리에서 위로)
+  function startJump(mx, mz) {
     const length = Math.hypot(mx, mz);
-    if (length > MOVE_EPS) {
-      rollDir.x = mx / length;
-      rollDir.z = mz / length;
-    } else {
-      rollDir.x = Math.sin(body.facing);
-      rollDir.z = Math.cos(body.facing);
-    }
-    rollTime = 0;
-    rollCooldown = ROLL.cooldown;
-    rollBuffer = 0;
-    body.facing = facingFromDir(rollDir.x, rollDir.z);
-    weapons.cancelSwing();
-    events.emit('roll', { position: body.position.clone() });
-    fx?.dust?.(body.position, 1);
+    jumpVel.x = length > MOVE_EPS ? (mx / length) * JUMP.speed : 0;
+    jumpVel.z = length > MOVE_EPS ? (mz / length) * JUMP.speed : 0;
+    jumpTime = 0;
+    jumpBuffer = 0;
+    landTime = 99;
+    events.emit('jump', { position: body.position.clone() });
+    fx?.dust?.(body.position, TAKEOFF_DUST);
+  }
+
+  // 땅에 내려옴: 꾹 디디며 빠르기가 줄고 먼지 '퍽', 이때부터 다시 뛸 때까지 기다림
+  function land() {
+    jumpTime = -1;
+    jumpCooldown = JUMP.cooldown;
+    landTime = 0;
+    altitude = 0;
+    body.velocity.x *= LAND_KEEP;
+    body.velocity.z *= LAND_KEEP;
+    events.emit('land', { position: body.position.clone() });
+    fx?.dust?.(body.position, LAND_DUST);
   }
 
   // 바라보는 쪽 정하기 → 총알을 모을 곳(target) 을 돌려줌 (없으면 null)
   function chooseFacing(dt, input, mx, mz, moving) {
-    if (rollTime >= 0) {
-      body.facing = facingFromDir(rollDir.x, rollDir.z);
-      return null;
-    }
     if (weapons.swinging) {
       body.facing = weapons.swingFacing; // 휘두르는 동안은 방향 고정
       return null;
@@ -186,11 +200,11 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
 
   function move(dt, mx, mz) {
     const v = body.velocity;
-    if (rollTime >= 0) {
-      const k = Math.min(1, rollTime / ROLL.seconds);
-      const speed = ROLL.speed * (1 - (1 - ROLL_END_SPEED) * k * k);
-      v.x = rollDir.x * speed;
-      v.z = rollDir.z * speed;
+    if (jumpTime >= 0) {
+      // 공중: 뛰어오를 때 정한 빠르기에 누르는 쪽을 조금 섞음 (airControl)
+      const c = JUMP.airControl;
+      v.x = jumpVel.x * (1 - c) + mx * JUMP.speed * c;
+      v.z = jumpVel.z * (1 - c) + mz * JUMP.speed * c;
     } else {
       // 원하는 빠르기 쪽으로 accel 만큼씩 (멈출 때·꺾을 때는 더 빨리)
       const wantX = mx * P.speed;
@@ -216,12 +230,13 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
     }
     delta.x = v.x * dt + body.knockDelta.x;
     delta.z = v.z * dt + body.knockDelta.z;
-    if (lunge > 0 && rollTime < 0) {
+    // 칼 휘두를 때 앞으로 살짝 (공중에서는 점프 빠르기 그대로)
+    if (lunge > 0 && jumpTime < 0) {
       delta.x += Math.sin(body.facing) * lunge * dt;
       delta.z += Math.cos(body.facing) * lunge * dt;
     }
-    slide(delta);
-    if (rollTime < 0) separate();
+    slide(delta); // 공중에서도 벽·나무·상자는 막음 (넘지 못함)
+    if (jumpTime < 0) separate(); // 공중에서는 미친토끼 위로 지나감
   }
 
   // 벽에 닿으면 미끄러지고, 벽 쪽으로 가던 빠르기는 없앰
@@ -275,8 +290,9 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
       return idleFrame;
     }
     body.updateBody(dt);
-    rollCooldown = Math.max(0, rollCooldown - dt);
-    rollBuffer = Math.max(0, rollBuffer - dt);
+    if (jumpTime < 0) jumpCooldown = Math.max(0, jumpCooldown - dt);
+    jumpBuffer = Math.max(0, jumpBuffer - dt);
+    landTime += dt;
     sinceFire += dt;
 
     // 무기 바꾸기·장전
@@ -296,24 +312,27 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
     const moving = length > MOVE_EPS;
     if (!moving) mx = mz = 0;
 
-    // 구르기
-    if (input.rollPressed) rollBuffer = ROLL_BUFFER;
-    if (rollTime >= 0) {
-      rollTime += dt;
-      if (rollTime >= ROLL.seconds) rollTime = -1;
+    // 점프: 땅에 있고 기다림이 끝났으면 뛰어오름 → seconds 동안 포물선 → 내려옴
+    if (input.jumpPressed) jumpBuffer = JUMP_BUFFER;
+    if (jumpTime >= 0) {
+      jumpTime += dt;
+      if (jumpTime >= JUMP.seconds) land();
     }
-    if (rollBuffer > 0 && rollTime < 0 && rollCooldown <= 0) startRoll(mx, mz);
+    if (jumpBuffer > 0 && jumpTime < 0 && jumpCooldown <= 0) startJump(mx, mz);
+    altitude = jumpTime >= 0 ? JUMP.height * jumpHeight(jumpTime / JUMP.seconds) : 0;
 
     const target = chooseFacing(dt, input, mx, mz, moving);
     move(dt, mx, mz);
 
     // 몸짓
-    const rolling = rollTime >= 0;
+    const jumping = jumpTime >= 0;
     const aimActive = !!(input.aimDir || input.aimPoint || input.fire);
     pose.facing = body.facing;
-    pose.move = rolling ? 0 : Math.min(1, Math.hypot(body.velocity.x, body.velocity.z) / P.speed);
-    pose.aiming = weapons.current === 'blaster' && !rolling && (aimActive || sinceFire < AIM_HOLD);
-    pose.roll = rolling ? Math.min(1, rollTime / ROLL.seconds) : -1;
+    pose.move = jumping ? 0 : Math.min(1, Math.hypot(body.velocity.x, body.velocity.z) / P.speed);
+    pose.aiming = weapons.current === 'blaster' && (aimActive || sinceFire < AIM_HOLD);
+    pose.jump = jumping ? Math.min(1, jumpTime / JUMP.seconds) : -1;
+    pose.altitude = altitude;
+    pose.land = landTime < JUMP.landingSquashSeconds ? 1 - landTime / JUMP.landingSquashSeconds : 0;
     pose.swing = weaponFrame ? weaponFrame.swing : -1;
     pose.swingSide = weaponFrame ? weaponFrame.swingSide : 1;
     pose.recoil = weaponFrame ? weaponFrame.recoil : 0;
@@ -321,14 +340,16 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
     rig.update(dt, pose);
     rig.muzzleWorld(muzzle);
 
-    // 무기 (구르는 동안은 쏘지 않음)
+    // 무기 (공중에서도 쏘고 휘두름. 공중에서 쏜 총알은 날아가며 땅에서 쏠 때 높이로 내려옴)
     weaponFrame = weapons.update(dt, {
-      holding: !rolling && !!input.fire,
-      pressed: !rolling && !!input.firePressed,
+      holding: !!input.fire,
+      pressed: !!input.firePressed,
       position: body.position,
       facing: body.facing,
       muzzle,
       target,
+      settleY: jumping ? AIR_SHOT_HEIGHT : null,
+      lift: altitude, // 공중에서 휘두르면 칼 자국도 그 높이에
     });
     lunge = weaponFrame.lunge;
     if (weaponFrame.fired) {
@@ -352,9 +373,11 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
     weapons.reset();
     syncWeaponModel(true);
     body.facing = Math.PI; // 화면 위쪽(미친토끼 쪽)을 바라봄
-    rollTime = -1;
-    rollCooldown = 0;
-    rollBuffer = 0;
+    jumpTime = -1;
+    jumpCooldown = 0;
+    jumpBuffer = 0;
+    landTime = 99;
+    altitude = 0;
     sinceFire = 99;
     pushBack = 0;
     lunge = 0;
@@ -362,7 +385,9 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
     body.hitStop = 0;
     pose.facing = body.facing;
     pose.move = 0;
-    pose.roll = -1;
+    pose.jump = -1;
+    pose.altitude = 0;
+    pose.land = 0;
     pose.swing = -1;
     pose.recoil = 0;
     pose.hurt = 0;
@@ -372,8 +397,10 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
 
   Object.assign(body, { kind: 'player', rig, weapons, muzzle, update, reset, hitStop: 0 });
   Object.defineProperties(body, {
-    rolling: { get: () => rollTime >= 0, enumerable: true },
-    rollReady: { get: () => (ROLL.cooldown > 0 ? 1 - rollCooldown / ROLL.cooldown : 1), enumerable: true },
+    jumping: { get: () => jumpTime >= 0, enumerable: true },
+    jumpProgress: { get: () => (jumpTime >= 0 ? Math.min(1, jumpTime / JUMP.seconds) : -1), enumerable: true },
+    jumpReady: { get: () => (jumpTime >= 0 ? 0 : JUMP.cooldown > 0 ? 1 - jumpCooldown / JUMP.cooldown : 1), enumerable: true },
+    altitude: { get: () => altitude, enumerable: true },
   });
   reset();
   return body;

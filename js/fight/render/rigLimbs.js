@@ -1,5 +1,5 @@
 // 토끼 팔다리 자세 (rabbitRig.js 가 씀)
-// 몸 전체의 움직임(깡충·구르기·젖히기)은 rabbitRig.js 가 정하고,
+// 몸 전체의 움직임(깡충·점프·젖히기)은 rabbitRig.js 가 정하고,
 // 이 파일은 귀·머리·팔·무기·발·꼬리를 그 순간 상태에 맞게 움직입니다.
 //
 //   const limbs = createRigLimbs(fig, handPart)
@@ -22,6 +22,10 @@ const EAR_LAND_SPLAY = 2.6; // 착지할 때 귀가 옆으로 벌어지는 세�
 const SWING_HALF = 1.45; // 칼 휘두르는 반쪽 각도 (양쪽으로 이만큼)
 const MELEE_REST_TILT = 0.55; // 칼·망치를 들고 있을 때 끝이 위로 들린 각도
 const RECOIL_PUSH = 0.9; // 총 반동으로 무기가 뒤로 밀리는 거리 (칸)
+const EAR_JUMP_BACK = 1.15; // 점프로 솟아오를 때 귀가 뒤로 날리는 각도
+const EAR_JUMP_FLOP = 0.3; // 점프 꼭대기부터 귀가 위로 붕 떠서 살짝 앞으로 넘어오는 각도 (크게 털썩은 착지 때)
+const EAR_APEX_KICK = 2.5; // 점프 꼭대기에서 귀가 앞으로 휙 넘어가는 세기
+const FOOT_TUCK = 1.1; // 점프 중 발을 몸 쪽으로 쏙 접는 높이 (칸)
 const FEET = ['footL', 'footR'];
 
 export function createRigLimbs(fig, handPart) {
@@ -58,6 +62,7 @@ export function createRigLimbs(fig, handPart) {
     tiltTimer: 2 + Math.random() * 3,
     tiltTarget: 0,
     tilt: 0,
+    prevRise: 0,
   };
 
   function setWeapon(node, isGun) {
@@ -91,8 +96,10 @@ export function createRigLimbs(fig, handPart) {
     nod.kick(-5);
   }
 
-  // frame = { dt, t, move, air, speed, accelFwd, yawRate, rolling, swinging, swing, swingSide,
+  // frame = { dt, t, move, air, speed, accelFwd, yawRate, jumping, rise, crouch, land, swinging, swing, swingSide,
   //           windup, slamming, recoil, hurt, stunned, aiming, calm }
+  //   jumping 점프 중, jumpAir 발이 땅에서 떨어짐, rise 1(막 솟음) → 0(꼭대기) → -1(내려오기 직전),
+  //   crouch 0~1 뛰기 직전 웅크림, land 1→0 착지 직후
   function update(f) {
     const { dt, t } = f;
     idleFidget(f);
@@ -100,10 +107,15 @@ export function createRigLimbs(fig, handPart) {
     // ── 귀: 용수철로 출렁, 달리면 뒤로, 화나면 납작, 어지러우면 축 처짐 ──
     let earPitch = -EAR_SPEED_BACK * f.speed - 0.75 * f.windup - 0.3 * f.hurt;
     let earSplay = 0.1 + 0.12 * f.windup;
-    if (f.rolling) {
-      earPitch = -1.2;
-      earSplay = 0.05;
+    if (f.jumpAir) {
+      // 점프: 솟아오를 때는 바람에 뒤로 쭉, 꼭대기부터는 위로 붕 떠서 앞으로 넘어옴 (양옆으로 살짝 벌어짐)
+      earPitch = f.rise > 0 ? -0.2 - EAR_JUMP_BACK * f.rise : EAR_JUMP_FLOP * Math.sqrt(-f.rise);
+      earSplay = f.rise > 0 ? 0.04 : 0.1 + 0.3 * -f.rise;
+      if (s.prevRise > 0 && f.rise <= 0) {
+        for (let i = 0; i < ears.length; i++) ears[i].pitch.kick(EAR_APEX_KICK);
+      }
     }
+    s.prevRise = f.jumpAir ? f.rise : 0;
     if (f.stunned) {
       earPitch = 0.35;
       earSplay = 0.85;
@@ -120,7 +132,7 @@ export function createRigLimbs(fig, handPart) {
 
     // ── 머리: 착지할 때 끄덕, 가만히 있으면 갸웃, 어지러우면 빙글 ──
     let headTarget = f.calm ? 0.025 * Math.sin(t * 2.7 + 0.6) : 0;
-    if (f.rolling) headTarget = 0.5;
+    if (f.jumping) headTarget = (f.rise > 0 ? -0.2 * f.rise : -0.12 * f.rise) + 0.25 * f.crouch; // 오를 때 위를, 내려올 때 땅을 봄
     headTarget += 0.14 * f.windup;
     nod.step(dt, headTarget);
     if (parts.head) {
@@ -186,10 +198,12 @@ export function createRigLimbs(fig, handPart) {
         weaponX = -armX - MELEE_REST_TILT - 1.65 * k;
       }
       rate = 18;
-    } else if (f.rolling) {
-      armX = -1.3;
-      weaponX = 1.3;
-      rate = 25;
+    } else if (f.jumping && !f.aiming) {
+      // 점프: 무기 든 팔도 살짝 옆으로 벌림 (조준 중이면 겨눈 그대로 — 공중에서도 쏨)
+      armX = gun ? -0.55 : -0.7;
+      armZ = 0.4 * (1 - f.crouch);
+      weaponX = gun ? -armX : -armX - MELEE_REST_TILT;
+      rate = 18;
     } else if (f.stunned) {
       armX = 0.15;
       armZ = 0.15 * Math.sin(t * 5);
@@ -215,16 +229,16 @@ export function createRigLimbs(fig, handPart) {
 
   function poseOtherLimbs(f) {
     const { dt, t } = f;
-    // 왼팔: 뛸 때 파닥, 총 조준할 때 받쳐 줌, 구를 때 오므림
+    // 왼팔: 뛸 때 파닥, 총 조준할 때 받쳐 줌, 점프할 때 옆으로 활짝
     let armLX = -0.15 - 0.45 * f.air;
     let armLZ = 0.12 + 0.5 * f.air;
     if (gun && f.aiming) {
       armLX = -1.0;
       armLZ = -0.3;
     }
-    if (f.rolling) {
-      armLX = -1.4;
-      armLZ = 0;
+    if (f.jumping) {
+      armLX = -0.45 - 0.35 * f.crouch;
+      armLZ = (0.7 + 0.2 * Math.max(0, -f.rise)) * (1 - f.crouch);
     }
     if (f.windup > 0 && !gun) armLZ = 0.55 * f.windup;
     if (f.stunned) {
@@ -235,25 +249,30 @@ export function createRigLimbs(fig, handPart) {
     s.armLZ = approach(s.armLZ, armLZ, 16, dt);
     if (armL) armL.rotation.set(s.armLX, 0, armLSide * s.armLZ);
 
-    // 발: 공중에서 뒤로 쏙, 구를 때 오므림, 어지러우면 비틀
+    // 발: 공중에서 뒤로 쏙, 점프할 때는 차고 올라 → 쏙 접었다 → 땅을 향해 내밂, 어지러우면 비틀
     for (let i = 0; i < FEET.length; i++) {
       const foot = parts[FEET[i]];
       if (!foot) continue;
       let fx = 0.75 * f.air;
       let fy = 0.3 * f.air;
-      if (f.rolling) {
-        fx = -0.9;
-        fy = 0.8;
+      if (f.jumpAir) {
+        const g = (1 - f.rise) / 2; // 0 막 솟음 → 1 땅에 닿기 직전
+        fx = 0.9 - 1.25 * g;
+        fy = FOOT_TUCK * (1 - f.rise * f.rise);
+      } else if (f.jumping) {
+        fx = 0; // 웅크리는 동안은 발바닥을 땅에 꾹
+        fy = 0;
       }
       if (f.stunned) fx = 0.2 * Math.sin(t * 6 + i * Math.PI);
       foot.rotation.x = approach(foot.rotation.x, fx, 25, dt);
       foot.position.y = approach(foot.position.y, restFootY[FEET[i]] + fy, 25, dt);
     }
 
-    // 꼬리: 살랑살랑
+    // 꼬리: 살랑살랑 (점프 중에는 공중에서 신나게)
     if (parts.tail) {
-      parts.tail.rotation.y = Math.sin(t * 15) * 0.35 * Math.max(f.move, f.air) + Math.sin(t * 2.1) * 0.1;
-      parts.tail.rotation.x = -0.35 * f.air;
+      const air = f.jumping ? 1 : f.air;
+      parts.tail.rotation.y = Math.sin(t * 15) * 0.35 * Math.max(f.move, air) + Math.sin(t * 2.1) * 0.1;
+      parts.tail.rotation.x = -0.35 * air;
     }
   }
 
@@ -263,7 +282,7 @@ export function createRigLimbs(fig, handPart) {
       ears[i].splay.reset();
     }
     nod.reset();
-    s.twist = s.armY = s.armZ = s.tilt = s.tiltTarget = 0;
+    s.twist = s.armY = s.armZ = s.tilt = s.tiltTarget = s.prevRise = 0;
   }
 
   return { setWeapon, kickLanding, kickTakeoff, kickHurt, update, reset };

@@ -1,10 +1,10 @@
 // 휴대폰 조작 (왼쪽 움직이기 막대 + 오른쪽 큰 단추들)
 // 왼쪽 반에 손가락을 대면 그 자리에 '움직이기 막대'가 나타납니다.
 // 오른손 엄지 자리에는 단추가 있습니다.
-//   공격 단추 (구르기 왼쪽)
+//   공격 단추 (점프 왼쪽)
 //     누르고 있으면 → 가까운 미친토끼를 자동으로 겨눠 계속 공격 (칼이면 계속 휘두름)
 //     누른 채로 끌면 → 끄는 쪽으로 겨눠 계속 공격 (단추 안의 손잡이가 손가락을 따라감)
-//   구르기 · 장전 · 총⇄칼 바꾸기 단추 → 누르는 순간 바로
+//   점프 · 장전 · 총⇄칼 바꾸기 단추 → 누르는 순간 바로
 // 손가락 여러 개를 동시에 써도 됩니다 (손가락마다 번호로 따로 기억).
 // 휴대폰을 돌리면(세로 ⇄ 가로) 막대와 공격 단추를 놓습니다 → 손가락을 떼고 다시 대면 새 화면에 맞게 시작
 // (창 크기만 바뀔 때, 예를 들어 아이폰 주소창이 숨거나 나타날 때는 놓지 않음)
@@ -13,7 +13,7 @@
 //   const touch = createTouchControls(element, { root, onPress, onTouch })
 //       element: 손가락을 받는 곳 (싸움터 상자 #arena 또는 그 안의 그림판)
 //       root: 막대·단추 그림이 든 곳 (fight.html 의 #touchControls)
-//       onPress(이름)   'roll' | 'switch' | 'reload' (단추) | 'attackStart' (공격 단추를 막 누름)
+//       onPress(이름)   'jump' | 'switch' | 'reload' (단추) | 'attackStart' (공격 단추를 막 누름)
 //       onTouch()       손가락이 닿을 때마다 (휴대폰 조작 모드로 바꾸라는 뜻)
 //   touch.move → { x, z }          움직이기 막대 (길이 0~1, 화면 위쪽 = -z, 오른쪽 = +x)
 //   touch.attacking                공격 단추를 누르고 있음
@@ -181,7 +181,7 @@ export function createTouchControls(element, { root = document.getElementById('t
     if (event.pointerId === attack.pointerId) releaseAttack();
   }
 
-  // ── 다른 단추 (구르기 · 총⇄칼 · 장전): 누르는 순간 바로 ──
+  // ── 다른 단추 (점프 · 총⇄칼 · 장전): 누르는 순간 바로 ──
   function onButtonDown(event) {
     const button = event.currentTarget;
     if (isTouch(event)) onTouch();

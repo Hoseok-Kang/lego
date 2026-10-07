@@ -9,7 +9,7 @@
 //   body.updateBody(dt)       매 장면마다: 반짝임·밀려남·무적 시간 줄이기 → body.knockDelta 계산
 //   body.knockDelta           이번 장면에 밀려나야 할 거리 { x, z } (움직일 때 더해 주기)
 //   body.reset(x, z)          처음 상태로 (다시 하기)
-//   body.extraInvulnerable    () => true 이면 맞지 않음 (구르는 중 등, 주인이 정함)
+//   body.extraInvulnerable    () => true 이면 맞지 않음 (점프 중 등, 주인이 정함)
 //   body.position / velocity / radius / facing / alive / hurt / health / team
 //
 // 맞는 세기·튀는 블록 세기·'펑' 잔해 비율(deathKeep)은 fightConfig.js 의 pop 설정에서 바꿉니다.
