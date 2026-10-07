@@ -1,7 +1,7 @@
 /* 펑펑 토끼 화면 효과 (js/fight/ui/hud.js, floatText.js)
    - 마우스를 따라다니는 분홍 조준점 (장전하는 동안 당근색이 한 바퀴 차오름, 쏠 때 톡)
    - 빨간 화면 테두리 (체력이 적으면 두근두근, 맞으면 번쩍)
-   - 떠오르는 글자 (-10, 펑!, +30, 장전!) — 종류별 색·크기
+   - 떠오르는 글자 (-10, 펑!, +30, 장전!) — 종류별 색·크기 (휴대폰에서는 조금 작게)
    색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다. */
 
 .crosshair {
@@ -188,11 +188,11 @@ body:not(.hud-on) .crosshair,
   color: #ff5c6c;
 }
 
-/* 펑! (토끼가 터짐) */
+/* 펑! (토끼가 터짐) — 화면이 작을수록 작게 (휴대폰 28px ~ 큰 화면 54px), 터지는 블록을 가리지 않게 */
 .float-text[data-kind="pop"] {
-  font-size: 54px;
+  font-size: clamp(28px, 6vmin, 54px);
   color: #fff03a;
-  -webkit-text-stroke: 7px var(--float-outline);
+  -webkit-text-stroke: clamp(4px, 0.8vmin, 7px) var(--float-outline);
   text-shadow: 0 4px 0 var(--float-outline), 0 0 24px rgb(255 105 143 / 0.8);
 }
 
@@ -214,6 +214,26 @@ body:not(.hud-on) .crosshair,
   font-size: 20px;
   color: #9fc3e9;
   -webkit-text-stroke: 4px var(--float-outline);
+}
+
+/* 휴대폰(좁거나 낮은 화면): 작아진 토끼를 글자가 덮지 않게 조금 작게 (종류별 크기 차이는 그대로) */
+@media (max-width: 640px), (max-height: 500px) {
+  .float-text {
+    font-size: 18px;
+    -webkit-text-stroke-width: 4px;
+  }
+
+  .float-text[data-kind="big"] {
+    font-size: 22px;
+  }
+
+  .float-text[data-kind="hurt"] {
+    font-size: 21px;
+  }
+
+  .float-text[data-kind="heal"] {
+    font-size: 22px;
+  }
 }
 
 /* 영상 녹화(?capture) 화면에서는 조준점을 숨김 */

@@ -6,6 +6,8 @@
 //     누른 채로 끌면 → 끄는 쪽으로 겨눠 계속 공격 (단추 안의 손잡이가 손가락을 따라감)
 //   구르기 · 장전 · 총⇄칼 바꾸기 단추 → 누르는 순간 바로
 // 손가락 여러 개를 동시에 써도 됩니다 (손가락마다 번호로 따로 기억).
+// 휴대폰을 돌리면(세로 ⇄ 가로) 막대와 공격 단추를 놓습니다 → 손가락을 떼고 다시 대면 새 화면에 맞게 시작
+// (창 크기만 바뀔 때, 예를 들어 아이폰 주소창이 숨거나 나타날 때는 놓지 않음)
 // 이 파일은 js/fight/core/input.js 가 만들어 씁니다. (게임은 input.state 만 읽으면 됨)
 //
 //   const touch = createTouchControls(element, { root, onPress, onTouch })
@@ -212,6 +214,19 @@ export function createTouchControls(element, { root = document.getElementById('t
   // 아이폰: 두 손가락 확대·두 번 톡 확대 막기
   listen(document, 'gesturestart', preventDefault);
   listen(document, 'dblclick', preventDefault);
+
+  // 화면을 돌리면 막대·공격 단추를 놓음 (막대 가운데가 옛 화면 자리에 남아 엉뚱한 쪽으로 달리지 않게)
+  // 창 크기 바뀜(resize)이 아니라 세로 ⇄ 가로가 진짜 바뀔 때만 (주소창이 숨을 때 달리던 손가락이 끊기지 않게)
+  function releaseOnRotate() {
+    if (moveStick.pointerId !== null) releaseMove();
+    if (attack.pointerId !== null) releaseAttack();
+  }
+  const portrait = safely(() => globalThis.matchMedia?.('(orientation: portrait)'));
+  if (portrait?.addEventListener) listen(portrait, 'change', releaseOnRotate, { passive: true });
+  else if (portrait?.addListener) {
+    portrait.addListener(releaseOnRotate); // 옛 아이폰(사파리 13 이하)
+    cleanups.push(() => portrait.removeListener(releaseOnRotate));
+  }
 
   function setEnabled(on) {
     enabled = !!on;

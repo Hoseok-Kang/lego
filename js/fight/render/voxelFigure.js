@@ -17,8 +17,8 @@
 //   fig.popBlocks(n) → [{ position, color }]   귀 끝부터 n개 떼어 냄 (세상 좌표, 부서진 조각용)
 //                                    귀를 다 떼었으면 몸통·무기가 아닌 블록을 아무거나
 //   fig.restoreBlocks(n) → 다시 붙인 수        마지막에 떼어 낸 블록부터 위에서 톡 떨어져 다시 붙음
-//   fig.explode() → [{ position, color }]      보이는 블록 전부 (무기 포함) 떼어 냄 ('펑!')
-//   fig.reset()                      모든 블록을 다시 보이게 (다시 하기)
+//   fig.explode() → [{ position, color }]      보이는 블록 전부 (무기 포함) 떼어 냄 ('펑!') — 그 뒤로는 아예 그리지 않음
+//   fig.reset()                      모든 블록을 다시 보이게 (다시 하기, 다 터진 인형도 다시 그림)
 //   fig.animate(dt)                  다시 붙는 블록 모션 진행
 //   fig.setFlash(정도 0~1, 색='#FFFFFF')   몸 전체를 잠깐 물들이기 (바뀔 때만 색을 다시 보냄)
 //   fig.setVisible(참/거짓) ; fig.dispose()
@@ -112,7 +112,7 @@ export function createVoxelFigure(scene, modelDef, { castShadow = true, scale = 
     batch = createBlockBatch(size, { castShadow, receiveShadow: true });
     batch.bodies.name = 'voxelFigureBlocks';
     batch.bodies.count = total;
-    batch.bodies.visible = visible;
+    batch.bodies.visible = visible && !exploded;
     scene.add(batch.bodies);
     if (oldBatch) {
       scene.remove(oldBatch.bodies);
@@ -223,6 +223,7 @@ export function createVoxelFigure(scene, modelDef, { castShadow = true, scale = 
     exploded = true;
     needsWrite = true;
     update();
+    batch.bodies.visible = false; // 다 터진 토끼는 그리지 않음 (그림자까지 두 번 그리던 빈 블록 묶음을 쉼)
     return list;
   }
 
@@ -237,6 +238,7 @@ export function createVoxelFigure(scene, modelDef, { castShadow = true, scale = 
     exploded = false;
     needsWrite = true;
     update();
+    batch.bodies.visible = visible; // 터져서 숨겼던 블록 묶음을 다시 그림
   }
 
   function setFlash(amount, hex = '#FFFFFF') {
@@ -298,7 +300,7 @@ export function createVoxelFigure(scene, modelDef, { castShadow = true, scale = 
   function setVisible(value) {
     visible = !!value;
     root.visible = visible;
-    batch.bodies.visible = visible;
+    batch.bodies.visible = visible && !exploded; // 다 터진 인형은 보이게 해도 그리지 않음 (reset 하면 다시 그림)
     if (visible) {
       needsWrite = true;
       update();

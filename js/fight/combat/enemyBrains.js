@@ -212,7 +212,7 @@ export function becomeAlert(e, ctx, spread) {
   e.state = 'alert';
   e.stateTime = 0;
   e.ai.wakeDelay = -1;
-  ctx.fx?.alert?.(() => e.position, ALERT_SHOW, e.alertLift);
+  ctx.fx?.alert?.(() => (e.alive ? e.position : null), ALERT_SHOW, e.alertLift); // 터지면 '!' 도 바로 숨김
   ctx.events?.emit('enemyAlert', { enemy: e });
   if (spread) ctx.wakeFriends(e);
 }

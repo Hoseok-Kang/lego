@@ -6,8 +6,8 @@ export function startFrameLoop(tick) {
   function frame(now) {
     const dt = Math.min(0.1, (now - last) / 1000); // 탭을 잠깐 떠났다 와도 한 번에 튀지 않게
     last = now;
+    requestAnimationFrame(frame); // 다음 장면을 먼저 예약 → 한 장면에서 오류가 나도 게임이 멈추지 않음
     tick(dt);
-    requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 }

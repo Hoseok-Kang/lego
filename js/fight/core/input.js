@@ -8,7 +8,9 @@
 //   input.state = {
 //       move: { x, z }            움직일 방향 (길이 0~1, 대각선도 1을 넘지 않음. 화면 위쪽 = -z)
 //       aimPoint: Vector3 | null  마우스가 가리키는 땅 위치 (총알 높이 AIM_HEIGHT). 휴대폰에서는 null
-//       aimDir: { x, z } | null   휴대폰 공격 단추를 끈 방향. 끌지 않았거나 컴퓨터에서는 null
+//       aimDir: { x, z } | null   휴대폰 공격 단추를 끈 방향 (땅 위 방향, 길이 1). 끌지 않았거나 컴퓨터에서는 null
+//                                 카메라가 비스듬히 내려다봐서 화면 위아래가 짧아 보이므로, 끈 방향을 땅 방향으로 되돌려 줌
+//                                 (그래서 대각선으로 끌어도 총알이 손가락 쪽으로 날아가 보임)
 //       fire                      공격 버튼을 누르고 있음
 //       firePressed               이번 장면에 막 누름
 //       autoAim                   가까운 미친토끼를 자동으로 겨누기 (휴대폰 공격 단추를 끌지 않고 누름)
@@ -35,6 +37,7 @@ import { FIGHT } from '../fightConfig.js';
 
 const AIM_HEIGHT = 4.5 * FIGHT.figureScale; // 총알이 날아가는 높이 (총구 높이). 마우스가 가리키는 곳을 이 높이의 평면에서 찾음
 const WHEEL_GAP = 0.15; // 마우스 휠이 이 시간(초) 동안 조용해야 다음 무기 바꾸기 (트랙패드가 여러 번 바꾸지 않게)
+const AIM_TILT = Math.sin((FIGHT.camera.pitchDeg * Math.PI) / 180); // 비스듬히 내려다봐서 화면 위아래가 짧아 보이는 만큼 되돌림
 
 // 움직이는 키 → [x, z]
 const MOVE_KEYS = {
@@ -86,6 +89,7 @@ export function createInput(element, { screenToGround = null, touchRoot = docume
   const heldKeys = new Set();
   const mouse = { x: 0, y: 0, seen: false, buttons: 0, fire: false };
   const aimOut = new THREE.Vector3();
+  const touchAim = { x: 0, z: 0 }; // 공격 단추를 끈 방향 → 땅 위 방향 (돌려 씀)
   let override = null;
   let enabled = true;
   let lastWheel = -Infinity;
@@ -233,7 +237,7 @@ export function createInput(element, { screenToGround = null, touchRoot = docume
       state.autoAim = false;
     } else if (state.usingTouch) {
       state.aimPoint = null;
-      state.aimDir = touch.aimDir;
+      state.aimDir = groundAimFromDrag(touch.aimDir);
       state.fire = touch.attacking;
       state.autoAim = !touch.aiming && (touch.attacking || edges.attackTap);
     } else {
@@ -251,6 +255,16 @@ export function createInput(element, { screenToGround = null, touchRoot = docume
     state.slot = edges.slot;
     applyOverride();
     return state;
+  }
+
+  // 화면에서 끈 방향 → 땅 위 방향: 화면 위아래(z)는 비스듬히 보여 짧아 보이므로 AIM_TILT 로 나눠 늘린 뒤 길이 1로
+  function groundAimFromDrag(drag) {
+    if (!drag) return null;
+    const z = drag.z / AIM_TILT;
+    const length = Math.hypot(drag.x, z) || 1;
+    touchAim.x = drag.x / length;
+    touchAim.z = z / length;
+    return touchAim;
   }
 
   function applyOverride() {

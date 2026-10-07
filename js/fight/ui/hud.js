@@ -91,6 +91,7 @@ export function createHud({ sounds = null } = {}) {
       if (!block) return;
       const gone = order < EAR_BLOCKS - visible;
       if (gone === block.classList.contains('is-gone')) return;
+      if (gone) block.classList.remove('is-back'); // 다시 붙은 표시를 떼야 톡 날아가는 움직임이 이김 (안 떼면 귀가 그대로 보임)
       block.classList.toggle('is-gone', gone);
       if (!gone) replay(block, 'is-back');
     });

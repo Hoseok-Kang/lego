@@ -1,7 +1,7 @@
 // 미친토끼 무리 (만들기, 매 장면 움직이기, 다시 하기)
 // fightConfig.js 의 enemies.spawns 자리에 칼·총·망치 미친토끼를 세우고, 매 장면 머리(enemyBrains.js)를 돌립니다.
 // 맞는 것·귀가 터지는 것·'펑'은 fighterBody.js 가 내 토끼와 똑같이 처리합니다.
-// 맞으면 쉬고 있던 토끼도 깨어나고('!'), 깨어난 토끼는 근처 친구를 차례로 깨웁니다.
+// 맞으면 쉬고 있던 토끼도 깨어나고('!'), 깨어난 토끼는 근처(fightConfig.js 의 enemies.wakeRadius) 친구를 차례로 깨웁니다.
 // 한꺼번에 공격 준비를 하는 토끼는 칼·망치 토끼 최대 MAX_MELEE 마리, 총 토끼 최대 MAX_RANGED 마리
 // (동시에 너무 많이 덤비지 않게 — 차례를 기다리는 칼 토끼는 옆에서 빙빙 돎).
 //
@@ -37,10 +37,12 @@ const WEAPON_OF = { knife: 'knife', gunner: 'enemyGun', brute: 'hammer' }; // �
 const KNOCK_TAKEN = { knife: 1, gunner: 1, brute: 0.45 }; // 맞고 밀리는 정도 (망치 토끼는 무거워서 덜 밀림)
 const MAX_MELEE = 2; // 동시에 공격 준비·공격하는 칼·망치 토끼 최대 수
 const MAX_RANGED = 1; // 동시에 쏘는 총 토끼 최대 수 (번갈아 쏴서 총알을 보고 피하기 쉽게)
-const WAKE_RADIUS = 28; // 깨어난 토끼가 이 거리 안의 친구를 깨움 (칸)
-const DUST_MIN = 0.5; // 이보다 세게 착지할 때만 먼지 (쉴 때 살살 뛰는 것은 먼지 없음)
+const WAKE_RADIUS = E.wakeRadius; // 친구 깨우는 거리 (fightConfig.js 의 enemies.wakeRadius)
+const DUST_MIN = 0.75; // 깡충 세기(0~1, 토끼 크기와 상관없이)가 이보다 셀 때만 착지 먼지 (쉴 때 살살 걷는 것은 먼지 없음)
 const DUST_SIZE = 0.7; // 착지 먼지 크기 비율
 const ALERT_ABOVE = 1; // '!' 를 귀 끝보다 이만큼 위에 (칸)
+const ENEMY_HURT_HEX = '#FFF03A'; // 맞으면 연노랑으로 반짝 (하양은 내 토끼 색이라 헷갈리지 않게)
+const ENEMY_FLASH_MAX = 0.55; // 맞았을 때 반짝임 최대 세기 (원래 색이 비쳐 보이게)
 
 export function createEnemies(scene, { collision, bullets, fx = null, debris, events, view = null, player }) {
   const list = [];
@@ -57,8 +59,11 @@ export function createEnemies(scene, { collision, bullets, fx = null, debris, ev
     const rig = createRabbitRig(scene, model, {
       weapon: createWeaponModel(WEAPON_OF[kind]),
       scale,
+      hurtHex: ENEMY_HURT_HEX,
+      flashMax: ENEMY_FLASH_MAX,
+      // strength = 깡충 세기 × 토끼 크기 → 기준도 크기만큼 곱해서 견줌 (작은 토끼도 세게 뛰면 먼지)
       onLand: (position, strength) => {
-        if (strength > DUST_MIN) fx?.dust?.(position, strength * DUST_SIZE);
+        if (strength > DUST_MIN * scale) fx?.dust?.(position, strength * DUST_SIZE);
       },
     });
     const body = createFighterBody({ team: 'enemy', rig, maxHp: cfg.maxHp, radius: cfg.radius, debris, fx, events, view });

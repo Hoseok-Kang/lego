@@ -6,15 +6,18 @@
 //   marks.alert(followFn, 초, 올림 = ALERT_LIFT)   followFn() → Vector3 : '!' 아래쪽이 떠 있을 자리
 //                                   바닥 위치(y < 1, 예: fighter.position)를 주면 '올림' 칸만큼 머리 위로 올려 줌
 //                                   (큰 토끼는 올림 = ALERT_LIFT × 크기 로 주면 됨)
+//                                   followFn() 이 null 을 돌려주면 그 장면에는 숨김 (예: 토끼가 터짐)
+//                                   '!' 블록 크기는 fightConfig.js 의 figureScale 을 따라감 (토끼가 작으면 '!' 도 작게)
 //   marks.aimLine(from, to, 보이기)  from → to 점선 (매 장면 불러 줌, 보이기 false 면 숨김)
 //   marks.update(dt) ; marks.clear()
 
 import * as THREE from '../../lib/three.js';
 import { getBlockAssets } from '../../game/core/blockAssets.js';
+import { FIGHT } from '../fightConfig.js';
 
 const ALERT_HEX = '#C91A09'; // '!' 색 (빨강)
 const ALERT_SHINE_HEX = '#FF698F'; // '!' 위쪽 반짝 색 (코랄)
-const ALERT_BLOCK = 0.95; // '!' 블록 하나 크기
+const ALERT_BLOCK = 1.2 * (FIGHT.figureScale ?? 1); // '!' 블록 하나 크기 (토끼 크기에 맞춤: 0.5 → 0.6칸, '!' 키 약 3.6칸)
 const ALERT_LIFT = 19; // 바닥 위치를 받았을 때 머리 위로 올리는 높이
 const ALERT_POP = 0.22; // 뿅 튀어나오는 시간
 const ALERT_HIDE = 0.16; // 작아지며 사라지는 시간

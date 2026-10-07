@@ -34,7 +34,7 @@ const KINDS = {
 export function createFloatText(layerElement, worldToScreen) {
   const items = [];
   const screen = { x: 0, y: 0, visible: false };
-  const view = { width: 0, height: 0 }; // 화면 크기 (장면마다 한 번만 읽음)
+  const view = { width: 0, height: 0 }; // 화면 크기: 처음 한 번과 창 크기가 바뀔 때만 읽음 (매 장면 읽으면 브라우저가 화면 배치를 다시 계산해 느려짐)
   let nextSteal = 0;
 
   for (let i = 0; i < POOL_SIZE; i++) {
@@ -62,7 +62,6 @@ export function createFloatText(layerElement, worldToScreen) {
     item.node.textContent = String(text);
     item.node.dataset.kind = kind;
     layerElement.append(item.node); // 새 글자가 맨 위에 보이게
-    measure();
     place(item);
     return item;
   }
@@ -72,8 +71,10 @@ export function createFloatText(layerElement, worldToScreen) {
     view.height = window.innerHeight;
   }
 
+  measure();
+  window.addEventListener('resize', measure, { passive: true });
+
   function update(dt) {
-    measure();
     for (const item of items) {
       if (!item.active) continue;
       item.age += dt;

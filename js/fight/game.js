@@ -18,6 +18,11 @@
 //
 // 멈칫(hit-stop): 칼로 맞히거나 미친토끼가 펑 하면 아주 잠깐 시간이 멈춤 (최대 fightConfig.js 의 hitStopMax)
 // 찾아오기: 깨어 있는 미친토끼가 하나도 없이 enemies.huntAfter 초가 지나면 가장 가까운 토끼가 내 토끼를 찾아옴
+// 이긴 뒤('won')에는 아직 날아가던 적 총알이 내 토끼를 맞히지 않음 (결과 화면의 남은 체력 = 정보판 체력)
+// 멈춘 동안에는 카메라가 멈추기 직전의 조준 쪽을 그대로 봄 (멈춤 화면 뒤에서 화면이 미끄러지지 않게)
+// 휴대폰 터치 중이면 매 장면 카메라에 '화면 아래 조작 단추 높이'(fightConfig.js 의 camera.touchBottomPx)를 알려 줌
+//   → 내 토끼가 단추 밑에 숨지 않게 카메라가 조금 더 따라감
+// 처음 띄울 때 효과 셰이더를 미리 한 번 만들어 둠 (첫 총·첫 칼·첫 망치 때 멈칫하지 않게, 화면에는 남지 않음)
 // 떠오르는 글자·당근 떨어뜨리기·기록 세기는 fightFeedback.js, 싸움터 부품 만들기·다시 차리기는 fightWorld.js
 // 결과 화면이 뜨기까지의 시간 등 진행 느낌은 아래 상수에서 바꿉니다.
 
@@ -62,6 +67,7 @@ export function createFightGame({ container, capture = false }) {
   let autopilot = null;
   let soundArmed = false;
   const aimDir = { x: 0, z: 0 };
+  let pausedAim = null; // 멈출 때의 조준 방향 (멈춘 동안 화면이 뒤에서 미끄러지지 않게 그대로 씀)
 
   connectFightFeedback({ world, hud, floats, stats, hitStop: requestHitStop });
 
@@ -108,6 +114,8 @@ export function createFightGame({ container, capture = false }) {
 
   function pause() {
     if (state.phase !== 'play') return;
+    const aim = cameraAim(); // 조작을 끄기 전에 지금 조준 방향을 기억
+    pausedAim = aim ? { x: aim.x, z: aim.z } : null;
     state.phase = 'paused';
     stopInput();
     overlays.showPause(resume, restart);
@@ -182,6 +190,9 @@ export function createFightGame({ container, capture = false }) {
     // 멈칫 중에는 '막 누름' 을 지우지 않고 다음 장면으로 넘김 (누른 것이 사라지지 않게)
     if (simDt > 0 || state.phase !== 'play') input.endFrame();
 
+    // 휴대폰 터치 중이면 화면 아래 조작 단추 높이만큼 비켜서 내 토끼를 보여 줌 (세로·가로 화면마다 다름)
+    const touchBottom = FIGHT.camera.touchBottomPx;
+    view.setSafeBottomPx?.(input.state.usingTouch && touchBottom ? touchBottom[stage.camera.aspect < 1 ? 'portrait' : 'landscape'] : 0);
     view.update(dt, { target: player.position, aimDir: cameraAim() });
     updateAimLine();
     syncHud();
@@ -192,7 +203,8 @@ export function createFightGame({ container, capture = false }) {
     const frame = player.update(dt, state.phase === 'play' ? input.state : IDLE_INPUT);
     if (frame?.hitStop > 0) requestHitStop(frame.hitStop);
     enemies.update(dt);
-    bullets.update(dt, world.fighters());
+    // 이긴 뒤에는 남은 적 총알이 내 토끼를 맞히지 않음 (결과 화면의 남은 체력이 정보판과 같게)
+    bullets.update(dt, state.phase === 'won' ? enemies.list : world.fighters());
     pickups.update(dt, player);
     props.update(dt);
     debris.update(dt);
@@ -236,6 +248,7 @@ export function createFightGame({ container, capture = false }) {
 
   // 화면을 조준 쪽으로 미리 옮길 방향 (마우스는 멀수록 많이, 터치 막대는 기울인 만큼)
   function cameraAim() {
+    if (state.phase === 'paused') return pausedAim; // 멈춘 동안은 멈출 때의 방향 그대로
     if (state.phase !== 'play' || !player.alive) return null;
     const s = input.state;
     if (s.aimDir && (s.aimDir.x || s.aimDir.z)) return s.aimDir;
@@ -300,8 +313,30 @@ export function createFightGame({ container, capture = false }) {
     },
   };
 
+  // 효과 셰이더 미리 만들기 (첫 총·첫 칼·첫 망치 때 멈칫하지 않게): 효과를 한 번 띄워 그리고 바로 치움
+  // 불티·연기는 fx.update 에서 보이게 되므로 꼭 한 번 update 한 뒤 그림. 조준 점선도 함께.
+  // 그린 뒤 compile 로 아직 숨어 있는 것(망치 충격 고리 등)의 셰이더도 만들어 둠
+  // 다 치운 뒤 한 번 더 그려서 화면(그림판)에도 효과가 남지 않게 함
+  function warmUpEffects() {
+    const at = player.position.clone().setY(3);
+    fx.muzzleFlash(at, 0);
+    fx.hitSpark(at);
+    fx.slashArc(player.position, 0, 2.6, 6, 1);
+    const ring = fx.telegraph(player.position, 6, 0.8);
+    fx.popRing(player.position, 0.5);
+    fx.aimLine(player.muzzle, { x: at.x + 6, y: at.y, z: at.z }, true);
+    fx.update(1 / 60);
+    stage.render();
+    stage.renderer.compile(stage.scene, stage.camera);
+    ring.cancel();
+    fx.clear();
+    fx.aimLine(null, null, false);
+    stage.render();
+  }
+
   // 처음: 싸움터를 차려 두고 처음 화면을 띄움
   resetRound();
+  warmUpEffects();
   input.setEnabled(false);
   overlays.showTitle(startGame);
   document.getElementById('bootMessage')?.setAttribute('hidden', '');

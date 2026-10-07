@@ -11,6 +11,7 @@
 //   stage.sun / stage.smallScreen                       햇빛 / 작은 화면(휴대폰)인지
 //
 // 바닥판 크기·색은 fightConfig.js 의 map, 바닥판 두께는 mapLayout.js 의 plateThickness,
+// 화면 선명도 최대 배율은 fightConfig.js 의 map.maxPixelRatio (휴대폰이 버벅이면 낮춤),
 // 빛의 세기·방향은 아래 상수에서 바꿉니다.
 
 import * as THREE from '../../lib/three.js';
@@ -30,7 +31,7 @@ const OUTSIDE_STUD_SHADE = 0.22; // 바깥 땅 돌기 무늬의 밝고 어두운
 
 export function createFightStage(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, FIGHT.map.maxPixelRatio ?? 2)); // 선명도 최대 배율 (fightConfig.js)
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.NeutralToneMapping;
@@ -76,10 +77,11 @@ export function createFightStage(container) {
   scene.add(ground.group);
 
   // 바닥판 바깥의 낮은 땅 (바닥판 밑면 높이). 돌기 무늬 그림을 깔아서 장난감 판처럼 보이게
+  // 바깥 땅은 반짝일 필요가 없어서 가벼운 재질 (휴대폰 화면의 넓은 부분을 덮으므로 그리기가 가벼워짐, 그림자는 그대로 받음)
   const studs = createStudTexture(renderer);
   const outside = new THREE.Mesh(
     new THREE.PlaneGeometry(OUTSIDE_SIZE, OUTSIDE_SIZE),
-    new THREE.MeshStandardMaterial({ color: outsideColor, map: studs, roughness: 0.85, metalness: 0 }),
+    new THREE.MeshLambertMaterial({ color: outsideColor, map: studs }),
   );
   outside.rotation.x = -Math.PI / 2;
   outside.position.y = -thickness - 0.002;

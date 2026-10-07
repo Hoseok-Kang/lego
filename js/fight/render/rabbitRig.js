@@ -1,10 +1,13 @@
 // 토끼 몸짓 (귀엽고 통통 튀는 움직임)
 // 블록 인형(voxelFigure.js) 위에 깡충 뛰기, 귀 출렁임, 숨쉬기, 무기 들기, 칼 휘두르기, 구르기,
-// 공격 준비(웅크리며 빨갛게 떨기), 맞았을 때 하얗게 반짝이며 뒤로 젖히기, 어지러워 비틀거리기를 입힙니다.
+// 공격 준비(웅크리며 빨갛게 떨기), 맞았을 때 반짝이며 뒤로 젖히기, 어지러워 비틀거리기를 입힙니다.
 // 몸 전체 움직임은 이 파일, 귀·팔·무기·발·꼬리 자세는 rigLimbs.js 가 맡습니다.
 //
-//   const rig = createRabbitRig(scene, modelDef, { weapon: 무기설계도|null, scale = 1, onLand })
+//   const rig = createRabbitRig(scene, modelDef, { weapon: 무기설계도|null, scale = 1, onLand, hurtHex, flashMax = 1 })
 //     onLand(위치, 세기)   깡충 뛰다 땅에 닿을 때마다 (예: fx.dust 연결, 없어도 됨)
+//                          세기 = 깡충 세기(0~1) × scale (토끼 크기만큼 작아짐)
+//     hurtHex             맞았을 때 반짝이는 색 (없으면 HURT_HEX)
+//     flashMax            맞았을 때 반짝임 최대 세기 0~1 (작을수록 원래 색이 비쳐 보임)
 //   rig.setWeapon(무기설계도|null)     손에 든 무기 바꾸기 (weaponArt.js 의 createWeaponModel 결과)
 //   rig.update(dt, pose)              매 장면 한 번. pose = {
 //       position (Vector3, 발밑), facing (바라보는 각도), move 0~1 (빠르기 비율), aiming (조준 중),
@@ -40,10 +43,13 @@ const WINDUP_SHAKE = 0.14; // 공격 준비할 때 덜덜 떠는 크기 (칸)
 const RELEASE_SECONDS = 0.34; // 준비 뒤 내려치기/찌르기 모션 시간
 const RUN_SPEED = 12; // 이 빠르기(초당 칸)면 귀가 가장 많이 뒤로 넘어감
 const TELEPORT = 8; // 한 장면에 이보다 멀리 옮겨지면 순간이동으로 봄 (귀가 갑자기 휙 넘어가지 않게)
-const HURT_HEX = '#F4F4F4'; // 맞았을 때 반짝이는 색
+const HURT_HEX = '#F4F4F4'; // 맞았을 때 반짝이는 기본 색 (토끼마다 hurtHex 로 바꿀 수 있음)
 const WINDUP_HEX = '#C91A09'; // 공격 준비할 때 물드는 색
+const WINDUP_TINT = 0.35; // 공격 준비 때 빨갛게 물드는 기본 세기
+const WINDUP_PULSE = 0.25; // 공격 준비 때 깜빡이며 더해지는 세기
+const WINDUP_HURT_SHARE = 0.5; // 공격 준비 중에 맞으면 빨강이 (맞은 반짝임 × 이 비율)까지 잠깐 더 밝아짐
 
-export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onLand = null } = {}) {
+export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onLand = null, hurtHex = HURT_HEX, flashMax = 1 } = {}) {
   const fig = createVoxelFigure(scene, modelDef, { scale, parents: PARENTS });
   const { parts, root } = fig;
   const hand = modelDef.hand || { part: 'armR', at: fig.pivots.armR || [0, 0, 0] };
@@ -229,11 +235,14 @@ export function createRabbitRig(scene, modelDef, { weapon = null, scale = 1, onL
 
     limbs.update(f);
 
-    // 반짝임: 맞으면 하얗게, 공격 준비 중이면 빨갛게 깜빡
-    // 맞은 순간만 확 하얗게 (제곱 → 빨리 빠짐: 총을 계속 맞아도 색과 귀가 보이게)
-    const hurtFlash = Math.min(1, hurt * hurt * 1.15);
-    if (hurtFlash > 0.02) fig.setFlash(hurtFlash, HURT_HEX);
-    else if (windup > 0) fig.setFlash(windup * (0.22 + 0.2 * (0.5 + 0.5 * Math.sin(t * 30))), WINDUP_HEX);
+    // 반짝임: 공격 준비 중이면 빨갛게 깜빡, 아니면 맞았을 때 hurtHex 색으로 반짝
+    // 공격 준비 빨강이 먼저 — 맞아도 가려지지 않게, 맞으면 빨강이 잠깐 더 밝아짐
+    // 맞은 순간만 확 반짝 (제곱 → 빨리 빠짐: 총을 계속 맞아도 색과 귀가 보이게), flashMax 보다 세지 않게
+    const hurtFlash = Math.min(flashMax, hurt * hurt * 1.15);
+    if (windup > 0) {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 30);
+      fig.setFlash(Math.max(hurtFlash * WINDUP_HURT_SHARE, windup * (WINDUP_TINT + WINDUP_PULSE * pulse)), WINDUP_HEX);
+    } else if (hurtFlash > 0.02) fig.setFlash(hurtFlash, hurtHex);
     else fig.setFlash(0);
 
     fig.animate(dt);

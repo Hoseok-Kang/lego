@@ -24,7 +24,8 @@ import { createPlayer } from './combat/player.js';
 import { createEnemies } from './combat/enemies.js';
 import { createPickups } from './combat/pickups.js';
 
-const RUBBLE_JITTER = 0.05; // 잔해가 눕는 높이를 자리마다 0 ~ 이만큼 다르게 (겹친 블록 윗면 깜빡임 막기, 눈에는 안 보임)
+const DEBRIS_INSET = 0.5; // 조각이 바닥판 끝에서 이만큼(칸) 안쪽에서 튕겨 돌아옴
+const RUBBLE_JITTER = 0.05; // 잔해가 눕는 높이를 자리마다 0 ~ 이만큼 다르게 (겹친 블록 윗면 깜빡임 막기, 눈에는 안 보임. 쌓기를 끈 때만)
 
 export function createFightWorld(container) {
   const stage = createFightStage(container);
@@ -34,6 +35,7 @@ export function createFightWorld(container) {
   const view = createFollowCamera(stage.camera, stage.renderer.domElement, cameraConfig);
   const fitCamera = (width, height) => {
     cameraConfig.minHalfWidth = width < height ? (FIGHT.camera.portraitHalfWidth ?? FIGHT.camera.minHalfWidth) : FIGHT.camera.minHalfWidth;
+    view.refreshRect(); // 화면 크기가 바뀔 때만 캔버스 위치·크기를 다시 읽음 (카메라는 매 장면 읽지 않음)
   };
   fitCamera(container.clientWidth, container.clientHeight);
   stage.onResize(fitCamera);
@@ -44,14 +46,18 @@ export function createFightWorld(container) {
   const halfD = FIGHT.map.depth / 2;
   const collision = createCollisionWorld({ bounds: { minX: -halfW, maxX: halfW, minZ: -halfD, maxZ: halfD } });
 
-  const debris = createDebris(scene, FIGHT.debris);
+  // 날아가는 조각은 바닥판 끝(조금 안쪽)에서 튕겨 돌아옴 → 내 토끼가 울타리 옆에서 터져도 잔해가 바깥 땅에 떨어지지 않음
+  const debrisBounds = { minX: -halfW + DEBRIS_INSET, maxX: halfW - DEBRIS_INSET, minZ: -halfD + DEBRIS_INSET, maxZ: halfD - DEBRIS_INSET };
+  const debris = createDebris(scene, { ...FIGHT.debris, bounds: debrisBounds }); // FIGHT.debris.stack (블록 더미 쌓기) 도 함께 넘어감
   const props = createProps(scene, { collision, debris, events });
-  // 조각이 떨어질 바닥 높이: 돌담 위는 돌담 위, 바닥판 밖으로 날아간 조각은 한 칸 낮은 바깥 땅 위
-  // + 자리마다 아주 조금 다른 높이 (겹쳐 누운 잔해 윗면이 같은 높이에서 지글거리지 않게)
+  // 조각이 떨어질 땅 높이: 돌담 위는 돌담 위, 바닥판 밖은 한 칸 낮은 바깥 땅 (잔해 더미 높이는 debris.js 가 따로 더함)
+  // 쌓지 않을 때만: 자리마다 아주 조금 다른 높이 (겹쳐 누운 잔해 윗면이 같은 높이에서 지글거리지 않게)
+  // 쌓을 때(debris.stack)는 잔해가 칸에 맞춰 겹치지 않고 놓이므로 0 (높이가 자리마다 다르면 쌓인 블록 사이가 살짝 들뜨거나 묻힘)
   const outsideY = -(FIGHT_MAP.plateThickness ?? 1);
+  const jitter = FIGHT.debris.stack ? 0 : RUBBLE_JITTER;
   debris.setGroundHeight((x, z) => {
     const base = x < -halfW || x > halfW || z < -halfD || z > halfD ? outsideY : props.groundHeight(x, z);
-    return base + RUBBLE_JITTER * hash01(x, z);
+    return jitter ? base + jitter * hash01(x, z) : base;
   });
 
   const fx = createEffects(scene);

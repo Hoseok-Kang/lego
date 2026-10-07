@@ -11,10 +11,15 @@
 //   view.shake(세기)                                                   화면 흔들기 (겹치면 커지고, 최대 shakeMax)
 //   view.kick({ x, z }, 세기)                                          화면을 그 방향 반대로 살짝 톡 (총 반동 등, 없어도 됨)
 //   view.snapTo(target)                                                부드럽게 가지 않고 바로 그 자리로 (다시 하기)
+//   view.setSafeBottomPx(px)                                           화면 아래 이만큼(px)은 휴대폰 조작 단추 자리 (0 = 없음, 처음엔 0)
+//                                                                      game.js 가 매 장면 알려 줌: 터치 중이면 camera.touchBottomPx 의 portrait/landscape, 아니면 0
+//   view.refreshRect()                                                 캔버스 위치·크기를 다시 읽기 (화면 크기가 바뀔 때 fightWorld.js 가 부름)
 //   view.distance / view.look / view.extent                            지금 카메라 거리 / 바라보는 땅 위치 / 보이는 땅 범위 (확인용)
 //
 // 전장 가장자리에서는 화면이 전장 밖(울타리 너머)을 너무 많이 비추지 않게 카메라가 멈춥니다.
-// (내 토끼는 그래도 늘 화면 안쪽에 머뭄) 끄려면 createFollowCamera(…, { bounds: null }).
+// 그래도 내 토끼는 늘 다 보이게 합니다: 위쪽 정보 카드(camera.safeTopPx) 아래, 아래쪽 조작 단추(setSafeBottomPx) 위.
+// 화면이 전장보다 세로로 길면(휴대폰 세로) 전장을 화면 위아래 가운데에 둡니다.
+// 끄려면 createFollowCamera(…, { bounds: null }).
 //   네 번째 인자 { bounds = 전장 크기, edgeMargin = EDGE_MARGIN }
 //
 // 따라가는 빠르기·미리 옮기는 거리·흔들림 세기는 fightConfig.js 의 camera 에서 바꿉니다.
@@ -47,8 +52,10 @@ export function createFollowCamera(camera, element, config, { bounds = MAP_BOUND
   let started = false;
   let distance = 60;
   const fitFor = { aspect: 0, fov: 0, halfWidth: 0, halfDepth: 0 }; // 이 값들이 그대로면 거리를 다시 계산하지 않음
-  // 캔버스 위치·크기: 한 장면에 한 번만 읽음 (글자 띄우기가 여러 번 불러도 화면 배치를 다시 계산하지 않게)
-  let rect = null;
+  // 캔버스 위치·크기: 처음 한 번과 화면 크기가 바뀔 때(refreshRect)만 읽음 (매 장면 읽으면 브라우저가 화면 배치를 다시 계산해 느려짐)
+  let rect = element.getBoundingClientRect();
+  let safeBottomPx = 0; // 화면 아래 조작 단추 자리 (px). setSafeBottomPx 로 바꿈
+  const limit = { top: BODY_EDGE, bottom: BODY_EDGE }; // 내 토끼가 있어도 되는 화면 위·아래 끝 (화면 가운데 0, 끝 1)
   // 바라보는 곳 기준으로 보이는 땅 범위: far(화면 위 끝, 음수) near(화면 아래 끝) side(화면 아래 줄의 좌우 절반 폭)
   const extent = { far: -30, near: 15, side: 20 };
 
@@ -64,7 +71,6 @@ export function createFollowCamera(camera, element, config, { bounds = MAP_BOUND
   const corner = new THREE.Vector3();
 
   function update(dt, { target = null, aimDir = null } = {}) {
-    rect = element.getBoundingClientRect();
     if (target) goal.set(target.x, 0, target.z);
 
     // 조준 쪽으로 미리 옮길 양
@@ -129,9 +135,10 @@ export function createFollowCamera(camera, element, config, { bounds = MAP_BOUND
     let x = lowX <= highX ? Math.min(highX, Math.max(lowX, point.x)) : (bounds.minX + bounds.maxX) / 2;
     const lowZ = bounds.minZ - edgeMargin - extent.far;
     const highZ = bounds.maxZ + edgeMargin - extent.near;
-    // 화면이 전장보다 세로로 길면(휴대폰 세로) 가까운 쪽(아래) 가장자리에 맞춤 — 먼 쪽은 작게 보이므로
-    let z = lowZ <= highZ ? Math.min(highZ, Math.max(lowZ, point.z)) : highZ;
-    // 내 토끼 몸이 화면 밖으로 나가면, 내 토끼 쪽으로 되돌아가며 몸이 다 보이는 가장 먼 곳을 찾음
+    // 화면이 전장보다 세로로 길면(휴대폰 세로) 전장을 화면 가운데에 둠 — 아래쪽 엄지·단추 밑에 내 토끼가 들어가지 않게
+    let z = lowZ <= highZ ? Math.min(highZ, Math.max(lowZ, point.z)) : (lowZ + highZ) / 2;
+    measureLimits();
+    // 내 토끼 몸이 화면 밖(또는 정보 카드·조작 단추 밑)으로 나가면, 내 토끼 쪽으로 되돌아가며 몸이 다 보이는 가장 먼 곳을 찾음
     if (!bodyOnScreen(x, z)) {
       let lo = 0; // 0 = 지금 위치, 1 = 내 토끼 바로 위 (늘 다 보임)
       let hi = 1;
@@ -147,7 +154,15 @@ export function createFollowCamera(camera, element, config, { bounds = MAP_BOUND
     point.z = z;
   }
 
-  // 바라보는 곳이 (lx, lz) 일 때 내 토끼 발밑·귀 끝·양옆이 화면 안쪽(BODY_EDGE)에 있는지
+  // 내 토끼가 있어도 되는 화면 위·아래 끝 (화면 가운데 0, 끝 1): 위는 정보 카드 아래, 아래는 조작 단추 위
+  // 두 값이 모두 0 px 이면 위아래 모두 BODY_EDGE (예전과 같음)
+  function measureLimits() {
+    const height = rect?.height || 0;
+    limit.top = height ? Math.min(BODY_EDGE, 1 - (2 * (config.safeTopPx ?? 0)) / height) : BODY_EDGE;
+    limit.bottom = height ? Math.min(BODY_EDGE, 1 - (2 * safeBottomPx) / height) : BODY_EDGE;
+  }
+
+  // 바라보는 곳이 (lx, lz) 일 때 내 토끼 발밑·귀 끝·양옆이 화면 안쪽(BODY_EDGE, 위아래는 limit)에 있는지
   function bodyOnScreen(lx, lz) {
     const r = goal.z - lz;
     const xr = goal.x - lx;
@@ -157,13 +172,14 @@ export function createFollowCamera(camera, element, config, { bounds = MAP_BOUND
   }
 
   // 바라보는 땅 위치 기준 (xr 옆, h 높이, r 앞뒤) 인 점이 화면 안쪽에 있는지 (카메라 방향이 고정이라 식으로 바로 계산)
+  // ny: 화면 위 끝 +1, 아래 끝 -1 → 위는 정보 카드, 아래는 조작 단추를 피함
   function inside(xr, h, r) {
     const tanHalf = Math.tan((camera.fov * DEG) / 2);
     const depth = distance + (LOOK_HEIGHT - h) * up - r * back;
     if (depth <= 0) return false;
     const ny = ((h - LOOK_HEIGHT) * back - r * up) / (depth * tanHalf);
     const nx = xr / (depth * tanHalf * camera.aspect);
-    return Math.abs(nx) <= BODY_EDGE && Math.abs(ny) <= BODY_EDGE;
+    return Math.abs(nx) <= BODY_EDGE && ny <= limit.top && ny >= -limit.bottom;
   }
 
   // 화면 비율에 맞춰, 바라보는 곳 둘레 땅 네모(좌우 minHalfWidth, 앞뒤 minHalfDepth)가 다 들어오는 가장 가까운 거리
@@ -253,6 +269,12 @@ export function createFollowCamera(camera, element, config, { bounds = MAP_BOUND
     snapTo(target) {
       if (target) goal.set(target.x, 0, target.z);
       started = false;
+    },
+    setSafeBottomPx(px) {
+      safeBottomPx = Math.max(0, px || 0);
+    },
+    refreshRect() {
+      rect = element.getBoundingClientRect();
     },
     get distance() {
       return distance;

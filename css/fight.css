@@ -340,7 +340,20 @@ kbd {
   border-radius: calc(4.5px * var(--size)) calc(4.5px * var(--size)) calc(2px * var(--size)) calc(2px * var(--size));
 }
 
-/* 귀 블록이 톡 터져 날아감 (hud.js 가 is-gone 을 붙임) */
+/* 당근을 먹어 귀 블록이 다시 붙음 */
+.bunny-face .ear i.is-back {
+  animation: ear-block-back 0.35s cubic-bezier(.3, 1.6, .5, 1);
+}
+
+@keyframes ear-block-back {
+  from {
+    translate: 0 -10px;
+    opacity: 0;
+  }
+}
+
+/* 귀 블록이 톡 터져 날아감 (hud.js 가 is-gone 을 붙임)
+   다시 붙음(is-back) 규칙보다 뒤에 둠 → 두 이름표가 함께 붙어 있어도 날아가는 쪽이 이김 */
 .bunny-face .ear i.is-gone {
   animation: ear-block-pop 0.45s cubic-bezier(.2, .7, .4, 1) forwards;
 }
@@ -363,18 +376,6 @@ kbd {
   100% {
     translate: calc(var(--fly, -1) * 12px) 6px;
     rotate: calc(var(--fly, -1) * 200deg);
-    opacity: 0;
-  }
-}
-
-/* 당근을 먹어 귀 블록이 다시 붙음 */
-.bunny-face .ear i.is-back {
-  animation: ear-block-back 0.35s cubic-bezier(.3, 1.6, .5, 1);
-}
-
-@keyframes ear-block-back {
-  from {
-    translate: 0 -10px;
     opacity: 0;
   }
 }

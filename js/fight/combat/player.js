@@ -7,7 +7,7 @@
 //   player            = fighter (team 'player', position, velocity, radius, facing, alive, takeDamage, heal …)
 //   player.update(dt, input) → 무기 frame { hitStop, fired, swung, hits, … }   매 장면 한 번
 //       input = { move:{x,z}, aimPoint, aimDir, fire, firePressed, autoAim, rollPressed, switchPressed, slot, reloadPressed }
-//       바라보는 쪽 정하기: aimDir > aimPoint > autoAim(앞쪽 가까운 미친토끼) > 걷는 쪽
+//       바라보는 쪽 정하기: aimDir > aimPoint > autoAim(가까운 미친토끼, 앞쪽을 조금 더 좋아함 — 뒤에 바짝 붙은 토끼도 쏨) > 걷는 쪽
 //   player.reset(x?, z?)               처음 자리(없으면 FIGHT.map.playerSpawn)·체력·무기로 (다시 하기)
 //   player.rig / player.weapons        블록 인형 몸짓 / 무기 (weapons.js)
 //   player.rolling (참/거짓) / player.rollReady (0~1, HUD 구르기 버튼) / player.muzzle (총구 위치 Vector3)
@@ -40,6 +40,7 @@ const AIM_DEADZONE = 1.5; // 마우스가 내 토끼에 이보다 가까우면 �
 const AIM_HOLD = 0.6; // 쏜 뒤 이 시간 동안은 총을 겨눈 자세 유지
 const BODY_PUSH = 0.5; // 미친토끼와 겹치면 이만큼씩 밀려남 (구를 때는 지나감)
 const MOVE_EPS = 0.15; // 이보다 작은 스틱 입력은 '안 움직임'
+const HURT_FLASH_HEX = '#FF698F'; // 내 토끼가 맞으면 코랄색으로 반짝 (하양은 내 털색이라 안 보이고, 하양 = 나 로 남게)
 
 export function createPlayer(scene, { collision = null, bullets, fx = null, debris, events, view = null, getEnemies = () => [], props = null }) {
   const models = { blaster: createWeaponModel('blaster'), sword: createWeaponModel('sword') };
@@ -47,6 +48,7 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
   const rig = createRabbitRig(scene, createRabbitModel('player'), {
     weapon: models[weapons.current] || null,
     scale: FIGHT.figureScale ?? 1,
+    hurtHex: HURT_FLASH_HEX,
     onLand: (position, strength) => fx?.dust?.(position, strength),
   });
   let shownWeapon = weapons.current;
@@ -164,8 +166,9 @@ export function createPlayer(scene, { collision = null, bullets, fx = null, debr
       return copyTarget(point);
     }
     if (input.autoAim) {
+      // 모든 방향에서 고름: 점수가 앞쪽을 최대 3배까지 좋아해서, 멀리 앞에 있는 토끼보다 뒤에 바짝 붙은 토끼를 먼저 쏨
       const ref = moving ? facingFromDir(mx, mz) : body.facing;
-      const enemy = pickEnemy(ref, Math.PI / 2) || pickEnemy(ref, Math.PI);
+      const enemy = pickEnemy(ref, Math.PI);
       if (enemy) {
         body.facing = facingFromDir(enemy.position.x - body.position.x, enemy.position.z - body.position.z);
         return copyTarget(enemy.position);
