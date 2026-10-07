@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>펑펑 토끼 블록 미리보기</title>
+<style>
+  body { margin: 0; background: #dfe7ec; font: 13px system-ui, sans-serif; color: #17232c; }
+  #wrap { position: relative; display: inline-block; }
+  canvas { display: block; }
+  .label { position: absolute; padding: 2px 6px; background: rgba(255, 255, 255, 0.82); border-radius: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
+  .error { color: #c91a09; white-space: pre-wrap; padding: 12px; }
+</style>
+</head>
+<body>
+<div id="wrap"></div>
+<script type="module">
+// 펑펑 토끼 블록 모양 미리보기 (그림 만드는 사람용)
+// 토끼·무기·소품 모양을 여러 각도에서 한 장에 그려 봅니다. tools/fight-art-preview.mjs 로 PNG 저장.
+//   ?mode=rabbits   토끼 4종: 게임 카메라(위에서 58°) · 정면 · 옆 · 뒤 · 비스듬히 · 무기 든 모습
+//                   &kinds=player,knife 처럼 골라 볼 수 있음
+//   ?mode=pop       토끼 4종: 체력 100% → 5% 일 때 귀가 터진 모습 (게임 카메라)
+//   ?mode=weapons   무기 5종 (게임 카메라 · 옆 · 위 · 비스듬히)      ?mode=props   소품 (propArt.js 의 PREVIEW_LIST)
+//   ?mode=scene     실제 게임 화면 (1600×900). fightConfig.js 의 camera 설정대로 내 토끼를 가운데에 둔 모습
+//   &cell=280       칸 크기(픽셀)
+//   scene 에서만: &across=70 (화면 가로에 보이는 칸 수를 바꿔 비교) · &scale=0.8 (토끼 크기를 바꿔 비교) · &top=1 (위에서 본 배치도)
+// 여기 그리는 '무기 든 모습'은 간단한 흉내입니다. 진짜 움직임은 js/fight/render/rabbitRig.js 가 만듭니다.
+import * as THREE from '../js/lib/three.js';
+import { getBlockAssets } from '../js/game/core/blockAssets.js';
+import { createStudioLight, createBaseplate } from '../js/scene/stage.js';
+import { CONFIG } from '../js/config.js';
+import { FIGHT } from '../js/fight/fightConfig.js';
+
+const params = new URLSearchParams(location.search);
+const mode = params.get('mode') ?? 'rabbits';
+const CELL = Number(params.get('cell') ?? 280);
+const wrap = document.getElementById('wrap');
+const DEG = Math.PI / 180;
+const matrix = new THREE.Matrix4();
+const color = new THREE.Color();
+
+const load = async (path) => {
+  try {
+    return await import(path);
+  } catch (error) {
+    console.error(`${path}: ${error.message}`);
+    return null;
+  }
+};
+const rabbitArt = await load('../js/fight/art/rabbitArt.js');
+const weaponArt = await load('../js/fight/art/weaponArt.js');
+const propArt = await load('../js/fight/art/propArt.js');
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.setScissorTest(true);
+wrap.append(renderer.domElement);
+const environment = createStudioLight(renderer);
+
+// ── 블록 묶음 만들기 ──
+function voxelMesh(voxels, origin = [0, 0, 0]) {
+  const { block, material } = getBlockAssets();
+  const mesh = new THREE.InstancedMesh(block, material, Math.max(1, voxels.length));
+  voxels.forEach((v, i) => {
+    matrix.makeTranslation(v.x - origin[0], v.y - origin[1], v.z - origin[2]);
+    mesh.setMatrixAt(i, matrix);
+    mesh.setColorAt(i, color.set(v.hex));
+  });
+  mesh.count = voxels.length;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+// 토끼 + (선택) 무기. pose: 'rest' 그대로, 'hold' 오른팔을 앞으로 들고 무기를 앞으로 겨눔
+function rabbitGroup(def, { popped = 0, pose = 'rest', weapon = null } = {}) {
+  const root = new THREE.Group();
+  const hidden = new Set(def.popOrder.slice(0, popped).map((p) => `${p.part}:${p.index}`));
+  const nodes = {};
+  for (const [name, part] of Object.entries(def.parts)) {
+    const node = new THREE.Group();
+    node.position.set(...part.pivot);
+    node.add(voxelMesh(part.voxels.filter((_, i) => !hidden.has(`${name}:${i}`)), part.pivot));
+    root.add(node);
+    nodes[name] = node;
+  }
+  if (pose === 'hold' || pose === 'cute') {
+    nodes.earL.rotation.z = -8 * DEG;
+    nodes.earR.rotation.z = 8 * DEG;
+    nodes.earL.rotation.x = nodes.earR.rotation.x = -6 * DEG;
+  }
+  if (pose === 'hold') {
+    const arm = nodes.armR;
+    arm.rotation.x = -75 * DEG;
+    arm.updateMatrix();
+    if (weapon) {
+      const pivot = new THREE.Vector3(...def.parts.armR.pivot);
+      const hand = new THREE.Vector3(...def.hand.at).sub(pivot).applyMatrix4(new THREE.Matrix4().makeRotationX(arm.rotation.x)).add(pivot);
+      const gun = new THREE.Group();
+      gun.add(voxelMesh(weapon.voxels, weapon.grip));
+      gun.position.copy(hand);
+      root.add(gun);
+    }
+  }
+  return root;
+}
+
+function countLabel(def) {
+  const parts = Object.entries(def.parts).map(([n, p]) => `${n} ${p.voxels.length}`).join(' · ');
+  const total = Object.values(def.parts).reduce((s, p) => s + p.voxels.length, 0);
+  return `${def.kind} 블록 ${total} (귀·꼬리 ${def.popOrder.length}) 키 ${def.height}\n${parts}`;
+}
+
+// ── 장면 (조명 + 바닥) ──
+function makeScene({ ground = 26, groundColor = FIGHT.map.groundColor } = {}) {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#cfdbe3');
+  scene.environment = environment;
+  scene.environmentIntensity = 0.6;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6f7f8c, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.1);
+  sun.position.set(ground * 0.4, ground * 1.0, ground * 0.6);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.03;
+  const cam = sun.shadow.camera;
+  cam.left = cam.bottom = -ground * 0.7;
+  cam.right = cam.top = ground * 0.7;
+  cam.far = ground * 4;
+  scene.add(sun, sun.target);
+  if (ground) {
+    const plate = createBaseplate({ color: groundColor, thickness: 0.5 }, { size: 1, studRadius: CONFIG.block.studRadius, studHeight: CONFIG.block.studHeight }, { studSegments: 10 });
+    plate.resize(ground, ground);
+    scene.add(plate.group);
+  }
+  return scene;
+}
+
+// 카메라: 게임처럼 위에서 내려다봄 (pitch 도, yaw 도) 또는 정면 평행 투영
+function perspective(target, pitch, yaw, span, aspect = 1) {
+  const camera = new THREE.PerspectiveCamera(FIGHT.camera.fov, aspect, 0.5, 500);
+  const distance = span / (2 * Math.tan((FIGHT.camera.fov * DEG) / 2) * Math.min(1, aspect));
+  camera.position.set(
+    target.x + Math.sin(yaw * DEG) * Math.cos(pitch * DEG) * distance,
+    target.y + Math.sin(pitch * DEG) * distance,
+    target.z + Math.cos(yaw * DEG) * Math.cos(pitch * DEG) * distance,
+  );
+  camera.lookAt(target);
+  return camera;
+}
+function ortho(target, yaw, span, pitch = 0) {
+  const camera = new THREE.OrthographicCamera(-span / 2, span / 2, span / 2, -span / 2, 0.1, 500);
+  camera.position.set(target.x + Math.sin(yaw * DEG) * Math.cos(pitch * DEG) * 80, target.y + Math.sin(pitch * DEG) * 80, target.z + Math.cos(yaw * DEG) * Math.cos(pitch * DEG) * 80);
+  camera.lookAt(target);
+  return camera;
+}
+
+// ── 격자에 그리기 ──
+const jobs = [];
+const labels = [];
+function cell(col, row, scene, camera, text = '') {
+  jobs.push({ col, row, scene, camera });
+  if (text) labels.push({ col, row, text });
+}
+function draw(cols, rows, width = CELL, height = CELL) {
+  renderer.setSize(cols * width, rows * height);
+  for (const { col, row, scene, camera } of jobs) {
+    const y = (rows - 1 - row) * height;
+    renderer.setViewport(col * width, y, width, height);
+    renderer.setScissor(col * width, y, width, height);
+    renderer.render(scene, camera);
+  }
+  for (const { col, row, text } of labels) {
+    const div = document.createElement('div');
+    div.className = 'label';
+    div.textContent = text;
+    div.style.left = `${col * width + 6}px`;
+    div.style.top = `${row * height + 6}px`;
+    div.style.whiteSpace = 'pre';
+    wrap.append(div);
+  }
+}
+
+const WEAPON_OF = { player: 'blaster', knife: 'knife', gunner: 'enemyGun', brute: 'hammer' };
+const weaponFor = (kind) => (weaponArt ? weaponArt.createWeaponModel(WEAPON_OF[kind]) : null);
+const center = new THREE.Vector3(0, 8.5, 0.5);
+const SPAN = 25; // 한 칸에 보이는 가로 칸 수 (토끼 확대 보기)
+
+if (mode === 'rabbits') {
+  const kinds = (params.get('kinds') ?? rabbitArt.RABBIT_KINDS.join(',')).split(',');
+  kinds.forEach((kind, row) => {
+    const def = rabbitArt.createRabbitModel(kind);
+    const scene = makeScene();
+    scene.add(rabbitGroup(def));
+    const views = [
+      [perspective(center, FIGHT.camera.pitchDeg, 0, SPAN), `게임 각도 (${FIGHT.camera.pitchDeg}°)\n${countLabel(def)}`],
+      [ortho(center, 0, SPAN), '정면'],
+      [ortho(center, 90, SPAN), '옆 (+x 에서 봄, 얼굴 = 왼쪽)'],
+      [perspective(center, 30, 180, SPAN), '뒤'],
+      [perspective(center, 22, 35, SPAN), '비스듬히'],
+    ];
+    const holdScene = makeScene();
+    holdScene.add(rabbitGroup(def, { pose: 'hold', weapon: weaponFor(kind) }));
+    views.push([perspective(center, FIGHT.camera.pitchDeg, 0, SPAN), '무기 들기 (게임 각도)']);
+    views.forEach(([camera, text], col) => cell(col, row, col === 5 ? holdScene : scene, camera, text));
+  });
+  draw(6, kinds.length);
+} else if (mode === 'pop') {
+  const fractions = [1, 0.8, 0.6, 0.4, 0.2, 0.05];
+  rabbitArt.RABBIT_KINDS.forEach((kind, row) => {
+    const def = rabbitArt.createRabbitModel(kind);
+    fractions.forEach((hp, col) => {
+      const remaining = Math.ceil(def.popOrder.length * hp);
+      const popped = def.popOrder.length - remaining;
+      const scene = makeScene();
+      scene.add(rabbitGroup(def, { popped }));
+      cell(col, row, scene, perspective(center, FIGHT.camera.pitchDeg, 0, SPAN), `${kind} 체력 ${Math.round(hp * 100)}% · 남은 귀·꼬리 ${remaining}/${def.popOrder.length}`);
+    });
+  });
+  draw(fractions.length, rabbitArt.RABBIT_KINDS.length);
+} else if (mode === 'weapons' && weaponArt) {
+  weaponArt.WEAPON_KINDS.forEach((kind, row) => {
+    const def = weaponArt.createWeaponModel(kind);
+    const scene = makeScene({ ground: 16 });
+    const group = new THREE.Group();
+    group.add(voxelMesh(def.voxels));
+    group.position.y = 1 - Math.min(...def.voxels.map((v) => v.y - 0.5));
+    scene.add(group);
+    const zs = def.voxels.map((v) => v.z);
+    const c = new THREE.Vector3(0, 2.5, (Math.min(...zs) + Math.max(...zs)) / 2);
+    const marks = ['grip', 'muzzle', 'tip'].filter((k) => def[k]).map((k) => `${k} [${def[k].join(', ')}]`).join(' ');
+    cell(0, row, scene, perspective(c, FIGHT.camera.pitchDeg, 0, 13), `${kind} 블록 ${def.voxels.length}\n${marks}`);
+    cell(1, row, scene, ortho(c, 90, 13), '옆 (+x 에서 봄, 앞 = 왼쪽)');
+    cell(2, row, scene, ortho(c, 0, 13, 89), '위');
+    cell(3, row, scene, perspective(c, 25, 35, 13), '비스듬히');
+  });
+  draw(4, weaponArt.WEAPON_KINDS.length, CELL, Math.round(CELL * 0.75));
+} else if (mode === 'props' && propArt) {
+  const list = propArt.PREVIEW_LIST;
+  const cols = 4;
+  list.forEach(([kind, variant], i) => {
+    const def = propArt.createPropModel(kind, variant);
+    const span = Math.max(10, Math.max(...def.size) * 1.5);
+    const scene = makeScene({ ground: Math.ceil(span * 1.3) });
+    scene.add(voxelMesh(def.voxels));
+    const c = new THREE.Vector3(0, def.size[1] * 0.4, 0);
+    cell(i % cols, Math.floor(i / cols), scene, perspective(c, FIGHT.camera.pitchDeg, 0, span), `${kind} ${JSON.stringify(variant ?? '')} 블록 ${def.voxels.length}\n크기 ${def.size.join('×')}`);
+  });
+  draw(cols, Math.ceil(list.length / cols));
+} else if (mode === 'scene') {
+  // 실제 게임 화면 크기: 1600×900 화면에 가로 약 45칸이 보이게 (게임 카메라와 같은 화각·각도)
+  const width = 1600;
+  const height = 900;
+  const scene = makeScene({ ground: 0 });
+  const sun = scene.children.find((c) => c.isDirectionalLight);
+  sun.position.set(30, 60, 40);
+  Object.assign(sun.shadow.camera, { left: -50, right: 50, top: 50, bottom: -50, far: 200 });
+  const plate = createBaseplate({ color: FIGHT.map.groundColor, thickness: 1 }, { size: 1, studRadius: CONFIG.block.studRadius, studHeight: CONFIG.block.studHeight }, { studSegments: 8 });
+  plate.resize(80, 60);
+  scene.add(plate.group);
+
+  const place = (object, x, z, facing = 0, scale = 1) => {
+    object.position.set(x, 0, z);
+    object.rotation.y = facing;
+    object.scale.setScalar(scale);
+    scene.add(object);
+    return object;
+  };
+  const toward = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
+  const prop = (kind, variant, x, z) => place(voxelMesh(propArt.createPropModel(kind, variant).voxels), x, z);
+  const rabbit = (kind, x, z, facing, { weapon = WEAPON_OF[kind], pose = 'hold', popped = 0 } = {}) => {
+    const def = rabbitArt.createRabbitModel(kind);
+    const w = weapon && weaponArt ? weaponArt.createWeaponModel(weapon) : null;
+    const scale = (kind === 'brute' ? FIGHT.enemies.brute.scale : 1) * Number(params.get('scale') ?? 1); // &scale=0.8 토끼 크기 비교
+    return place(rabbitGroup(def, { pose, weapon: w, popped }), x, z, facing, scale);
+  };
+
+  // 게임처럼 내 토끼를 가운데에 두고, 미친토끼는 위쪽(북쪽)에서 다가오게
+  const px = 0;
+  const pz = 10;
+  rabbit('player', px, pz, toward(px, pz, 10, 0), { weapon: 'blaster' }); // 총토끼 쪽을 겨누는 내 토끼
+  rabbit('player', px - 19, pz + 7, Math.PI * 0.8, { weapon: 'sword', popped: 12 }); // 귀가 반쯤 터진 칼 든 토끼
+  rabbit('knife', -12, 2, toward(-12, 2, px, pz));
+  rabbit('knife', 18, 9, toward(18, 9, px, pz), { popped: 10 });
+  rabbit('gunner', 10, 0, toward(10, 0, px, pz));
+  rabbit('brute', -1, -2, toward(-1, -2, px, pz));
+
+  if (propArt) {
+    prop('crate', 0, -24, 9); prop('crate', 1, -28, 9); prop('crate', 0, -26, 13);
+    prop('wallStone', { length: 9, height: 3, axis: 'x' }, 5.5, 5);
+    prop('wallStone', { length: 4, height: 3, axis: 'z' }, 10.5, 7);
+    prop('tree', 0, 24, -6); prop('tree', 2, -27, -4); prop('tree', 1, 26, 15);
+    prop('bush', 0, -8, 16); prop('bush', 2, 18, 12); prop('bush', 1, -19, -2);
+    prop('rock', 1, 20, -1); prop('rock', 0, -6, -6); prop('rock', 2, 6, 17);
+    prop('flowers', 0, 3, 15); prop('flowers', 1, -14, 8); prop('flowers', 2, 13, 0);
+    prop('carrotPatch', 0, 12, 17);
+    place(voxelMesh(propArt.createPropModel('carrot', 'upright').voxels), -6, 14).position.y = 1;
+    prop('carrot', 'lying', -15, 13);
+    prop('fence', { length: 64, axis: 'x' }, 0, 23);
+  }
+
+  const camera = new THREE.PerspectiveCamera(FIGHT.camera.fov, width / height, 0.5, 500);
+  // 카메라 거리: 게임 카메라처럼 내 토끼 둘레로 좌우 minHalfWidth, 앞뒤 minHalfDepth 칸이 보이는 가장 가까운 거리
+  //   (&across=60 처럼 적으면 화면 가로에 그만큼의 칸이 보이게 바꿔서 비교해 볼 수 있음)
+  const target = new THREE.Vector3(px, 0, pz); // 카메라는 내 토끼를 봄
+  const pitch = FIGHT.camera.pitchDeg * DEG;
+  const groundHit = (ndcX, ndcY) => {
+    const ray = new THREE.Vector3(ndcX, ndcY, 0.5).unproject(camera).sub(camera.position).normalize();
+    return camera.position.clone().addScaledVector(ray, -camera.position.y / ray.y);
+  };
+  const fits = (distance) => {
+    camera.position.set(target.x, Math.sin(pitch) * distance, target.z + Math.cos(pitch) * distance);
+    camera.lookAt(target);
+    camera.updateMatrixWorld();
+    const top = groundHit(0, 1).z;
+    const bottom = groundHit(0, -1).z;
+    const side = groundHit(1, 0).x - target.x;
+    const wanted = params.get('across') ? Number(params.get('across')) / 2 : FIGHT.camera.minHalfWidth;
+    return side >= wanted && (params.get('across') || (target.z - top >= FIGHT.camera.minHalfDepth && bottom - target.z >= FIGHT.camera.minHalfDepth));
+  };
+  let distance = 10;
+  while (!fits(distance) && distance < 400) distance += 0.25;
+  const across = Math.round(2 * (groundHit(1, 0).x - target.x));
+  if (params.get('top')) {
+    // &top=1 : 바로 위에서 내려다본 배치도 (자리 확인용)
+    const top = new THREE.OrthographicCamera(-40, 40, 22.5, -22.5, 0.1, 500);
+    top.position.set(0, 100, 4);
+    top.lookAt(0, 0, 4);
+    cell(0, 0, scene, top, '바로 위에서 본 배치도');
+  } else {
+    cell(0, 0, scene, camera, `게임 카메라 (58°, 거리 ${distance.toFixed(1)}) · 내 토끼 높이에서 가로 약 ${across}칸이 보임`);
+  }
+  draw(1, 1, width, height);
+}
+document.body.dataset.ready = 'true';
+</script>
+</body>
+</html>

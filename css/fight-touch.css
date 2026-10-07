@@ -1,0 +1,349 @@
+/* 펑펑 토끼 휴대폰 조작 꾸미기 (js/fight/ui/touchControls.js 가 쓰는 모양)
+   휴대폰에서만 보입니다 (body.touch-mode — js/fight/core/input.js 가 붙임).
+   - 왼쪽 반: 손가락을 대면 그 자리에 '움직이기 막대'가 나타남
+   - 오른쪽 반: 손가락을 대면 '조준 막대'. 끌면 그쪽으로 공격, 톡 치면 가까운 미친토끼를 자동 조준
+   - 오른손 엄지 근처: 구르기 · 무기 바꾸기 · 장전 단추 (누르기 쉬운 큰 크기)
+   막대가 쉬고 있을 때 서 있는 자리는 아래 --idle-x / --idle-y 에서 바꿉니다.
+   색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다. */
+
+.touch-controls {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  display: none;
+  pointer-events: none; /* 막대 그림은 손가락을 가로채지 않음 (손가락은 싸움터가 받음) */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.touch-mode .touch-controls {
+  display: block;
+}
+
+/* 메뉴가 열려 있거나 조작을 끈 동안 */
+body.overlay-open .touch-controls,
+.touch-controls.is-off {
+  display: none !important;
+}
+
+/* ── 막대 (움직이기 · 조준) ── */
+.stick {
+  --base: 116px; /* 막대 바탕 지름 */
+  --knob: 54px; /* 손잡이 지름 */
+  position: fixed;
+  left: var(--x, var(--idle-x));
+  top: var(--y, var(--idle-y));
+  width: 0;
+  height: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.stick--move {
+  --idle-x: calc(var(--edge-left) + 92px);
+  --idle-y: calc(100dvh - var(--edge-bottom) - 104px);
+}
+
+/* 오른쪽 조준 막대: 세로 화면에서는 단추들 위쪽, 가로 화면에서는 단추들 왼쪽에서 쉼 */
+.stick--aim {
+  --idle-x: calc(100vw - var(--edge-right) - 86px);
+  --idle-y: calc(100dvh - var(--edge-bottom) - 290px);
+}
+
+@media (orientation: landscape) {
+  .stick--aim {
+    --idle-x: calc(100vw - var(--edge-right) - 270px);
+    --idle-y: calc(100dvh - var(--edge-bottom) - 96px);
+  }
+}
+
+.stick.is-active {
+  opacity: 1;
+  transition: none;
+}
+
+.stick-base,
+.stick-knob {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+}
+
+.stick-base {
+  width: var(--base);
+  height: var(--base);
+  translate: -50% -50%;
+  border: 3px solid rgb(255 255 255 / 0.75);
+  background:
+    radial-gradient(circle, transparent 0 56%, rgb(255 255 255 / 0.22) 57% 100%),
+    rgb(27 18 25 / 0.18);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.stick-knob {
+  display: grid;
+  place-items: center;
+  width: var(--knob);
+  height: var(--knob);
+  translate: calc(-50% + var(--kx, 0px)) calc(-50% + var(--ky, 0px));
+  border: 3px solid #ffffff;
+  box-shadow: inset 0 -5px 0 rgb(0 0 0 / 0.18), 0 4px 10px rgb(0 0 0 / 0.25);
+}
+
+.stick.is-active .stick-knob {
+  scale: 1.06;
+}
+
+/* 움직이기 손잡이: 하늘색 + 토끼 발바닥 */
+.stick--move .stick-knob {
+  background: #5a93db;
+}
+
+.stick-paw {
+  width: 26px;
+  height: 26px;
+  background:
+    radial-gradient(ellipse 7px 6px at 50% 70%, #ffffff 0 95%, transparent),
+    radial-gradient(circle at 20% 34%, #ffffff 0 3.2px, transparent 3.8px),
+    radial-gradient(circle at 40% 16%, #ffffff 0 3.2px, transparent 3.8px),
+    radial-gradient(circle at 62% 16%, #ffffff 0 3.2px, transparent 3.8px),
+    radial-gradient(circle at 82% 34%, #ffffff 0 3.2px, transparent 3.8px);
+}
+
+/* 조준 손잡이: 분홍 + 흰 조준 표시 */
+.stick--aim .stick-knob {
+  background: var(--berry);
+}
+
+.stick--aim .stick-base {
+  border-color: rgb(255 214 226 / 0.85);
+}
+
+.stick-cross {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #ffffff 0 2.6px, transparent 3px);
+}
+
+/* 조준 막대를 끄는 동안(발사 중) 손잡이가 통통 */
+.stick--aim.is-firing .stick-knob {
+  animation: knob-fire 0.18s ease-in-out infinite alternate;
+}
+
+@keyframes knob-fire {
+  to {
+    scale: 1.14;
+  }
+}
+
+/* 쉬는 동안만 보이는 작은 설명 */
+.stick-label {
+  position: absolute;
+  left: 0;
+  top: calc(var(--base) / 2 + 8px);
+  translate: -50% 0;
+  padding: 3px 9px;
+  border-radius: 10px;
+  background: rgb(27 18 25 / 0.42);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.stick.is-active .stick-label,
+.touch-controls.is-played .stick-label {
+  display: none;
+}
+
+/* ── 단추 (구르기 · 무기 · 장전) ── */
+.touch-btn {
+  position: fixed;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  width: var(--size);
+  height: var(--size);
+  padding: 0;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  color: #ffffff;
+  font: inherit;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
+  box-shadow: inset 0 -6px 0 rgb(0 0 0 / 0.2), 0 5px 14px rgb(0 0 0 / 0.28);
+  -webkit-tap-highlight-color: transparent;
+  transition: scale 0.06s;
+}
+
+.touch-btn.is-pressed {
+  scale: 0.88;
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.2), 0 2px 8px rgb(0 0 0 / 0.28);
+}
+
+.touch-btn .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.touch-btn-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.25);
+}
+
+/* 구르기: 가장 크게, 오른쪽 아래 구석 */
+.touch-btn--roll {
+  --size: 80px;
+  right: calc(var(--edge-right) + 12px);
+  bottom: calc(var(--edge-bottom) + 22px);
+  background: var(--berry);
+}
+
+.touch-btn--roll .icon {
+  width: 32px;
+  height: 32px;
+}
+
+/* 다시 구를 수 있을 때까지 고리가 차오름 (--ready 0 ~ 1, hud.js 가 정함) */
+.touch-ring {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: conic-gradient(#ffffff calc(var(--ready, 1) * 1turn), rgb(27 18 25 / 0.28) 0);
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  mask: radial-gradient(closest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  pointer-events: none;
+}
+
+.touch-btn--roll[data-ready="false"] {
+  filter: saturate(0.4) brightness(0.92);
+}
+
+/* 무기 바꾸기: 구르기 왼쪽. 지금 든 무기 그림 + 남은 탄 */
+.touch-btn--swap {
+  --size: 66px;
+  right: calc(var(--edge-right) + 106px);
+  bottom: calc(var(--edge-bottom) + 10px);
+  border-color: var(--carrot);
+  background: #fffaf3;
+}
+
+.touch-btn--swap .weapon-pic {
+  width: 34px;
+  height: 34px;
+  shape-rendering: crispEdges;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.35));
+}
+
+.touch-btn--swap .when-sword,
+.touch-btn--swap[data-weapon="sword"] .when-blaster {
+  display: none;
+}
+
+.touch-btn--swap[data-weapon="sword"] .when-sword {
+  display: block;
+}
+
+.touch-ammo {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 6px;
+  border: 2px solid #ffffff;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--sheet);
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.touch-btn--swap[data-weapon="sword"] .touch-ammo {
+  display: none;
+}
+
+.touch-btn--swap.is-low .touch-ammo {
+  background: var(--hp-low);
+  color: #ffffff;
+}
+
+.touch-btn--swap.is-reloading .touch-ammo {
+  background: var(--carrot);
+  color: #ffffff;
+}
+
+.touch-btn--swap .touch-btn-label {
+  display: none;
+}
+
+/* 장전: 구르기 위쪽 */
+.touch-btn--reload {
+  --size: 58px;
+  right: calc(var(--edge-right) + 22px);
+  bottom: calc(var(--edge-bottom) + 122px);
+  background: #5a93db;
+}
+
+.touch-btn--reload .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.touch-btn--reload.is-reloading .icon {
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+/* 휴대폰 가로: 단추를 살짝 작게 */
+@media (max-height: 500px) {
+  .stick {
+    --base: 104px;
+    --knob: 50px;
+  }
+
+  .stick--move {
+    --idle-y: calc(100dvh - var(--edge-bottom) - 84px);
+  }
+
+  .touch-btn--roll {
+    --size: 74px;
+    bottom: calc(var(--edge-bottom) + 14px);
+  }
+
+  .touch-btn--swap {
+    --size: 60px;
+    right: calc(var(--edge-right) + 98px);
+    bottom: calc(var(--edge-bottom) + 6px);
+  }
+
+  .touch-btn--reload {
+    --size: 56px;
+    bottom: calc(var(--edge-bottom) + 104px);
+  }
+
+  .stick-label {
+    font-size: 12px;
+  }
+}
+
+body.capture .touch-controls {
+  display: none !important;
+}

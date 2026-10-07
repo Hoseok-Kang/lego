@@ -1,0 +1,214 @@
+/* 펑펑 토끼 무기 칸 (컴퓨터 화면 오른쪽 아래, js/fight/ui/hud.js 의 setWeapon · setRollReady)
+   [1 블록 총: 탄 수 + 노란 탄 알갱이 + 장전 고리] [2 블록 칼] [구르기 준비 칩]
+   휴대폰에서는 숨기고 무기 바꾸기·구르기 단추가 같은 일을 합니다 (css/fight-touch.css).
+   색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다. */
+
+.weapon-bar {
+  position: absolute;
+  right: var(--edge-right);
+  bottom: var(--edge-bottom);
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.weapon-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 8px 14px 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  opacity: 0.72;
+  transition: opacity 0.15s, translate 0.15s, border-color 0.15s;
+}
+
+.weapon-slot[data-active="true"] {
+  opacity: 1;
+  translate: 0 -4px;
+  border-color: var(--pink);
+  box-shadow: var(--shadow), 0 4px 0 color-mix(in srgb, var(--pink) 40%, transparent);
+}
+
+.slot-key {
+  position: absolute;
+  top: -10px;
+  left: -6px;
+  min-width: 22px;
+  height: 22px;
+}
+
+.weapon-slot[data-active="true"] .slot-key {
+  border-color: var(--pink);
+  background: var(--pink);
+  color: #ffffff;
+}
+
+.weapon-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--pink-soft) 70%, var(--sheet));
+}
+
+.weapon-pic {
+  width: 32px;
+  height: 32px;
+  shape-rendering: crispEdges;
+}
+
+/* 장전 고리: 장전하는 동안 한 바퀴 채워짐 (--reload 0 ~ 1) */
+.reload-ring {
+  position: absolute;
+  inset: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  rotate: -90deg;
+  fill: none;
+  stroke: var(--carrot);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--reload, 0) * 100);
+  opacity: 0;
+}
+
+.weapon-slot.is-reloading .reload-ring {
+  opacity: 1;
+}
+
+.weapon-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.weapon-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.weapon-sub {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ammo {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ammo-max {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.reload-text {
+  display: none;
+  margin-left: 6px;
+  font-size: 14px;
+  color: var(--carrot);
+}
+
+.weapon-slot.is-reloading .reload-text {
+  display: inline;
+}
+
+.weapon-slot.is-reloading .ammo strong,
+.weapon-slot.is-reloading .ammo-max {
+  display: none;
+}
+
+.weapon-slot.is-low .ammo strong {
+  color: var(--hp-low);
+}
+
+/* 남은 탄: 노란 블록 알갱이 */
+.ammo-pips {
+  display: flex;
+  gap: 2px;
+}
+
+.ammo-pips i {
+  display: block;
+  width: 6px;
+  height: 9px;
+  border-radius: 1.5px;
+  background: var(--yellow);
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.2);
+}
+
+.ammo-pips i.is-empty {
+  background: var(--track);
+  box-shadow: none;
+}
+
+/* 구르기 준비 칩: 다시 구를 수 있을 때까지 차오름 */
+.roll-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  overflow: hidden;
+  padding: 0 10px 0 12px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.roll-chip > :not(.roll-fill) {
+  position: relative;
+}
+
+.roll-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--ready, 1) * 100%);
+  background: color-mix(in srgb, var(--pink) 28%, transparent);
+}
+
+.roll-chip[data-ready="true"] {
+  border-color: var(--pink);
+}
+
+.roll-chip[data-ready="true"] .roll-fill {
+  background: color-mix(in srgb, var(--pink) 22%, transparent);
+}
+
+.roll-chip[data-ready="false"] {
+  color: var(--muted);
+}
+
+.roll-chip .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* 마우스가 없는 기기(휴대폰): 무기 칸·조작 도움말 대신 터치 단추 (css/fight-touch.css) */
+body.touch-mode .weapon-bar {
+  display: none;
+}
+
+/* 휴대폰 가로: 위쪽 정보판을 얇게 */
+@media (max-height: 500px) {
+  .weapon-slot {
+    min-height: 54px;
+    padding: 6px 12px 6px 8px;
+  }
+}

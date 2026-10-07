@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#fdf0f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1219" media="(prefers-color-scheme: dark)">
+<title>펑펑 토끼</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<!-- 순서가 중요해요: 공통 → 안내창 틀 → 시작 화면 → 정보판 → 무기 칸 → 효과 → 휴대폰 조작 -->
+<link rel="stylesheet" href="css/fight.css">
+<link rel="stylesheet" href="css/fight-screens.css">
+<link rel="stylesheet" href="css/fight-title.css">
+<link rel="stylesheet" href="css/fight-hud.css">
+<link rel="stylesheet" href="css/fight-weapons.css">
+<link rel="stylesheet" href="css/fight-fx.css">
+<link rel="stylesheet" href="css/fight-touch.css">
+</head>
+<body>
+<!--
+  펑펑 토끼 화면
+  화면에 보이는 글자는 대부분 이 파일에서 바로 고칠 수 있습니다.
+  id="..." 와 data-... 는 프로그램(js/fight/ui/*.js, js/fight/core/input.js)이 찾아 쓰는 이름이라 바꾸면 안 됩니다.
+  모양(색, 크기, 위치)은 css/fight*.css 에서 바꿉니다. 색은 css/fight.css 맨 위 한 곳에서 정합니다.
+    시작 화면 css/fight-title.css · 결과·멈춤 화면 css/fight-screens.css · 정보판 css/fight-hud.css
+    무기 칸 css/fight-weapons.css · 조준점·떠오르는 글자 css/fight-fx.css · 휴대폰 단추 css/fight-touch.css
+-->
+
+<!-- 그림 아이콘 모음 (아래에서 <use href="#..."> 로 가져다 씀) -->
+<svg class="icon-defs" aria-hidden="true" focusable="false">
+  <!-- 블록 총: 주황 몸통 + 노란 물통 + 파란 손잡이 -->
+  <symbol id="i-blaster" viewBox="0 0 16 16">
+    <rect x="6" y="1" width="2" height="1" fill="#F2CD37"/>
+    <rect x="5" y="2" width="4" height="3" fill="#F2CD37"/>
+    <rect x="5" y="2" width="4" height="1" fill="#FFF03A"/>
+    <rect x="1" y="5" width="11" height="4" fill="#FE8A18"/>
+    <rect x="1" y="5" width="11" height="1" fill="#F8BB3D"/>
+    <rect x="12" y="6" width="3" height="2" fill="#5A93DB"/>
+    <rect x="2" y="9" width="3" height="5" fill="#0055BF"/>
+    <rect x="6" y="9" width="1" height="2" fill="#1B2A34"/>
+  </symbol>
+  <!-- 블록 칼: 회색 칼날 + 금색 날밑 + 밤색 손잡이 (비스듬히) -->
+  <symbol id="i-sword" viewBox="0 0 16 16">
+    <g transform="rotate(45 8 8)">
+      <rect x="7" y="-1" width="2" height="11" fill="#A0A5A9"/>
+      <rect x="7" y="-1" width="1" height="11" fill="#F4F4F4"/>
+      <rect x="4" y="10" width="8" height="2" fill="#F2CD37"/>
+      <rect x="7" y="12" width="2" height="3" fill="#582A12"/>
+      <rect x="6.5" y="15" width="3" height="1.4" fill="#F2CD37"/>
+    </g>
+  </symbol>
+  <!-- 구르기: 빙글 도는 화살표 -->
+  <symbol id="i-roll" viewBox="0 0 24 24">
+    <path d="M19 12a7 7 0 1 1-2.1-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M18.6 2.8l.6 5.2-5.2.3z" fill="currentColor"/>
+    <circle cx="12" cy="12" r="2.6" fill="currentColor"/>
+  </symbol>
+  <!-- 장전: 돌아가는 화살표 + 총알 블록 -->
+  <symbol id="i-reload" viewBox="0 0 24 24">
+    <path d="M5 12a7 7 0 0 1 12-4.9M19 12a7 7 0 0 1-12 4.9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M18.4 3.5l.2 4.6-4.6-.3zM5.6 20.5l-.2-4.6 4.6.3z" fill="currentColor"/>
+    <rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="currentColor"/>
+  </symbol>
+  <!-- 무기 바꾸기: 엇갈린 화살표 -->
+  <symbol id="i-swap" viewBox="0 0 24 24">
+    <path d="M4 8h13M13 4l4 4-4 4M20 16H7M11 12l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1.4" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/></symbol>
+</svg>
+
+<!-- ── 3D 싸움터 (그림판은 프로그램이 여기에 넣습니다) ── -->
+<div id="arena" class="arena" aria-label="펑펑 토끼 싸움터"></div>
+<p id="bootMessage" class="boot-message">토끼를 깨우는 중…</p>
+
+<!-- 체력이 적을 때·맞았을 때 화면 가장자리가 빨갛게 (js/fight/ui/hud.js) -->
+<div id="hurtVignette" class="hurt-vignette" aria-hidden="true"></div>
+
+<!-- 맞힌 숫자 '-10', '펑!', '+30' 같은 떠오르는 글자 (js/fight/ui/floatText.js) -->
+<div id="floatLayer" class="float-layer" aria-hidden="true"></div>
+
+<!-- ── 정보판 (js/fight/ui/hud.js) ── -->
+<div id="hud" class="hud" hidden>
+  <header class="hud-top" aria-label="싸움 상황">
+    <!-- 내 토끼: 얼굴 귀 블록도 체력만큼 남아요 -->
+    <div id="hudMe" class="hud-card me-card" data-level="ok">
+      <span class="bunny-face bunny-face--me" aria-hidden="true">
+        <span class="ear ear--l"><i></i><i></i><i></i><i></i></span>
+        <span class="ear ear--r"><i></i><i></i><i></i><i></i></span>
+        <span class="face-head"></span>
+      </span>
+      <div class="me-text">
+        <span class="hud-label">내 토끼</span>
+        <div id="hudHpTrack" class="hp-track" role="progressbar" aria-label="내 토끼 체력" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+          <span id="hudHpLag" class="hp-lag"></span>
+          <span id="hudHpFill" class="hp-fill"></span>
+        </div>
+      </div>
+      <strong id="hudHpText" class="hud-big hp-num">100</strong>
+    </div>
+
+    <!-- 남은 미친토끼 -->
+    <div id="hudFoes" class="hud-card foe-card">
+      <span class="bunny-face bunny-face--crazy" aria-hidden="true">
+        <span class="ear ear--l"><i></i><i></i><i></i><i></i></span>
+        <span class="ear ear--r ear--bent"><i></i><i></i><i></i></span>
+        <span class="face-head"></span>
+      </span>
+      <span class="foe-text">
+        <span class="hud-label">미친토끼</span>
+        <strong class="hud-big"><span id="hudFoeAlive">5</span><small class="hud-of">/<span id="hudFoeTotal">5</span></small></strong>
+      </span>
+    </div>
+
+    <div class="hud-buttons">
+      <button id="soundBtn" class="hud-icon-btn" type="button" data-action="sound" aria-pressed="true" aria-label="소리 켜기·끄기">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <use href="#i-sound"/>
+          <path class="when-on" d="M15 9a4 4 0 010 6M17.5 6.5a7.5 7.5 0 010 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path class="when-off" d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button id="pauseBtn" class="hud-icon-btn" type="button" data-input="pause" aria-label="잠깐 멈춤">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 컴퓨터: 오른쪽 아래 무기 칸 (1 블록 총, 2 블록 칼) + 구르기 준비 -->
+  <div id="weaponBar" class="weapon-bar" aria-label="무기">
+    <div class="weapon-slot" data-weapon="blaster" data-active="true">
+      <kbd class="slot-key">1</kbd>
+      <span class="weapon-icon">
+        <svg class="reload-ring" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" pathLength="100"/></svg>
+        <svg class="weapon-pic" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-blaster"/></svg>
+      </span>
+      <span class="weapon-text">
+        <span class="weapon-name">블록 총</span>
+        <span class="ammo"><strong id="hudAmmo">14</strong><span class="ammo-max">/<span id="hudMagazine">14</span></span><span class="reload-text">장전 중</span></span>
+        <span id="hudAmmoPips" class="ammo-pips" aria-hidden="true"></span>
+      </span>
+    </div>
+    <div class="weapon-slot" data-weapon="sword" data-active="false">
+      <kbd class="slot-key">2</kbd>
+      <span class="weapon-icon">
+        <svg class="weapon-pic" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-sword"/></svg>
+      </span>
+      <span class="weapon-text">
+        <span class="weapon-name">블록 칼</span>
+        <span class="weapon-sub">총알도 튕겨요</span>
+      </span>
+    </div>
+    <div id="hudRoll" class="roll-chip" data-ready="true">
+      <span class="roll-fill" aria-hidden="true"></span>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-roll"/></svg>
+      <span>구르기</span>
+      <kbd>Space</kbd>
+    </div>
+  </div>
+
+  <!-- 컴퓨터: 왼쪽 아래 조작 도움말 -->
+  <p class="controls-hint">
+    <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동</span>
+    <span><kbd>마우스</kbd> 조준·공격</span>
+    <span><kbd>Space</kbd>/<kbd>우클릭</kbd> 구르기</span>
+    <span><kbd>Q</kbd> 무기</span>
+    <span><kbd>R</kbd> 장전</span>
+    <span><kbd>Esc</kbd> 멈춤</span>
+  </p>
+</div>
+
+<!-- 컴퓨터: 마우스를 따라다니는 조준점 -->
+<div id="crosshair" class="crosshair" aria-hidden="true" hidden>
+  <span class="crosshair-reload"></span>
+  <span class="crosshair-ring"></span>
+  <span class="crosshair-dot"></span>
+</div>
+
+<!-- ── 휴대폰 조작 (js/fight/ui/touchControls.js) ── -->
+<!-- 왼쪽 아무 데나 누르면 움직이는 막대, 오른쪽을 누르면 조준 막대가 손가락 밑에 나타납니다 -->
+<div id="touchControls" class="touch-controls" aria-hidden="true">
+  <div class="stick stick--move" data-stick="move">
+    <span class="stick-base"></span>
+    <span class="stick-knob"><span class="stick-paw"></span></span>
+    <span class="stick-label">움직이기</span>
+  </div>
+  <div class="stick stick--aim" data-stick="aim">
+    <span class="stick-base"></span>
+    <span class="stick-knob"><span class="stick-cross"></span></span>
+    <span class="stick-label">끌면 조준·발사<br>톡 치면 자동 조준</span>
+  </div>
+  <button class="touch-btn touch-btn--roll" type="button" data-input="roll" aria-label="구르기" tabindex="-1">
+    <span class="touch-ring" aria-hidden="true"></span>
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-roll"/></svg>
+    <span class="touch-btn-label">구르기</span>
+  </button>
+  <button id="touchSwap" class="touch-btn touch-btn--swap" type="button" data-input="switch" data-weapon="blaster" aria-label="무기 바꾸기" tabindex="-1">
+    <svg class="weapon-pic when-blaster" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-blaster"/></svg>
+    <svg class="weapon-pic when-sword" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-sword"/></svg>
+    <span id="touchAmmo" class="touch-ammo">14</span>
+    <span class="touch-btn-label">무기</span>
+  </button>
+  <button class="touch-btn touch-btn--reload" type="button" data-input="reload" aria-label="장전" tabindex="-1">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-reload"/></svg>
+    <span class="touch-btn-label">장전</span>
+  </button>
+</div>
+
+<!-- ── 시작 화면 (js/fight/ui/overlays.js) ── -->
+<section id="titleOverlay" class="overlay overlay--title" aria-labelledby="titleLogo" hidden>
+  <div class="overlay-card title-card">
+    <div class="title-main">
+      <h1 id="titleLogo" class="logo" aria-label="펑펑 토끼">
+        <span class="logo-pop" aria-hidden="true"><span>펑</span><span>펑</span></span>
+        <span class="logo-bunny" aria-hidden="true">토끼</span>
+      </h1>
+      <p class="story">미친토끼 5마리가 쳐들어왔어요! 모두 펑! 터뜨리세요</p>
+      <div class="cast" aria-hidden="true">
+        <span class="bunny-face bunny-face--me">
+          <span class="ear ear--l"><i></i><i></i><i></i><i></i></span>
+          <span class="ear ear--r"><i></i><i></i><i></i><i></i></span>
+          <span class="face-head"></span>
+        </span>
+        <span class="cast-vs">VS</span>
+        <span class="cast-foes">
+          <span class="bunny-face bunny-face--crazy"><span class="ear ear--l"><i></i><i></i><i></i><i></i></span><span class="ear ear--r ear--bent"><i></i><i></i><i></i></span><span class="face-head"></span></span>
+          <span class="bunny-face bunny-face--crazy"><span class="ear ear--l"><i></i><i></i><i></i><i></i></span><span class="ear ear--r ear--bent"><i></i><i></i><i></i></span><span class="face-head"></span></span>
+          <span class="bunny-face bunny-face--crazy bunny-face--big"><span class="ear ear--l"><i></i><i></i><i></i><i></i></span><span class="ear ear--r ear--bent"><i></i><i></i><i></i></span><span class="face-head"></span></span>
+          <span class="bunny-face bunny-face--crazy"><span class="ear ear--l"><i></i><i></i><i></i><i></i></span><span class="ear ear--r ear--bent"><i></i><i></i><i></i></span><span class="face-head"></span></span>
+          <span class="bunny-face bunny-face--crazy"><span class="ear ear--l"><i></i><i></i><i></i><i></i></span><span class="ear ear--r ear--bent"><i></i><i></i><i></i></span><span class="face-head"></span></span>
+        </span>
+      </div>
+      <button class="btn btn-primary btn-start" type="button" data-action="start">시작</button>
+    </div>
+
+    <div class="cheats">
+      <section class="cheat cheat--keys" aria-label="키보드·마우스 조작">
+        <h2 class="cheat-title">키보드 · 마우스</h2>
+        <ul class="cheat-list">
+          <li><span class="cheat-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>움직이기</span></li>
+          <li><span class="cheat-keys"><kbd>마우스</kbd></span><span>조준 · 누르고 있으면 공격</span></li>
+          <li><span class="cheat-keys"><kbd>Space</kbd><kbd>우클릭</kbd></span><span>데굴 구르기 (안 맞아요)</span></li>
+          <li><span class="cheat-keys"><kbd>1</kbd><kbd>2</kbd><kbd>Q</kbd></span><span>블록 총 · 블록 칼</span></li>
+          <li><span class="cheat-keys"><kbd>R</kbd><kbd>Esc</kbd></span><span>장전 · 멈춤</span></li>
+        </ul>
+      </section>
+      <section class="cheat cheat--touch" aria-label="터치 조작">
+        <h2 class="cheat-title">터치</h2>
+        <ul class="cheat-list">
+          <li><span class="cheat-keys"><span class="cheat-zone">왼쪽</span></span><span>끌어서 움직이기</span></li>
+          <li><span class="cheat-keys"><span class="cheat-zone">오른쪽</span></span><span>끌면 그쪽으로 공격</span></li>
+          <li><span class="cheat-keys"><span class="cheat-zone">톡!</span></span><span>가까운 미친토끼 자동 조준</span></li>
+          <li><span class="cheat-keys"><span class="cheat-zone">단추</span></span><span>구르기 · 무기 · 장전</span></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!-- ── 다 터뜨렸을 때 ── -->
+<section id="winOverlay" class="overlay overlay--win" aria-labelledby="winTitle" hidden>
+  <div class="overlay-card result-card">
+    <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <span class="bunny-face bunny-face--me bunny-face--hero" aria-hidden="true">
+      <span class="ear ear--l"><i></i><i></i><i></i><i></i></span>
+      <span class="ear ear--r"><i></i><i></i><i></i><i></i></span>
+      <span class="face-head"></span>
+    </span>
+    <h2 id="winTitle" class="overlay-title">다 터뜨렸어요!</h2>
+    <p class="overlay-sub">미친토끼가 모두 블록 더미가 됐어요.</p>
+    <div class="result-stats">
+      <div class="result-stat"><strong data-field="time">0:00</strong><span>걸린 시간</span></div>
+      <div class="result-stat"><strong data-field="hp">100</strong><span>남은 체력</span></div>
+      <div class="result-stat"><strong data-field="accuracy">0%</strong><span>명중률</span></div>
+    </div>
+    <div class="overlay-actions">
+      <button class="btn btn-primary btn-big" type="button" data-action="restart">한 번 더!</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── 내 토끼가 터졌을 때 ── -->
+<section id="loseOverlay" class="overlay overlay--lose" aria-labelledby="loseTitle" hidden>
+  <div class="overlay-card result-card">
+    <div class="rubble" aria-hidden="true">
+      <span class="bunny-face bunny-face--me bunny-face--dizzy"><span class="face-head"></span></span>
+      <i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <h2 id="loseTitle" class="overlay-title"><span class="pop-word">펑!</span> 내 토끼가 터졌어요</h2>
+    <p class="overlay-sub">당근 먹고 힘내서 다시 해 봐요.</p>
+    <div class="result-stats">
+      <div class="result-stat"><strong data-field="time">0:00</strong><span>버틴 시간</span></div>
+      <div class="result-stat"><strong><span data-field="kills">0</span><small>/<span data-field="total">5</span></small></strong><span>터뜨린 미친토끼</span></div>
+      <div class="result-stat"><strong data-field="accuracy">0%</strong><span>명중률</span></div>
+    </div>
+    <div class="overlay-actions">
+      <button class="btn btn-primary btn-big" type="button" data-action="restart">다시 하기</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── 잠깐 멈춤 ── -->
+<section id="pauseOverlay" class="overlay overlay--pause" aria-labelledby="pauseTitle" hidden>
+  <div class="overlay-card pause-card">
+    <h2 id="pauseTitle" class="overlay-title">잠깐 멈춤</h2>
+    <p class="overlay-sub">미친토끼들도 기다려 줄게요.</p>
+    <div class="overlay-actions">
+      <button class="btn btn-primary btn-big" type="button" data-action="resume">계속하기</button>
+      <button class="btn btn-big" type="button" data-action="restart">처음부터</button>
+    </div>
+  </div>
+</section>
+
+<script type="module" src="js/fight/main.js"></script>
+</body>
+</html>

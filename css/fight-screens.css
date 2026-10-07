@@ -1,0 +1,292 @@
+/* 펑펑 토끼 안내창 틀 + 결과 · 멈춤 화면 (js/fight/ui/overlays.js)
+   모든 안내창이 같이 쓰는 틀(반투명 막 + 둥근 카드), 다 터뜨렸을 때(꽃가루 블록 + 깡충 토끼),
+   내 토끼가 터졌을 때(흩어진 블록), 잠깐 멈춤 화면의 모양입니다.
+   글자는 fight.html, 색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y; /* 카드가 화면보다 길면 위아래로 밀어 보기 */
+  padding: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--veil) 70%, transparent) 0%, var(--veil) 70%);
+  user-select: none;
+}
+
+.overlay-card {
+  position: relative;
+  width: min(440px, 100%);
+  margin: auto;
+  padding: 26px;
+  border: 2px solid var(--line);
+  border-radius: 24px;
+  background: var(--sheet);
+  box-shadow: var(--shadow-big);
+  animation: card-in 0.4s cubic-bezier(.3, 1.4, .5, 1);
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    scale: 0.92;
+    translate: 0 18px;
+  }
+}
+
+.result-card,
+.pause-card {
+  text-align: center;
+}
+
+.overlay-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.overlay--win .overlay-title {
+  color: var(--berry);
+}
+
+.overlay--lose .overlay-title {
+  color: var(--ink);
+}
+
+/* '펑!' 만 당근색 + 살짝 기울여서 */
+.pop-word {
+  display: inline-block;
+  color: var(--carrot);
+  rotate: -6deg;
+}
+
+.overlay-sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.bunny-face--hero {
+  --size: 1.5;
+  margin: 4px auto 8px;
+  animation: hop 0.7s cubic-bezier(.3, 0, .5, 1) infinite;
+}
+
+/* 이겼을 때 위에서 떨어지는 블록 꽃가루 */
+.confetti {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0;
+  pointer-events: none;
+}
+
+.confetti i,
+.rubble i {
+  position: absolute;
+  display: block;
+  width: 14px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--c, var(--pink));
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.18);
+}
+
+.confetti i {
+  top: -6px;
+  left: var(--x);
+  animation: confetti-fall 1.6s cubic-bezier(.3, .6, .5, 1) var(--d, 0s) infinite;
+}
+
+.confetti i:nth-child(1) { --x: 8%; --c: #ff698f; --d: 0s; }
+.confetti i:nth-child(2) { --x: 20%; --c: #f2cd37; --d: 0.5s; }
+.confetti i:nth-child(3) { --x: 33%; --c: #5a93db; --d: 0.2s; }
+.confetti i:nth-child(4) { --x: 46%; --c: #fe8a18; --d: 0.9s; }
+.confetti i:nth-child(5) { --x: 58%; --c: #4b9f4a; --d: 0.35s; }
+.confetti i:nth-child(6) { --x: 70%; --c: #e4adc8; --d: 1.1s; }
+.confetti i:nth-child(7) { --x: 82%; --c: #f2cd37; --d: 0.65s; }
+.confetti i:nth-child(8) { --x: 92%; --c: #ff698f; --d: 1.3s; }
+
+@keyframes confetti-fall {
+  0% {
+    translate: 0 0;
+    rotate: 0deg;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    translate: 10px 120px;
+    rotate: 260deg;
+    opacity: 0;
+  }
+}
+
+/* 졌을 때: 귀가 다 터진 내 토끼가 어질어질 + 둘레에 흩어진 귀 블록 */
+.rubble {
+  position: relative;
+  width: 150px;
+  height: 66px;
+  margin: 0 auto 8px;
+}
+
+.rubble .bunny-face {
+  --size: 1.25;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  margin-left: -25px;
+  transform-origin: 50% 90%;
+  animation: dizzy 2.2s ease-in-out infinite;
+}
+
+/* 엑스(X) 눈 + 볼 + 입 */
+.bunny-face--dizzy .face-head {
+  background:
+    linear-gradient(45deg, transparent 40%, var(--eye) 40% 60%, transparent 60%) 22% 42% / 26% 36% no-repeat,
+    linear-gradient(-45deg, transparent 40%, var(--eye) 40% 60%, transparent 60%) 22% 42% / 26% 36% no-repeat,
+    linear-gradient(45deg, transparent 40%, var(--eye) 40% 60%, transparent 60%) 78% 42% / 26% 36% no-repeat,
+    linear-gradient(-45deg, transparent 40%, var(--eye) 40% 60%, transparent 60%) 78% 42% / 26% 36% no-repeat,
+    radial-gradient(ellipse calc(4.4px * var(--size)) calc(2.6px * var(--size)) at 15% 74%, var(--blush) 0 90%, transparent),
+    radial-gradient(ellipse calc(4.4px * var(--size)) calc(2.6px * var(--size)) at 85% 74%, var(--blush) 0 90%, transparent),
+    radial-gradient(circle at 50% 72%, var(--eye) 0 calc(2px * var(--size)), transparent calc(2.4px * var(--size))),
+    linear-gradient(180deg, var(--fur) 62%, var(--fur-shade));
+}
+
+@keyframes dizzy {
+  0%,
+  100% {
+    rotate: -9deg;
+  }
+  50% {
+    rotate: 7deg;
+  }
+}
+
+.rubble i:nth-child(2) { left: 6px; bottom: 0; --c: #f4f4f4; rotate: -8deg; }
+.rubble i:nth-child(3) { left: 24px; bottom: 0; --c: #e4adc8; rotate: 12deg; }
+.rubble i:nth-child(4) { left: 15px; bottom: 9px; --c: #f4f4f4; rotate: 4deg; }
+.rubble i:nth-child(5) { right: 8px; bottom: 0; --c: #5a93db; rotate: -18deg; }
+.rubble i:nth-child(6) { right: 26px; bottom: 0; --c: #f4f4f4; rotate: 6deg; }
+.rubble i:nth-child(7) { right: 40px; bottom: 0; --c: #ff698f; rotate: 30deg; animation: rubble-hop 1.6s ease-in-out infinite; }
+
+@keyframes rubble-hop {
+  0%,
+  60%,
+  100% {
+    translate: 0 0;
+  }
+  70% {
+    translate: 4px -14px;
+    rotate: 140deg;
+  }
+}
+
+.result-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.result-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--pink-soft) 50%, var(--sheet));
+}
+
+.result-stat strong {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-stat small {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.result-stat > span {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.overlay-actions .btn {
+  flex: 1 1 140px;
+}
+
+.pause-card {
+  width: min(360px, 100%);
+}
+
+/* 휴대폰 세로: 한 줄로 쌓기 */
+@media (max-width: 700px) {
+  .overlay-card {
+    padding: 22px 18px;
+  }
+
+  .overlay-title {
+    font-size: 32px;
+  }
+}
+
+/* 휴대폰 가로처럼 낮은 화면: 시작 화면을 양옆으로 나누고 작게 */
+@media (max-height: 500px) {
+  .overlay-card {
+    padding: 16px 20px;
+  }
+
+  .overlay-title {
+    font-size: 28px;
+  }
+
+  .bunny-face--hero {
+    --size: 1.1;
+    margin: 0 auto 2px;
+  }
+
+  .rubble {
+    height: 46px;
+  }
+
+  .rubble .bunny-face {
+    --size: 0.85;
+    margin-left: -17px;
+  }
+
+  .result-stats {
+    margin-top: 10px;
+  }
+
+  .result-stat strong {
+    font-size: 22px;
+  }
+
+  .overlay-actions {
+    margin-top: 12px;
+  }
+}
+
+/* 영상 녹화(?capture) 화면에서는 안내창을 숨김 */
+body.capture .overlay {
+  display: none !important;
+}

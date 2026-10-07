@@ -12,7 +12,7 @@
 //   body.extraInvulnerable    () => true 이면 맞지 않음 (구르는 중 등, 주인이 정함)
 //   body.position / velocity / radius / facing / alive / hurt / health / team
 //
-// 맞는 세기·튀는 블록 세기는 fightConfig.js 의 pop 설정에서 바꿉니다.
+// 맞는 세기·튀는 블록 세기·'펑' 잔해 비율(deathKeep)은 fightConfig.js 의 pop 설정에서 바꿉니다.
 
 import * as THREE from '../../lib/three.js';
 import { FIGHT } from '../fightConfig.js';
@@ -108,7 +108,7 @@ export function createFighterBody({ team, rig, maxHp, radius, debris, fx, events
   function die(position) {
     body.alive = false;
     knock.set(0, 0, 0);
-    const blocks = rig.explode();
+    const blocks = thinOut(rig.explode(), FIGHT.pop.deathKeep ?? 1);
     debris.burst(blocks, { from: hitPoint.set(position.x, CHEST_HEIGHT * 0.6 * scaleOf(rig), position.z), power: FIGHT.pop.deathPower, upward: FIGHT.pop.deathUpward });
     fx?.popRing?.(position, scaleOf(rig));
     view?.shake?.(team === 'player' ? FIGHT.pop.deathShake : FIGHT.pop.deathShake * 0.5);
@@ -116,6 +116,21 @@ export function createFighterBody({ team, rig, maxHp, radius, debris, fx, events
   }
 
   return body;
+}
+
+// 블록 목록에서 keep 비율만큼 고르게 골라 냄 (부위별 색 비율은 그대로)
+function thinOut(blocks, keep) {
+  if (keep >= 1) return blocks;
+  const kept = [];
+  let carry = Math.random();
+  for (const block of blocks) {
+    carry += keep;
+    if (carry >= 1) {
+      carry -= 1;
+      kept.push(block);
+    }
+  }
+  return kept;
 }
 
 function scaleOf(rig) {

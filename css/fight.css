@@ -1,0 +1,470 @@
+/* 펑펑 토끼 화면 꾸미기 — 공통
+   '블록 성 지키기'(css/game.css)와 같은 집안: 같은 글꼴(Jua + IBM Plex Sans KR), 둥근 장난감 판, 밝은·어두운 화면.
+   대신 이 게임은 분홍·빨강 강조색과 당근 주황색으로 귀엽고 신나는 느낌을 냅니다.
+   색은 맨 위 :root 에서만 정하고, 다른 파일에서도 이름(var(--...))으로 가져다 씁니다.
+   색을 바꾸고 싶으면 :root(밝은 화면)와 그 아래 어두운 화면 묶음 두 곳의 값을 바꾸면 됩니다.
+
+   파일 나눔 (fight.html 이 모두 불러옴)
+     css/fight.css          색과 글꼴, 바탕, 버튼·키 모양, 토끼 얼굴 아이콘, 영상 녹화·움직임 줄이기
+     css/fight-title.css    시작 화면 ('펑펑 토끼' 글자, 이야기, 조작 안내, 시작 단추)
+     css/fight-screens.css  안내창 틀, 이겼을 때·졌을 때·멈춤 화면
+     css/fight-hud.css      위쪽 정보판 (내 토끼 체력, 남은 미친토끼, 소리·멈춤 단추), 조작 도움말
+     css/fight-weapons.css  오른쪽 아래 무기 칸 (컴퓨터)
+     css/fight-fx.css       마우스 조준점, 빨간 화면 테두리, 떠오르는 글자
+     css/fight-touch.css    휴대폰 조작 (움직이기·조준 막대, 구르기·무기·장전 단추)
+
+   이 파일 차례: 색과 글꼴 → 바탕과 3D 싸움터 → 버튼·키 모양 → 토끼 얼굴 아이콘 → 영상 녹화·움직임 줄이기 */
+
+:root {
+  --paper: #fdf0f3; /* 바탕 (연분홍 종이) */
+  --sheet: #fffafb; /* 안내 카드 바탕 */
+  --panel: rgb(255 250 251 / 0.93); /* 3D 화면 위에 떠 있는 정보판 */
+  --ink: #2b1a23; /* 글자 */
+  --muted: #866271; /* 보조 글자 */
+  --line: #f0cdd9; /* 테두리 */
+  --berry: #e23a64; /* 주 버튼 (딸기 빨강) */
+  --berry-press: #c42a52;
+  --berry-ink: #ffffff;
+  --pink: #ff698f; /* 분홍 강조 (체력, 조준점) */
+  --pink-soft: #ffdbe5;
+  --carrot: #fe8a18; /* 당근 주황 */
+  --carrot-soft: #ffe4c7;
+  --yellow: #f2cd37;
+  --leaf: #4b9f4a;
+  --track: #f4dce4; /* 체력 막대 바탕 */
+  --hp-hi: #ffb0c4; /* 체력 막대 위쪽 밝은 줄 */
+  --hp-low: #e5262f; /* 체력 위험 */
+  --veil: rgb(253 240 243 / 0.66); /* 시작·결과 화면 뒤를 살짝 덮는 막 */
+  --shadow: 0 1px 0 rgb(43 26 35 / 0.06), 0 6px 18px rgb(120 30 60 / 0.16);
+  --shadow-big: 0 18px 48px rgb(120 30 60 / 0.26);
+  --focus: #1c6dd0;
+  --float-outline: #2b1a23; /* 떠오르는 글자 테두리 */
+  --logo-line: #2b1a23; /* 펑펑 토끼 글자 테두리 */
+  --face-line: #2b1a23; /* 토끼 얼굴 아이콘 테두리 */
+
+  /* 토끼 얼굴 아이콘 색 (블록 색 목록 js/bricks/brickColors.js 에서 고름) */
+  --fur-me: #f4f4f4; /* 흰색 */
+  --fur-me-shade: #f6d7b3; /* 연살구색 */
+  --ear-inner: #e4adc8; /* 분홍 */
+  --blush: #ff698f; /* 코랄 */
+  --eye: #1b2a34; /* 검정 */
+  --fur-crazy: #a0a5a9; /* 밝은 회색 */
+  --fur-crazy-shade: #6c6e68; /* 진한 회색 */
+  --eye-crazy: #c91a09; /* 빨강 */
+
+  --font-display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --radius: 16px;
+
+  /* 휴대폰 화면 가장자리(노치 등)를 피하는 여백 */
+  --edge-top: max(10px, env(safe-area-inset-top));
+  --edge-right: max(12px, env(safe-area-inset-right));
+  --edge-bottom: max(12px, env(safe-area-inset-bottom));
+  --edge-left: max(12px, env(safe-area-inset-left));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1b1219;
+    --sheet: #261a22;
+    --panel: rgb(38 26 34 / 0.92);
+    --ink: #f8e8ee;
+    --muted: #c29cad;
+    --line: #4a3140;
+    --berry: #f04a73;
+    --berry-press: #d23660;
+    --pink-soft: #4a2633;
+    --carrot-soft: #4a3220;
+    --track: #43303b;
+    --hp-low: #ff4a52;
+    --veil: rgb(27 18 25 / 0.7);
+    --shadow: 0 1px 0 rgb(0 0 0 / 0.2), 0 6px 18px rgb(0 0 0 / 0.4);
+    --shadow-big: 0 18px 48px rgb(0 0 0 / 0.55);
+    --focus: #6aa9f5;
+    --float-outline: #1b1219;
+    --logo-line: #1b1219;
+    --face-line: #1b1219;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #1b1219;
+  --sheet: #261a22;
+  --panel: rgb(38 26 34 / 0.92);
+  --ink: #f8e8ee;
+  --muted: #c29cad;
+  --line: #4a3140;
+  --berry: #f04a73;
+  --berry-press: #d23660;
+  --pink-soft: #4a2633;
+  --carrot-soft: #4a3220;
+  --track: #43303b;
+  --hp-low: #ff4a52;
+  --veil: rgb(27 18 25 / 0.7);
+  --shadow: 0 1px 0 rgb(0 0 0 / 0.2), 0 6px 18px rgb(0 0 0 / 0.4);
+  --shadow-big: 0 18px 48px rgb(0 0 0 / 0.55);
+  --focus: #6aa9f5;
+  --float-outline: #1b1219;
+  --logo-line: #1b1219;
+  --face-line: #1b1219;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* 화면이 끌려 올라가거나 확대되지 않게 (휴대폰) */
+html {
+  touch-action: none;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: keep-all; /* 한글 낱말이 줄 끝에서 잘리지 않게 */
+  overflow-wrap: break-word;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+.icon-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* 3D 그림판이 꽉 채움. 그림판이 아직 없을 때는 잔디색 바탕 */
+.arena {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.14) 0 2.6px, transparent 3.2px) 0 0 / 18px 18px,
+    radial-gradient(120% 90% at 50% 40%, #5aae58 0%, #3f8f3e 100%);
+}
+
+.fight-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  outline: none;
+}
+
+/* 싸우는 동안 컴퓨터에서는 마우스 화살표 대신 조준점 (hud.js 가 body 에 hud-on 을 붙임) */
+body.hud-on:not(.touch-mode):not(.overlay-open) .arena {
+  cursor: none;
+}
+
+.boot-message {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: #ffffff;
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+  pointer-events: none;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 8px 18px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.07);
+  transition: translate 0.08s, box-shadow 0.08s, background-color 0.15s;
+}
+
+.btn:hover {
+  border-color: var(--muted);
+}
+
+.btn:active {
+  translate: 0 2px;
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.07);
+}
+
+/* 딸기색 블록 버튼: 아래쪽 그림자로 블록처럼 도톰하게 */
+.btn-primary {
+  border-color: var(--berry);
+  background: var(--berry);
+  color: var(--berry-ink);
+  box-shadow: inset 0 -5px 0 rgb(0 0 0 / 0.2);
+}
+
+.btn-primary:hover {
+  border-color: var(--berry-press);
+  background: var(--berry-press);
+}
+
+.btn-big {
+  min-height: 56px;
+  padding: 10px 26px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 400;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  fill: currentColor;
+}
+
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1.5px solid var(--line);
+  border-radius: 7px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: inset 0 -2.5px 0 rgb(0 0 0 / 0.08);
+  white-space: nowrap;
+}
+
+/* 머리 + 블록 네 칸짜리 귀 두 개. 귀 블록은 아래(DOM 첫 칸)부터 위(끝 칸)로 쌓임 */
+.bunny-face {
+  --fur: var(--fur-me);
+  --fur-shade: var(--fur-me-shade);
+  --inner: var(--ear-inner);
+  --eye-color: var(--eye);
+  --size: 1;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: calc(40px * var(--size));
+  height: calc(52px * var(--size));
+}
+
+.bunny-face .face-head {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(30px * var(--size));
+  border-radius: 42% 42% 46% 46%;
+  background:
+    radial-gradient(circle at 28% 44%, #ffffff 0 calc(1.1px * var(--size)), transparent calc(1.5px * var(--size))),
+    radial-gradient(circle at 66% 44%, #ffffff 0 calc(1.1px * var(--size)), transparent calc(1.5px * var(--size))),
+    radial-gradient(circle at 31% 50%, var(--eye-color) 0 calc(3.3px * var(--size)), transparent calc(3.8px * var(--size))),
+    radial-gradient(circle at 69% 50%, var(--eye-color) 0 calc(3.3px * var(--size)), transparent calc(3.8px * var(--size))),
+    radial-gradient(ellipse calc(4.4px * var(--size)) calc(2.6px * var(--size)) at 15% 72%, var(--blush) 0 90%, transparent),
+    radial-gradient(ellipse calc(4.4px * var(--size)) calc(2.6px * var(--size)) at 85% 72%, var(--blush) 0 90%, transparent),
+    radial-gradient(ellipse calc(2.4px * var(--size)) calc(1.8px * var(--size)) at 50% 66%, var(--blush) 0 92%, transparent),
+    linear-gradient(180deg, var(--fur) 62%, var(--fur-shade));
+  box-shadow: 0 0 0 calc(2px * var(--size)) var(--face-line), inset 0 calc(-3px * var(--size)) 0 rgb(0 0 0 / 0.08);
+}
+
+.bunny-face .ear {
+  position: absolute;
+  bottom: calc(27.5px * var(--size));
+  display: flex;
+  flex-direction: column-reverse;
+  gap: calc(1px * var(--size));
+  transform-origin: 50% 100%;
+}
+
+.bunny-face .ear--l {
+  left: calc(7px * var(--size));
+  rotate: -9deg;
+}
+
+.bunny-face .ear--r {
+  right: calc(7px * var(--size));
+  rotate: 9deg;
+}
+
+/* 귀 블록 하나: 가장자리는 털색, 가운데는 분홍 */
+.bunny-face .ear i {
+  display: block;
+  width: calc(9px * var(--size));
+  height: calc(5.4px * var(--size));
+  border-radius: calc(2px * var(--size));
+  background: linear-gradient(90deg, var(--fur) 0 26%, var(--inner) 26% 74%, var(--fur) 74%);
+  box-shadow: 0 0 0 calc(1.5px * var(--size)) var(--face-line);
+}
+
+.bunny-face .ear i:last-child {
+  border-radius: calc(4.5px * var(--size)) calc(4.5px * var(--size)) calc(2px * var(--size)) calc(2px * var(--size));
+}
+
+/* 귀 블록이 톡 터져 날아감 (hud.js 가 is-gone 을 붙임) */
+.bunny-face .ear i.is-gone {
+  animation: ear-block-pop 0.45s cubic-bezier(.2, .7, .4, 1) forwards;
+}
+
+.bunny-face .ear--r i.is-gone {
+  --fly: 1;
+}
+
+@keyframes ear-block-pop {
+  0% {
+    translate: 0 0;
+    rotate: 0deg;
+    opacity: 1;
+  }
+  35% {
+    translate: calc(var(--fly, -1) * 6px) -10px;
+    rotate: calc(var(--fly, -1) * 70deg);
+    opacity: 1;
+  }
+  100% {
+    translate: calc(var(--fly, -1) * 12px) 6px;
+    rotate: calc(var(--fly, -1) * 200deg);
+    opacity: 0;
+  }
+}
+
+/* 당근을 먹어 귀 블록이 다시 붙음 */
+.bunny-face .ear i.is-back {
+  animation: ear-block-back 0.35s cubic-bezier(.3, 1.6, .5, 1);
+}
+
+@keyframes ear-block-back {
+  from {
+    translate: 0 -10px;
+    opacity: 0;
+  }
+}
+
+/* 미친토끼: 회색 털, 빨간 눈, 화난 눈썹, 반창고, 꺾인 귀 */
+.bunny-face--crazy {
+  --fur: var(--fur-crazy);
+  --fur-shade: var(--fur-crazy-shade);
+  --inner: #c870a0;
+  --eye-color: var(--eye-crazy);
+}
+
+.bunny-face--crazy .face-head {
+  background:
+    linear-gradient(#f4f4f4, #f4f4f4) 84% 14% / calc(9px * var(--size)) calc(4px * var(--size)) no-repeat,
+    radial-gradient(circle at 31% 54%, #ff698f 0 calc(1.2px * var(--size)), transparent calc(1.6px * var(--size))),
+    radial-gradient(circle at 69% 54%, #ff698f 0 calc(1.2px * var(--size)), transparent calc(1.6px * var(--size))),
+    radial-gradient(circle at 31% 54%, var(--eye-color) 0 calc(3.4px * var(--size)), transparent calc(3.9px * var(--size))),
+    radial-gradient(circle at 69% 54%, var(--eye-color) 0 calc(3.4px * var(--size)), transparent calc(3.9px * var(--size))),
+    radial-gradient(ellipse calc(5px * var(--size)) calc(1.6px * var(--size)) at 50% 76%, #1b2a34 0 90%, transparent),
+    linear-gradient(180deg, var(--fur) 60%, var(--fur-shade));
+}
+
+/* 화난 눈썹 두 개 */
+.bunny-face--crazy .face-head::before,
+.bunny-face--crazy .face-head::after {
+  content: "";
+  position: absolute;
+  top: 24%;
+  width: calc(10px * var(--size));
+  height: calc(2.6px * var(--size));
+  border-radius: 2px;
+  background: var(--face-line);
+}
+
+.bunny-face--crazy .face-head::before {
+  left: 16%;
+  rotate: 22deg;
+}
+
+.bunny-face--crazy .face-head::after {
+  right: 16%;
+  rotate: -22deg;
+}
+
+/* 꺾인 귀: 블록 세 칸에 끝이 옆으로 휘어짐 */
+.bunny-face .ear--bent {
+  rotate: 24deg;
+}
+
+.bunny-face .ear--bent i:last-child {
+  translate: calc(3px * var(--size)) calc(1px * var(--size));
+  rotate: 50deg;
+}
+
+.bunny-face--big {
+  --size: 1.18;
+}
+
+@keyframes hop {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  40% {
+    translate: 0 -8px;
+  }
+}
+
+/* 휴대폰 가로처럼 낮은 화면: 키 모양을 조금 작게 */
+@media (max-height: 500px) {
+  kbd {
+    min-width: 21px;
+    height: 21px;
+    font-size: 11px;
+  }
+}
+
+/* 영상 녹화(?capture) 화면에서는 안내 글자를 숨김 */
+body.capture .boot-message {
+  display: none !important;
+}
+
+/* 움직임 줄이기를 켠 기기: 통통 튀는 움직임을 멈춤 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

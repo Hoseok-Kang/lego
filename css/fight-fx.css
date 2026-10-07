@@ -1,0 +1,222 @@
+/* 펑펑 토끼 화면 효과 (js/fight/ui/hud.js, floatText.js)
+   - 마우스를 따라다니는 분홍 조준점 (장전하는 동안 당근색이 한 바퀴 차오름, 쏠 때 톡)
+   - 빨간 화면 테두리 (체력이 적으면 두근두근, 맞으면 번쩍)
+   - 떠오르는 글자 (-10, 펑!, +30, 장전!) — 종류별 색·크기
+   색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다. */
+
+.crosshair {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.crosshair > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% -50%;
+}
+
+/* 분홍 고리 + 블록 같은 네 눈금 */
+.crosshair-ring {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--pink);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #ffffff, inset 0 0 0 2px #ffffff, 0 2px 6px rgb(0 0 0 / 0.3);
+  transition: scale 0.08s;
+}
+
+.crosshair-ring::before,
+.crosshair-ring::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  background:
+    linear-gradient(var(--pink), var(--pink)) 50% 0 / 4px 9px no-repeat,
+    linear-gradient(var(--pink), var(--pink)) 50% 100% / 4px 9px no-repeat;
+  filter: drop-shadow(0 0 1.5px #ffffff) drop-shadow(0 0 1px #ffffff);
+  width: 4px;
+  height: 52px;
+}
+
+.crosshair-ring::after {
+  rotate: 90deg;
+}
+
+.crosshair-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--berry);
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+/* 장전하는 동안 고리 바깥에 당근색이 한 바퀴 차오름 */
+.crosshair-reload {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: conic-gradient(var(--carrot) calc(var(--reload, 0) * 1turn), rgb(255 255 255 / 0.5) 0);
+  -webkit-mask: radial-gradient(circle, transparent 0 19px, #000 20px);
+  mask: radial-gradient(circle, transparent 0 19px, #000 20px);
+  opacity: 0;
+}
+
+.crosshair.is-reloading .crosshair-reload {
+  opacity: 1;
+}
+
+.crosshair.is-reloading .crosshair-ring {
+  border-color: var(--carrot);
+}
+
+/* 쏠 때 톡 */
+.crosshair.is-kick .crosshair-ring {
+  scale: 1.28;
+}
+
+.crosshair.is-sword .crosshair-ring {
+  border-radius: 30%;
+  rotate: 45deg;
+}
+
+/* 휴대폰·메뉴가 열렸을 때·창 밖에서는 숨김 */
+body.touch-mode .crosshair,
+body.overlay-open .crosshair,
+body:not(.hud-on) .crosshair,
+.crosshair.is-away {
+  display: none;
+}
+
+.hurt-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.hurt-vignette::before,
+.hurt-vignette::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  /* 가운데는 투명, 화면 가장자리(약 71%)부터 빨갛게, 네 귀퉁이가 가장 진함 */
+  background: radial-gradient(ellipse at 50% 50%, transparent 48%, rgb(229 38 47 / 0.34) 71%, rgb(229 38 47 / 0.7) 100%);
+}
+
+/* 체력이 적을 때: 천천히 두근두근 */
+.hurt-vignette.is-low::before {
+  animation: heartbeat 1.1s ease-in-out infinite;
+}
+
+/* 맞았을 때: 한 번 번쩍 */
+.hurt-vignette.is-hit::after {
+  animation: hurt-flash 0.4s ease-out;
+}
+
+@keyframes heartbeat {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  30% {
+    opacity: 0.55;
+  }
+  45% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes hurt-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.float-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.float-text {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1;
+  color: #ffffff;
+  white-space: nowrap;
+  will-change: transform, opacity;
+  -webkit-text-stroke: 5px var(--float-outline);
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 var(--float-outline);
+}
+
+/* 미친토끼가 맞음: 흰 숫자 */
+.float-text[data-kind="damage"] {
+  color: #ffffff;
+}
+
+/* 칼로 세게 맞힘: 노란 큰 숫자 */
+.float-text[data-kind="big"] {
+  font-size: 30px;
+  color: #fff03a;
+}
+
+/* 내 토끼가 맞음: 빨간 숫자 */
+.float-text[data-kind="hurt"] {
+  font-size: 28px;
+  color: #ff5c6c;
+}
+
+/* 펑! (토끼가 터짐) */
+.float-text[data-kind="pop"] {
+  font-size: 54px;
+  color: #fff03a;
+  -webkit-text-stroke: 7px var(--float-outline);
+  text-shadow: 0 4px 0 var(--float-outline), 0 0 24px rgb(255 105 143 / 0.8);
+}
+
+/* 당근 먹고 회복 */
+.float-text[data-kind="heal"] {
+  font-size: 30px;
+  color: #8be36f;
+}
+
+/* 장전!, 구르기 같은 안내 */
+.float-text[data-kind="info"] {
+  font-size: 18px;
+  color: #ffffff;
+  -webkit-text-stroke: 4px var(--float-outline);
+}
+
+/* 총알 튕겨 냄 */
+.float-text[data-kind="deflect"] {
+  font-size: 20px;
+  color: #9fc3e9;
+  -webkit-text-stroke: 4px var(--float-outline);
+}
+
+/* 영상 녹화(?capture) 화면에서는 조준점을 숨김 */
+body.capture .crosshair {
+  display: none !important;
+}

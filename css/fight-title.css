@@ -1,0 +1,409 @@
+/* 펑펑 토끼 시작 화면 (js/fight/ui/overlays.js 의 showTitle)
+   '펑펑 토끼' 큰 글자(펑펑은 노란 별 위에서 통통, 토끼에는 귀가 쫑긋), 이야기 한 줄, 내 토끼 VS 미친토끼,
+   큰 [시작] 단추, 키보드·터치 조작 안내. 휴대폰에서는 터치 안내만 보입니다.
+   글자는 fight.html 의 #titleOverlay, 색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다.
+   안내창 틀(.overlay, .overlay-card)은 css/fight-screens.css 에 있습니다. */
+
+.title-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 26px;
+  width: min(820px, 100%);
+  padding: 30px 30px 28px;
+}
+
+.title-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+/* '펑펑 토끼' 큰 글자: 펑펑은 노란 별 위에서 통통, 토끼에는 귀가 쫑긋 */
+.logo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.14em;
+  margin: 0;
+  padding-top: 0.62em;
+  font-family: var(--font-display);
+  font-size: clamp(54px, 9vw, 88px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.logo-pop {
+  display: flex;
+  gap: 0.04em;
+}
+
+.logo-pop > span,
+.logo-bunny {
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
+  -webkit-text-stroke: 0.085em var(--logo-line);
+  paint-order: stroke fill;
+  text-shadow: 0 0.07em 0 var(--logo-line);
+}
+
+.logo-pop > span {
+  color: var(--pink);
+  animation: logo-bounce 1.5s cubic-bezier(.4, 0, .4, 1) infinite;
+}
+
+.logo-pop > span:nth-child(1) {
+  rotate: -10deg;
+}
+
+.logo-pop > span:nth-child(2) {
+  rotate: 8deg;
+  color: var(--carrot);
+  animation-delay: 0.2s;
+}
+
+/* 글자 뒤 노란 별 (펑!) */
+.logo-pop > span::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -0.2em -0.24em -0.14em;
+  background: radial-gradient(circle at 50% 45%, #fff03a 0 30%, var(--yellow) 60%);
+  clip-path: polygon(50% 0%, 59.3% 15.2%, 75% 6.7%, 75.5% 24.5%, 93.3% 25%, 84.8% 40.7%, 100% 50%, 84.8% 59.3%, 93.3% 75%, 75.5% 75.5%, 75% 93.3%, 59.3% 84.8%, 50% 100%, 40.7% 84.8%, 25% 93.3%, 24.5% 75.5%, 6.7% 75%, 15.2% 59.3%, 0% 50%, 15.2% 40.7%, 6.7% 25%, 24.5% 24.5%, 25% 6.7%, 40.7% 15.2%);
+  animation: burst-spin 6s linear infinite;
+}
+
+.logo-pop > span:nth-child(2)::before {
+  background: radial-gradient(circle at 50% 45%, #fff03a 0 24%, #f8bb3d 62%);
+  animation-direction: reverse;
+}
+
+@keyframes logo-bounce {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1 1;
+  }
+  45% {
+    translate: 0 -0.12em;
+    scale: 0.96 1.05;
+  }
+  60% {
+    translate: 0 0;
+    scale: 1.08 0.92;
+  }
+}
+
+@keyframes burst-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+.logo-bunny {
+  color: #ffffff;
+}
+
+/* 토끼 귀 두 개 (흰 털 + 분홍 속) */
+.logo-bunny::before,
+.logo-bunny::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  bottom: 70%;
+  width: 0.3em;
+  height: 0.74em;
+  border: 0.07em solid var(--logo-line);
+  border-radius: 50% 50% 44% 44% / 64% 64% 36% 36%;
+  background:
+    radial-gradient(ellipse 28% 56% at 50% 52%, var(--ear-inner) 0 94%, transparent 100%),
+    #ffffff;
+  transform-origin: 50% 100%;
+  animation: ear-wiggle 2.6s ease-in-out infinite;
+}
+
+.logo-bunny::before {
+  left: 0.12em;
+  --tilt: -14deg;
+  rotate: var(--tilt);
+}
+
+.logo-bunny::after {
+  left: 0.56em;
+  --tilt: 12deg;
+  rotate: var(--tilt);
+  animation-delay: 0.35s;
+}
+
+@keyframes ear-wiggle {
+  0%,
+  70%,
+  100% {
+    rotate: var(--tilt);
+  }
+  78% {
+    rotate: calc(var(--tilt) - 10deg);
+  }
+  86% {
+    rotate: calc(var(--tilt) + 8deg);
+  }
+}
+
+.story {
+  margin: 0;
+  max-width: 22em;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+/* 내 토끼 VS 미친토끼 다섯 */
+.cast {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+}
+
+.cast > .bunny-face--me {
+  --size: 1.15;
+  animation: hop 0.9s cubic-bezier(.3, 0, .5, 1) infinite;
+}
+
+.cast-vs {
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--berry);
+}
+
+.cast-foes {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+}
+
+.cast-foes .bunny-face {
+  --size: 0.8;
+  animation: jitter 0.5s steps(2) infinite;
+}
+
+.cast-foes .bunny-face:nth-child(2n) {
+  animation-delay: 0.25s;
+}
+
+.cast-foes .bunny-face--big {
+  --size: 0.98;
+}
+
+@keyframes jitter {
+  0% {
+    rotate: -4deg;
+  }
+  50% {
+    rotate: 4deg;
+  }
+}
+
+.btn-start {
+  min-width: 220px;
+  min-height: 64px;
+  margin-top: 4px;
+  border-radius: 20px;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  box-shadow: inset 0 -6px 0 rgb(0 0 0 / 0.2), 0 8px 0 -2px color-mix(in srgb, var(--berry) 30%, transparent);
+  position: relative;
+}
+
+/* 단추 둘레로 퍼지는 고리 (단추 자체는 가만히 있어서 누르기 쉬움) */
+.btn-start::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 3px solid var(--berry);
+  border-radius: 24px;
+  pointer-events: none;
+  opacity: 0;
+  animation: start-ring 1.6s ease-out infinite;
+}
+
+@keyframes start-ring {
+  0% {
+    scale: 0.96;
+    opacity: 0.7;
+  }
+  100% {
+    scale: 1.14 1.3;
+    opacity: 0;
+  }
+}
+
+/* 조작 안내 (키보드 · 터치). 휴대폰(touch-mode)에서는 터치 안내가 먼저 */
+.cheats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+body.touch-mode .cheat--touch {
+  order: -1;
+}
+
+.cheat {
+  padding: 12px 14px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--pink-soft) 55%, var(--sheet));
+}
+
+.cheat--touch {
+  background: color-mix(in srgb, var(--carrot-soft) 60%, var(--sheet));
+}
+
+.cheat-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 400;
+}
+
+.cheat-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr); /* 왼쪽 키 칸은 가장 긴 키 묶음만큼 */
+  align-items: center;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.cheat-list li {
+  display: contents;
+}
+
+/* 휴대폰(마우스 없는 기기)에서는 키보드 안내를 숨겨 화면을 짧게 */
+body.touch-mode .cheat--keys {
+  display: none;
+}
+
+.cheat-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.cheat-zone {
+  display: inline-grid;
+  place-items: center;
+  min-width: 56px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 13px;
+  background: var(--carrot);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 14px;
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.16);
+}
+
+/* 휴대폰 세로: 한 줄로 쌓기 */
+@media (max-width: 700px) {
+  .title-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 22px 18px 18px;
+  }
+
+  .logo {
+    font-size: clamp(50px, 16vw, 72px);
+  }
+
+  .story {
+    font-size: 17px;
+  }
+
+  .btn-start {
+    order: 5;
+  }
+}
+
+/* 휴대폰 가로처럼 낮은 화면: 시작 화면을 양옆으로 나누고 작게 */
+@media (max-height: 500px) {
+  .title-card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    width: min(760px, 100%);
+    padding: 14px 18px;
+  }
+
+  .title-main {
+    gap: 8px;
+  }
+
+  .logo {
+    font-size: clamp(40px, 13vh, 58px);
+  }
+
+  .story {
+    font-size: 15px;
+  }
+
+  .cast {
+    gap: 8px;
+  }
+
+  .cast > .bunny-face--me {
+    --size: 0.8;
+  }
+
+  .cast-foes .bunny-face {
+    --size: 0.6;
+  }
+
+  .cast-foes .bunny-face--big {
+    --size: 0.72;
+  }
+
+  .cast-vs {
+    font-size: 17px;
+  }
+
+  .btn-start {
+    min-height: 54px;
+    font-size: 26px;
+  }
+
+  .cheats {
+    gap: 8px;
+  }
+
+  .cheat {
+    padding: 8px 12px 10px;
+  }
+
+  .cheat-title {
+    margin-bottom: 4px;
+    font-size: 15px;
+  }
+
+  .cheat-list {
+    gap: 3px 12px;
+    font-size: 12.5px;
+  }
+
+  .cheat-zone {
+    height: 22px;
+    min-width: 48px;
+    font-size: 13px;
+  }
+}
