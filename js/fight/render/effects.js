@@ -8,7 +8,8 @@
 //                                            위치 높이(y)가 0.5 보다 낮으면 칼 높이 SLASH_HEIGHT 에 그림
 //   fx.popRing(위치, 크기 = 1)               토끼가 '펑' 할 때 퍼지는 고리 + 연기 + 색종이
 //   fx.telegraph(위치, 반지름, 초) → { cancel(), done }   바닥에 빨간 원이 차오름 (망치 내려치기 예고)
-//   fx.alert(followFn, 초, 올림 = 19)        머리 위 빨간 '!' (followFn() → Vector3, 바닥 위치(y<1)면 '올림' 칸 위로)
+//   fx.alert(followFn, 초, 올림 = 19)        머리 위 빨간 '!' (followFn() → Vector3, 바닥 위치(y<1)면 '올림' 칸 위로,
+//                                            null 이면 그 장면에는 숨김 — 예: 토끼가 터짐)
 //   fx.aimLine(from, to, 보이기)              흐릿한 조준 점선 (매 장면)
 //   fx.dust(위치, 크기 = 1)                   깡충 착지할 때 발밑 먼지 (rabbitRig 의 onLand 에 연결)
 //   fx.update(dt) ; fx.clear()               clear: 다시 하기 할 때 남은 효과 모두 지우기

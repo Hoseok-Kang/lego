@@ -24,7 +24,7 @@ import { createPlayer } from './combat/player.js';
 import { createEnemies } from './combat/enemies.js';
 import { createPickups } from './combat/pickups.js';
 
-const DEBRIS_INSET = 0.5; // 조각이 바닥판 끝에서 이만큼(칸) 안쪽에서 튕겨 돌아옴
+const DEBRIS_INSET = 1; // 조각이 바닥판 끝에서 이만큼(칸) 안쪽에서 튕겨 돌아옴 (1 = 울타리 안쪽 면: 울타리는 바닥판 끝 한 칸 줄에 섬 → 잔해가 울타리 기둥에 박히지 않음)
 const RUBBLE_JITTER = 0.05; // 잔해가 눕는 높이를 자리마다 0 ~ 이만큼 다르게 (겹친 블록 윗면 깜빡임 막기, 눈에는 안 보임. 쌓기를 끈 때만)
 
 export function createFightWorld(container) {
@@ -46,7 +46,7 @@ export function createFightWorld(container) {
   const halfD = FIGHT.map.depth / 2;
   const collision = createCollisionWorld({ bounds: { minX: -halfW, maxX: halfW, minZ: -halfD, maxZ: halfD } });
 
-  // 날아가는 조각은 바닥판 끝(조금 안쪽)에서 튕겨 돌아옴 → 내 토끼가 울타리 옆에서 터져도 잔해가 바깥 땅에 떨어지지 않음
+  // 날아가는 조각은 울타리 안쪽 면에서 튕겨 돌아옴 → 내 토끼가 울타리 옆에서 터져도 잔해가 울타리 줄·바깥 땅에 떨어지지 않음
   const debrisBounds = { minX: -halfW + DEBRIS_INSET, maxX: halfW - DEBRIS_INSET, minZ: -halfD + DEBRIS_INSET, maxZ: halfD - DEBRIS_INSET };
   const debris = createDebris(scene, { ...FIGHT.debris, bounds: debrisBounds }); // FIGHT.debris.stack (블록 더미 쌓기) 도 함께 넘어감
   const props = createProps(scene, { collision, debris, events });

@@ -21,6 +21,8 @@ import { createHealth } from './health.js';
 const HURT_DECAY = 6; // 하얗게 반짝이는 것이 사라지는 빠르기
 const KNOCK_DECAY = 9; // 밀려나는 힘이 줄어드는 빠르기
 const CHEST_HEIGHT = 6; // 블록이 튀어나가는 기준 높이 (토끼 가슴쯤)
+// 떨어진 블록 크기: 모든 토끼가 같은 크기 (큰 망치 토끼 블록도 같게 → 바닥 칸에 맞춰 빈틈없이 쌓임)
+const DEBRIS_SCALE = FIGHT.figureScale;
 
 export function createFighterBody({ team, rig, maxHp, radius, debris, fx, events, view, hurtInvulnerable = 0 }) {
   const health = createHealth({ maxHp, popTotal: rig.figure.popTotal ?? rig.popTotal ?? 0 });
@@ -65,7 +67,7 @@ export function createFighterBody({ team, rig, maxHp, radius, debris, fx, events
 
       if (popped > 0 && !dead) {
         const blocks = rig.popBlocks(popped);
-        debris.burst(blocks, { from: hitPoint, power: FIGHT.pop.blockPower, upward: FIGHT.pop.blockUpward, scale: scaleOf(rig) });
+        debris.burst(blocks, { from: hitPoint, power: FIGHT.pop.blockPower, upward: FIGHT.pop.blockUpward, scale: DEBRIS_SCALE });
         events.emit('earPop', { target: body, count: popped, position });
       }
       events.emit('hit', { target: body, team, damage: amount, position, kind, popped });
@@ -113,7 +115,7 @@ export function createFighterBody({ team, rig, maxHp, radius, debris, fx, events
       from: hitPoint.set(position.x, CHEST_HEIGHT * 0.6 * scaleOf(rig), position.z),
       power: FIGHT.pop.deathPower,
       upward: FIGHT.pop.deathUpward,
-      scale: scaleOf(rig), // 토끼 블록과 같은 크기로 흩어짐
+      scale: DEBRIS_SCALE, // 토끼 블록과 같은 크기로 흩어짐
     });
     fx?.popRing?.(position, scaleOf(rig));
     view?.shake?.(team === 'player' ? FIGHT.pop.deathShake : FIGHT.pop.deathShake * 0.5);
