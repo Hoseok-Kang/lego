@@ -65,7 +65,7 @@ export function createFighterBody({ team, rig, maxHp, radius, debris, fx, events
 
       if (popped > 0 && !dead) {
         const blocks = rig.popBlocks(popped);
-        debris.burst(blocks, { from: hitPoint, power: FIGHT.pop.blockPower, upward: FIGHT.pop.blockUpward });
+        debris.burst(blocks, { from: hitPoint, power: FIGHT.pop.blockPower, upward: FIGHT.pop.blockUpward, scale: scaleOf(rig) });
         events.emit('earPop', { target: body, count: popped, position });
       }
       events.emit('hit', { target: body, team, damage: amount, position, kind, popped });
@@ -109,7 +109,12 @@ export function createFighterBody({ team, rig, maxHp, radius, debris, fx, events
     body.alive = false;
     knock.set(0, 0, 0);
     const blocks = thinOut(rig.explode(), FIGHT.pop.deathKeep ?? 1);
-    debris.burst(blocks, { from: hitPoint.set(position.x, CHEST_HEIGHT * 0.6 * scaleOf(rig), position.z), power: FIGHT.pop.deathPower, upward: FIGHT.pop.deathUpward });
+    debris.burst(blocks, {
+      from: hitPoint.set(position.x, CHEST_HEIGHT * 0.6 * scaleOf(rig), position.z),
+      power: FIGHT.pop.deathPower,
+      upward: FIGHT.pop.deathUpward,
+      scale: scaleOf(rig), // 토끼 블록과 같은 크기로 흩어짐
+    });
     fx?.popRing?.(position, scaleOf(rig));
     view?.shake?.(team === 'player' ? FIGHT.pop.deathShake : FIGHT.pop.deathShake * 0.5);
     events.emit('rabbitPopped', { target: body, team, position });

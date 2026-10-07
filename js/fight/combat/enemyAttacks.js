@@ -15,6 +15,7 @@
 //       (맞는 소식 hit 는 fighterBody 가 보냄, 총 소리 shot 은 enemyGunner.js)
 // 데미지·빠르기·준비 시간은 fightConfig.js 의 enemies, 아래는 움직임 느낌 숫자와 설정에 없는 몇 가지.
 
+import { FIGHT } from '../fightConfig.js';
 import { facingFromDir, turnToward } from './combatMath.js';
 import { moveEnemy } from './enemySteering.js';
 import { updateGunner } from './enemyGunner.js';
@@ -32,7 +33,7 @@ const STAB_LOCK = 0.6; // 준비 시간의 이 비율이 지나면 찌를 방향
 const STAB_KNOCKBACK = 12; // 찔린 내 토끼가 밀리는 세기
 const STAB_STOP_GAP = 0.3; // 돌진하다 내 토끼 몸에 이만큼 붙으면 멈춤
 const STAB_ARC = 70 * DEG; // 찌를 때 그리는 칼 자국 부채꼴
-const STAB_HEIGHT = 4.5; // 찌르는 높이 (불티 위치)
+const STAB_HEIGHT = 6 * FIGHT.figureScale; // 찌르는 높이 (불티 위치)
 const STAB_SPARK_HEX = '#C91A09'; // 찔렸을 때 불티 색 (빨강)
 const WAIT_MARGIN = 1.5; // 공격 차례를 기다릴 때: 공격 거리 + 이만큼에서 옆으로 빙빙 (내 토끼를 밀어붙이지 않게)
 const WAIT_SPEED = 0.45; // 기다리며 옆걸음하는 빠르기 (그 토끼 빠르기의 비율)

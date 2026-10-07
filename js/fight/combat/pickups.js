@@ -18,13 +18,13 @@ import { createBlockBatch } from '../../game/core/blockAssets.js';
 import { createPropModel } from '../art/propArt.js';
 
 const MAX_CARROTS = 24; // 동시에 있을 수 있는 당근 수
-const CARROT_SCALE = 0.8; // 당근 크기
+const CARROT_SCALE = 0.55; // 당근 크기 (블록 한 칸 = 1)
 const FLOAT_HEIGHT = 0.9; // 바닥에서 떠 있는 높이
 const BOB_HEIGHT = 0.7; // 둥실둥실 위아래 크기
 const BOB_SPEED = 3.4; // 둥실 빠르기
 const SPIN_SPEED = 1.9; // 빙글 도는 빠르기 (라디안/초)
 const WOBBLE = 0.16; // 살랑 기울어지는 각도
-const POP_START = 3; // 튀어나올 때 시작 높이
+const POP_START = 2; // 튀어나올 때 시작 높이
 const POP_UP = 17; // 튀어오르는 빠르기
 const POP_GRAVITY = 60;
 const POP_SIDE = 3.5; // 튀어나가는 옆 거리 (대략)
@@ -33,9 +33,9 @@ const BOUNCE = 0.42; // 땅에 닿으면 이만큼 다시 튐
 const SQUASH = 0.35; // 땅에 닿을 때 납작해지는 정도
 const EAT_DELAY = 0.35; // 튀어나온 뒤 이 시간이 지나야 먹을 수 있음
 const SUCK_SECONDS = 0.18; // 먹힐 때 입으로 빨려 들어가는 시간
-const MOUTH_HEIGHT = 7; // 내 토끼 입 높이
+const MOUTH_HEIGHT = 7 * FIGHT.figureScale; // 내 토끼 입 높이
 const GLOW_HEX = '#FFF03A'; // 발밑 빛 색 (연노랑)
-const GLOW_RADIUS = 2.1;
+const GLOW_RADIUS = 1.6;
 const GLOW_OPACITY = 0.38;
 const GLOW_Y = 0.22; // 바닥 돌기 위로 살짝
 

@@ -31,8 +31,9 @@
 
 import * as THREE from '../../lib/three.js';
 import { createTouchControls } from '../ui/touchControls.js';
+import { FIGHT } from '../fightConfig.js';
 
-const AIM_HEIGHT = 5; // 총알이 날아가는 높이. 마우스가 가리키는 곳을 이 높이의 평면에서 찾음
+const AIM_HEIGHT = 4.5 * FIGHT.figureScale; // 총알이 날아가는 높이 (총구 높이). 마우스가 가리키는 곳을 이 높이의 평면에서 찾음
 const WHEEL_GAP = 0.15; // 마우스 휠이 이 시간(초) 동안 조용해야 다음 무기 바꾸기 (트랙패드가 여러 번 바꾸지 않게)
 
 // 움직이는 키 → [x, z]

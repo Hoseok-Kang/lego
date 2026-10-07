@@ -30,7 +30,7 @@ const CORAL = '#FF698F';
 const SAND = '#E4CD9E';
 const CONFETTI = ['#F2CD37', '#FF698F', '#9FC3E9', '#F4F4F4', '#BBE90B', '#AC78BA'];
 
-const SLASH_HEIGHT = 4; // 칼 자국을 그리는 높이 (위치를 바닥으로 받았을 때)
+const SLASH_HEIGHT = 5.3 * FIGHT.figureScale; // 칼 자국을 그리는 높이 (위치를 바닥으로 받았을 때)
 const MUZZLE_SPARKS = 5; // 총구 불티 수
 const HIT_SPARKS = 7; // 맞은 자리 불티 수
 const POP_PUFFS = 12; // '펑' 연기 덩어리 수

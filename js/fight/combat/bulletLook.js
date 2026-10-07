@@ -12,7 +12,7 @@
 import * as THREE from '../../lib/three.js';
 import { createBlockBatch } from '../../game/core/blockAssets.js';
 
-const BULLET_SIZE = 0.7; // 총알 블록 크기 (블록 한 칸 = 1)
+const BULLET_SIZE = 0.55; // 총알 블록 크기 (블록 한 칸 = 1)
 const BULLET_STRETCH = 1.3; // 날아가는 방향으로 길쭉한 정도
 // 뒤따르는 작은 블록 [총알에서 떨어진 거리, 크기]
 const GHOSTS = [

@@ -23,15 +23,15 @@ import * as THREE from '../../lib/three.js';
 import { FIGHT } from '../fightConfig.js';
 
 const DEG = Math.PI / 180;
-const LOOK_HEIGHT = 3; // 땅이 아니라 이 높이(토끼 배쯤)를 화면 가운데에 둠 → 키 큰 토끼가 화면 가운데에 보임
+const LOOK_HEIGHT = 4 * FIGHT.figureScale; // 땅이 아니라 이 높이(토끼 배쯤)를 화면 가운데에 둠 → 키 큰 토끼가 화면 가운데에 보임
 const LEAD_FOLLOW = 0.55; // 조준 쪽으로 미리 옮기는 것은 따라가기보다 이만큼 느리게 (조준이 휙휙 바뀌어도 어지럽지 않게)
 const SHAKE_DECAY = 6.5; // 흔들림이 줄어드는 빠르기
 const KICK_DECAY = 14; // '톡' 밀림이 돌아오는 빠르기
 const KICK_MAX = 1.2; // '톡' 밀림 최대 거리 (칸)
 const FIT_EDGE = 1; // 화면 끝까지 쓰기 (1 = 끝까지, 0.95 = 5% 여유)
 const EDGE_MARGIN = 5; // 전장 가장자리에서 울타리 바깥이 이만큼(칸)까지만 보이게 카메라를 멈춤
-const BODY_HEIGHT = 17; // 가장자리에서 멈출 때도 내 토끼 발끝~귀 끝(이 높이)이 화면 안에 남게
-const BODY_HALF_WIDTH = 4; // 내 토끼 좌우 폭 (절반)
+const BODY_HEIGHT = 18 * FIGHT.figureScale + 3.5; // 가장자리에서 멈출 때도 내 토끼 발끝~귀 끝(이 높이)이 화면 안에 남게
+const BODY_HALF_WIDTH = 5.5 * FIGHT.figureScale; // 내 토끼 좌우 폭 (절반)
 const BODY_EDGE = 0.94; // 내 토끼가 화면 끝에서 이만큼 안쪽에 있게 (1 = 화면 끝)
 const MAP_BOUNDS = { minX: -FIGHT.map.width / 2, maxX: FIGHT.map.width / 2, minZ: -FIGHT.map.depth / 2, maxZ: FIGHT.map.depth / 2 };
 

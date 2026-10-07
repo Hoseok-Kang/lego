@@ -3,9 +3,10 @@
 // 바닥에 멈춘 조각은 사라지지 않고 '잔해'로 전장에 남아 있다가, 대장 몬스터가 나올 때 모여서 대장이 됩니다.
 // (잔해가 가득 차면 새 조각은 잠깐 뒤에 작아지며 사라집니다)
 //
-//   debris.burst(blocks, { from, power, upward })   blocks: [{ position, color }] (BlockFigure.removeBlocks 결과)
-//   debris.spawn(position, color, velocity, { lifetime, settle })  조각 하나 띄우기 (settle: false 면 잔해로 남지 않음)
-//   debris.takeRubble(n)                            바닥에 남은 잔해 n개를 가져감 → [{ position, quaternion, color }]
+//   debris.burst(blocks, { from, power, upward, scale })   blocks: [{ position, color }] (BlockFigure.removeBlocks 결과)
+//   debris.spawn(position, color, velocity, { lifetime, settle, scale })  조각 하나 띄우기 (settle: false 면 잔해로 남지 않음)
+//                                                   scale: 조각 크기 (1 = 블록 한 칸, 작은 블록 인형에서 떨어진 조각은 더 작게)
+//   debris.takeRubble(n)                            바닥에 남은 잔해 n개를 가져감 → [{ position, quaternion, color, scale }]
 //   debris.setGroundHeight((x, z) => 높이)           바닥 높이 알려 주기 (성 돌바닥·타워 자리 위는 1)
 //   debris.update(dt)
 //   debris.clear()
@@ -36,11 +37,13 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
   const age = new Float32Array(capacity);
   const life = new Float32Array(capacity);
   const canSettle = new Uint8Array(capacity); // 1이면 바닥에 멈췄을 때 잔해로 남음 (스킬 반짝이 등은 0)
+  const size = new Float32Array(capacity); // 조각 크기 (1 = 블록 한 칸)
   let count = 0;
 
   // 바닥에 남은 잔해
   const rubblePos = new Float32Array(Math.max(1, rubbleCapacity) * 3);
   const rubbleQuat = new Float32Array(Math.max(1, rubbleCapacity) * 4);
+  const rubbleSize = new Float32Array(Math.max(1, rubbleCapacity));
   let rubbleCount = 0;
   let rubbleDirty = false;
   let groundHeight = () => 0;
@@ -51,9 +54,8 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
   const euler = new THREE.Euler();
   const scale = new THREE.Vector3();
   const color = new THREE.Color();
-  const unit = new THREE.Vector3(1, 1, 1);
 
-  function spawn(at, blockColor, velocity, { lifetime = lifeSeconds, settle = true } = {}) {
+  function spawn(at, blockColor, velocity, { lifetime = lifeSeconds, settle = true, scale: blockScale = 1 } = {}) {
     if (count >= capacity) return; // 너무 많으면 새 조각은 생략
     const i = count++;
     pos.set([at.x, at.y, at.z], i * 3);
@@ -63,11 +65,12 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
     age[i] = 0;
     life[i] = lifetime * (0.75 + Math.random() * 0.5);
     canSettle[i] = settle ? 1 : 0;
+    size[i] = blockScale;
     mesh.setColorAt(i, blockColor);
     colorsDirty = true;
   }
 
-  function burst(blocks, { from = null, power = 6, upward = 7 } = {}) {
+  function burst(blocks, { from = null, power = 6, upward = 7, scale: blockScale = 1 } = {}) {
     const direction = new THREE.Vector3();
     for (const block of blocks) {
       if (from) direction.subVectors(block.position, from).setY(0);
@@ -76,7 +79,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
       direction.y = upward * (0.6 + Math.random() * 0.8);
       direction.x += (Math.random() - 0.5) * power * 0.6;
       direction.z += (Math.random() - 0.5) * power * 0.6;
-      spawn(block.position, block.color, direction);
+      spawn(block.position, block.color, direction, { scale: blockScale });
     }
   }
 
@@ -87,7 +90,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
     while (i < count) {
       age[i] += dt;
       const b = i * 3;
-      const floor = groundHeight(pos[b], pos[b + 2]) + HALF;
+      const floor = groundHeight(pos[b], pos[b + 2]) + HALF * size[i];
       const resting = vel[b + 1] === 0 && Math.abs(vel[b]) + Math.abs(vel[b + 2]) < SETTLE_SPEED;
       if (resting && canSettle[i] && age[i] > SETTLE_AGE && pos[b + 1] <= floor + 0.01 && rubbleCount < rubbleCapacity) {
         settle(i, floor);
@@ -121,7 +124,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
       rot[b + 2] += spin[b + 2] * dt;
 
       const remaining = life[i] - age[i];
-      const s = remaining < 0.35 ? Math.max(0.01, remaining / 0.35) : 1;
+      const s = (remaining < 0.35 ? Math.max(0.01, remaining / 0.35) : 1) * size[i];
       position.set(pos[b], pos[b + 1], pos[b + 2]);
       rotation.setFromEuler(euler.set(rot[b], rot[b + 1], rot[b + 2]));
       scale.set(s, s, s);
@@ -152,8 +155,10 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
     rotation.setFromEuler(euler.set(snapAngle(rot[b]), snapAngle(rot[b + 1]), snapAngle(rot[b + 2])));
     rubblePos.set([pos[b], floor, pos[b + 2]], r * 3);
     rubbleQuat.set([rotation.x, rotation.y, rotation.z, rotation.w], r * 4);
+    rubbleSize[r] = size[i];
     position.set(pos[b], floor, pos[b + 2]);
-    matrix.compose(position, rotation, unit);
+    scale.setScalar(size[i]);
+    matrix.compose(position, rotation, scale);
     mesh.getColorAt(i, color);
     rubbleMesh.setMatrixAt(r, matrix);
     rubbleMesh.setColorAt(r, color);
@@ -172,6 +177,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
         position: new THREE.Vector3(rubblePos[r * 3], rubblePos[r * 3 + 1], rubblePos[r * 3 + 2]),
         quaternion: new THREE.Quaternion(rubbleQuat[r * 4], rubbleQuat[r * 4 + 1], rubbleQuat[r * 4 + 2], rubbleQuat[r * 4 + 3]),
         color: color.clone(),
+        scale: rubbleSize[r],
       });
     }
     if (amount > 0) rubbleDirty = true;
@@ -194,6 +200,7 @@ export function createDebris(scene, { capacity, gravity, lifeSeconds, rubbleCapa
       age[i] = age[last];
       life[i] = life[last];
       canSettle[i] = canSettle[last];
+      size[i] = size[last];
       mesh.getColorAt(last, color);
       mesh.setColorAt(i, color);
       colorsDirty = true;

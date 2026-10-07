@@ -14,7 +14,7 @@
 import { FIGHT } from './fightConfig.js';
 
 const HEAD_HEIGHT = 19; // 떠오르는 글자를 시작하는 높이 (토끼 귀 끝쯤, 큰 토끼는 크기만큼 곱함)
-const POP_TEXT_HEIGHT = 10; // '펑!' 글자 높이 (터진 자리 가운데쯤)
+const POP_TEXT_HEIGHT = 13 * FIGHT.figureScale; // '펑!' 글자 높이 (터진 자리 가운데쯤)
 const DEFLECT_TEXT_HEIGHT = 1; // '팅!' 은 총알 높이에서 조금 위
 const BIG_HIT = 20; // 이만큼 이상 맞히면 큰 글자
 const PLAYER_HIT_SHAKE = 0.3; // 내 토끼가 맞았을 때 화면 흔들림

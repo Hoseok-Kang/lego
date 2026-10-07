@@ -44,7 +44,7 @@ const SWING_WINDUP = 0.22;
 const SLASH_AT = 0.18; // 휘두르기 이 비율에서 칼 자국 효과를 그림 (칼이 움직이기 시작할 때)
 const LUNGE_HOLD = 0.5; // 휘두르기 이 비율까지는 lunge 최고 빠르기, 그 뒤 줄어듦
 const CRATE_REACH = 2.4; // 칼이 상자에 닿는 크기 (상자 반지름)
-const SPARK_HEIGHT = 5.5; // 칼에 맞은 자리 불꽃 높이
+const SPARK_HEIGHT = 7.3 * FIGHT.figureScale; // 칼에 맞은 자리 불꽃 높이
 const SPARK_HEX = '#F4F4F4';
 
 export function createPlayerWeapons({ bullets, fx = null, events, getEnemies = () => [], props = null }) {
