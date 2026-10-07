@@ -179,28 +179,34 @@
 </div>
 
 <!-- ── 휴대폰 조작 (js/fight/ui/touchControls.js) ── -->
-<!-- 왼쪽 아무 데나 누르면 움직이는 막대, 오른쪽을 누르면 조준 막대가 손가락 밑에 나타납니다 -->
+<!-- 왼쪽 아무 데나 누르면 움직이는 막대가 손가락 밑에 나타납니다.
+     오른쪽 아래: 공격(누르면 자동 조준, 끌면 그쪽으로) · 구르기 · 장전, 그 위에 총⇄칼 바꾸기 -->
 <div id="touchControls" class="touch-controls" aria-hidden="true">
   <div class="stick stick--move" data-stick="move">
     <span class="stick-base"></span>
     <span class="stick-knob"><span class="stick-paw"></span></span>
     <span class="stick-label">움직이기</span>
   </div>
-  <div class="stick stick--aim" data-stick="aim">
-    <span class="stick-base"></span>
-    <span class="stick-knob"><span class="stick-cross"></span></span>
-    <span class="stick-label">끌면 조준·발사<br>톡 치면 자동 조준</span>
-  </div>
+  <button id="touchSwap" class="touch-btn touch-btn--swap" type="button" data-input="switch" data-weapon="blaster" aria-label="총 칼 바꾸기" tabindex="-1">
+    <span class="swap-pics" aria-hidden="true">
+      <svg class="weapon-pic swap-blaster" viewBox="0 0 16 16"><use href="#i-blaster"/></svg>
+      <svg class="weapon-pic swap-sword" viewBox="0 0 16 16"><use href="#i-sword"/></svg>
+    </span>
+    <span class="touch-btn-label">총⇄칼</span>
+  </button>
+  <button id="touchAttack" class="touch-btn touch-btn--attack" type="button" data-stick="attack" data-weapon="blaster" aria-label="공격" tabindex="-1">
+    <span class="attack-aim" aria-hidden="true"></span>
+    <span class="attack-knob" aria-hidden="true">
+      <svg class="weapon-pic when-blaster" viewBox="0 0 16 16"><use href="#i-blaster"/></svg>
+      <svg class="weapon-pic when-sword" viewBox="0 0 16 16"><use href="#i-sword"/></svg>
+    </span>
+    <span id="touchAmmo" class="touch-ammo">14</span>
+    <span class="touch-btn-label">공격</span>
+  </button>
   <button class="touch-btn touch-btn--roll" type="button" data-input="roll" aria-label="구르기" tabindex="-1">
     <span class="touch-ring" aria-hidden="true"></span>
     <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-roll"/></svg>
     <span class="touch-btn-label">구르기</span>
-  </button>
-  <button id="touchSwap" class="touch-btn touch-btn--swap" type="button" data-input="switch" data-weapon="blaster" aria-label="무기 바꾸기" tabindex="-1">
-    <svg class="weapon-pic when-blaster" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-blaster"/></svg>
-    <svg class="weapon-pic when-sword" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-sword"/></svg>
-    <span id="touchAmmo" class="touch-ammo">14</span>
-    <span class="touch-btn-label">무기</span>
   </button>
   <button class="touch-btn touch-btn--reload" type="button" data-input="reload" aria-label="장전" tabindex="-1">
     <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-reload"/></svg>
@@ -250,9 +256,9 @@
         <h2 class="cheat-title">터치</h2>
         <ul class="cheat-list">
           <li><span class="cheat-keys"><span class="cheat-zone">왼쪽</span></span><span>끌어서 움직이기</span></li>
-          <li><span class="cheat-keys"><span class="cheat-zone">오른쪽</span></span><span>끌면 그쪽으로 공격</span></li>
-          <li><span class="cheat-keys"><span class="cheat-zone">톡!</span></span><span>가까운 미친토끼 자동 조준</span></li>
-          <li><span class="cheat-keys"><span class="cheat-zone">단추</span></span><span>구르기 · 무기 · 장전</span></li>
+          <li><span class="cheat-keys"><span class="cheat-zone">공격</span></span><span>누르면 가까운 미친토끼를 자동 공격</span></li>
+          <li><span class="cheat-keys"><span class="cheat-zone">끌기</span></span><span>공격 단추를 끌면 그쪽으로 공격</span></li>
+          <li><span class="cheat-keys"><span class="cheat-zone">단추</span></span><span>구르기 · 장전 · 총⇄칼</span></li>
         </ul>
       </section>
     </div>

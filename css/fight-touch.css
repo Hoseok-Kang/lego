@@ -1,9 +1,9 @@
 /* 펑펑 토끼 휴대폰 조작 꾸미기 (js/fight/ui/touchControls.js 가 쓰는 모양)
    휴대폰에서만 보입니다 (body.touch-mode — js/fight/core/input.js 가 붙임).
    - 왼쪽 반: 손가락을 대면 그 자리에 '움직이기 막대'가 나타남
-   - 오른쪽 반: 손가락을 대면 '조준 막대'. 끌면 그쪽으로 공격, 톡 치면 가까운 미친토끼를 자동 조준
-   - 오른손 엄지 근처: 구르기 · 무기 바꾸기 · 장전 단추 (누르기 쉬운 큰 크기)
-   막대가 쉬고 있을 때 서 있는 자리는 아래 --idle-x / --idle-y 에서 바꿉니다.
+   - 오른손 엄지 근처: 공격(구르기 왼쪽) · 구르기 · 장전, 그 위에 총⇄칼 바꾸기 단추
+     공격 단추는 누르고 있으면 자동 조준 공격, 누른 채 끌면 그쪽으로 공격
+   움직이기 막대가 쉬고 있을 때 서 있는 자리는 아래 --idle-x / --idle-y, 단추 자리는 각 단추의 right / bottom 에서 바꿉니다.
    색 이름(var(--...))은 css/fight.css 맨 위에서 정합니다. */
 
 .touch-controls {
@@ -26,7 +26,7 @@ body.overlay-open .touch-controls,
   display: none !important;
 }
 
-/* ── 막대 (움직이기 · 조준) ── */
+/* ── 움직이기 막대 ── */
 .stick {
   --base: 116px; /* 막대 바탕 지름 */
   --knob: 54px; /* 손잡이 지름 */
@@ -42,19 +42,6 @@ body.overlay-open .touch-controls,
 .stick--move {
   --idle-x: calc(var(--edge-left) + 92px);
   --idle-y: calc(100dvh - var(--edge-bottom) - 104px);
-}
-
-/* 오른쪽 조준 막대: 세로 화면에서는 단추들 위쪽, 가로 화면에서는 단추들 왼쪽에서 쉼 */
-.stick--aim {
-  --idle-x: calc(100vw - var(--edge-right) - 86px);
-  --idle-y: calc(100dvh - var(--edge-bottom) - 290px);
-}
-
-@media (orientation: landscape) {
-  .stick--aim {
-    --idle-x: calc(100vw - var(--edge-right) - 270px);
-    --idle-y: calc(100dvh - var(--edge-bottom) - 96px);
-  }
 }
 
 .stick.is-active {
@@ -111,35 +98,6 @@ body.overlay-open .touch-controls,
     radial-gradient(circle at 82% 34%, #ffffff 0 3.2px, transparent 3.8px);
 }
 
-/* 조준 손잡이: 분홍 + 흰 조준 표시 */
-.stick--aim .stick-knob {
-  background: var(--berry);
-}
-
-.stick--aim .stick-base {
-  border-color: rgb(255 214 226 / 0.85);
-}
-
-.stick-cross {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #ffffff;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, #ffffff 0 2.6px, transparent 3px);
-}
-
-/* 조준 막대를 끄는 동안(발사 중) 손잡이가 통통 */
-.stick--aim.is-firing .stick-knob {
-  animation: knob-fire 0.18s ease-in-out infinite alternate;
-}
-
-@keyframes knob-fire {
-  to {
-    scale: 1.14;
-  }
-}
-
 /* 쉬는 동안만 보이는 작은 설명 */
 .stick-label {
   position: absolute;
@@ -162,7 +120,7 @@ body.overlay-open .touch-controls,
   display: none;
 }
 
-/* ── 단추 (구르기 · 무기 · 장전) ── */
+/* ── 단추 (공격 · 구르기 · 장전 · 총⇄칼) ── */
 .touch-btn {
   position: fixed;
   display: grid;
@@ -229,29 +187,93 @@ body.overlay-open .touch-controls,
   filter: saturate(0.4) brightness(0.92);
 }
 
-/* 무기 바꾸기: 구르기 왼쪽. 지금 든 무기 그림 + 남은 탄 */
-.touch-btn--swap {
-  --size: 66px;
-  right: calc(var(--edge-right) + 106px);
-  bottom: calc(var(--edge-bottom) + 10px);
-  border-color: var(--carrot);
-  background: #fffaf3;
+/* 공격: 구르기 왼쪽, 크게. 지금 든 무기 그림 + 남은 탄
+   누르고 있으면 자동 조준 공격, 끌면 안쪽 손잡이가 손가락을 따라가고 그쪽으로 공격 */
+.touch-btn--attack {
+  --size: 84px;
+  right: calc(var(--edge-right) + 112px);
+  bottom: calc(var(--edge-bottom) + 16px);
+  background: var(--carrot);
 }
 
-.touch-btn--swap .weapon-pic {
+.attack-knob {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fffaf3;
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.14);
+  translate: var(--kx, 0px) var(--ky, 0px);
+}
+
+.touch-btn--attack .weapon-pic {
   width: 34px;
   height: 34px;
   shape-rendering: crispEdges;
   filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.35));
 }
 
-.touch-btn--swap .when-sword,
-.touch-btn--swap[data-weapon="sword"] .when-blaster {
+.touch-btn--attack .when-sword,
+.touch-btn--attack[data-weapon="sword"] .when-blaster {
   display: none;
 }
 
-.touch-btn--swap[data-weapon="sword"] .when-sword {
+.touch-btn--attack[data-weapon="sword"] .when-sword {
   display: block;
+}
+
+.touch-btn--attack .touch-btn-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 1px 8px;
+  border-radius: 9px;
+  background: rgb(27 18 25 / 0.45);
+}
+
+/* 누르고 있는 동안 통통 (공격 중) */
+.touch-btn--attack.is-pressed {
+  scale: 0.94;
+}
+
+.touch-btn--attack.is-pressed .attack-knob {
+  animation: knob-fire 0.18s ease-in-out infinite alternate;
+}
+
+@keyframes knob-fire {
+  to {
+    scale: 1.1;
+  }
+}
+
+/* 끌어서 겨누는 동안: 단추 둘레에 겨누는 쪽을 가리키는 화살표 고리 */
+.attack-aim {
+  position: absolute;
+  inset: -22px;
+  border: 3px solid rgb(255 255 255 / 0.85);
+  border-radius: 50%;
+  background: rgb(27 18 25 / 0.16);
+  opacity: 0;
+  rotate: var(--aim-angle, 0rad);
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+
+.attack-aim::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  translate: -50% 0;
+  border: 11px solid transparent;
+  border-top: 0;
+  border-bottom: 14px solid #ffffff;
+}
+
+.touch-btn--attack.is-aiming .attack-aim {
+  opacity: 1;
 }
 
 .touch-ammo {
@@ -271,22 +293,55 @@ body.overlay-open .touch-controls,
   text-align: center;
 }
 
-.touch-btn--swap[data-weapon="sword"] .touch-ammo {
+.touch-btn--attack[data-weapon="sword"] .touch-ammo {
   display: none;
 }
 
-.touch-btn--swap.is-low .touch-ammo {
+.touch-btn--attack.is-low .touch-ammo {
   background: var(--hp-low);
   color: #ffffff;
 }
 
-.touch-btn--swap.is-reloading .touch-ammo {
+.touch-btn--attack.is-reloading .touch-ammo {
   background: var(--carrot);
   color: #ffffff;
 }
 
+/* 총⇄칼 바꾸기: 오른쪽 가운데 (공격 단추 위쪽). 지금 든 무기가 크고 진하게 */
+.touch-btn--swap {
+  --size: 66px;
+  right: calc(var(--edge-right) + 54px);
+  bottom: calc(var(--edge-bottom) + 254px);
+  border-color: var(--carrot);
+  background: #fffaf3;
+  color: var(--ink);
+}
+
+.swap-pics {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.touch-btn--swap .weapon-pic {
+  width: 22px;
+  height: 22px;
+  shape-rendering: crispEdges;
+  opacity: 0.4;
+  transition: scale 0.12s, opacity 0.12s;
+}
+
+.touch-btn--swap[data-weapon="blaster"] .swap-blaster,
+.touch-btn--swap[data-weapon="sword"] .swap-sword {
+  opacity: 1;
+  scale: 1.25;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.35));
+}
+
 .touch-btn--swap .touch-btn-label {
-  display: none;
+  color: var(--ink);
+  font-size: 12px;
+  text-shadow: none;
 }
 
 /* 장전: 구르기 위쪽 */
@@ -328,10 +383,26 @@ body.overlay-open .touch-controls,
     bottom: calc(var(--edge-bottom) + 14px);
   }
 
+  .touch-btn--attack {
+    --size: 76px;
+    right: calc(var(--edge-right) + 102px);
+    bottom: calc(var(--edge-bottom) + 12px);
+  }
+
+  .attack-knob {
+    width: 48px;
+    height: 48px;
+  }
+
+  .touch-btn--attack .touch-btn-label {
+    display: none;
+  }
+
+  /* 가로 화면에서는 공격 단추 왼쪽 */
   .touch-btn--swap {
     --size: 60px;
-    right: calc(var(--edge-right) + 98px);
-    bottom: calc(var(--edge-bottom) + 6px);
+    right: calc(var(--edge-right) + 196px);
+    bottom: calc(var(--edge-bottom) + 20px);
   }
 
   .touch-btn--reload {

@@ -2,7 +2,7 @@
 // 왼쪽 위: 내 토끼 얼굴 + 분홍 체력 막대 + 숫자. 얼굴의 귀 블록도 체력만큼만 남아요 (게임 속 토끼처럼!)
 // 가운데 위: 남은 미친토끼 '3 / 5'. 오른쪽 위: 소리 · 멈춤 단추
 // 오른쪽 아래(컴퓨터): 무기 칸 [1 블록 총 탄 수·장전 고리] [2 블록 칼] + 구르기 준비
-// 휴대폰: 무기 바꾸기 단추에 지금 무기 그림과 남은 탄, 구르기 단추에 준비 고리 (css/fight-touch.css)
+// 휴대폰: 공격 단추에 지금 무기 그림과 남은 탄, 총⇄칼 단추에 지금 무기 표시, 구르기 단추에 준비 고리 (css/fight-touch.css)
 // 마우스를 따라다니는 조준점, 체력이 적으면 화면 가장자리가 두근두근 빨갛게.
 //
 //   const hud = createHud({ sounds })   sounds: fightSounds.js (있으면 소리 단추가 저절로 켜고 끔. 없어도 됨)
@@ -48,6 +48,7 @@ export function createHud({ sounds = null } = {}) {
     crosshair: el('crosshair'),
     vignette: el('hurtVignette'),
     touchSwap: el('touchSwap'),
+    touchAttack: el('touchAttack'),
     touchAmmo: el('touchAmmo'),
     touchRoll: document.querySelector('.touch-btn--roll'),
     touchReload: document.querySelector('.touch-btn--reload'),
@@ -119,6 +120,7 @@ export function createHud({ sounds = null } = {}) {
         if (active && name && label) label.textContent = name; // 무기 이름은 fightConfig.js 의 weapons.*.name
       }
       if (ui.touchSwap) ui.touchSwap.dataset.weapon = id;
+      if (ui.touchAttack) ui.touchAttack.dataset.weapon = id;
       ui.crosshair?.classList.toggle('is-sword', id === 'sword');
     }
     if (Number.isFinite(magazine) && magazine !== last.magazine) {
@@ -138,11 +140,11 @@ export function createHud({ sounds = null } = {}) {
     if (low !== last.low) {
       last.low = low;
       blasterSlot?.classList.toggle('is-low', low);
-      ui.touchSwap?.classList.toggle('is-low', low);
+      ui.touchAttack?.classList.toggle('is-low', low);
     }
     if (isReloading !== last.reloading) {
       last.reloading = isReloading;
-      for (const node of [blasterSlot, ui.touchSwap, ui.touchReload, ui.crosshair]) node?.classList.toggle('is-reloading', isReloading);
+      for (const node of [blasterSlot, ui.touchAttack, ui.touchReload, ui.crosshair]) node?.classList.toggle('is-reloading', isReloading);
       if (isReloading && ui.touchAmmo) ui.touchAmmo.textContent = '…';
       else if (ui.touchAmmo && Number.isFinite(ammo)) ui.touchAmmo.textContent = String(ammo);
     }

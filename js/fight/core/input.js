@@ -8,10 +8,10 @@
 //   input.state = {
 //       move: { x, z }            움직일 방향 (길이 0~1, 대각선도 1을 넘지 않음. 화면 위쪽 = -z)
 //       aimPoint: Vector3 | null  마우스가 가리키는 땅 위치 (총알 높이 AIM_HEIGHT). 휴대폰에서는 null
-//       aimDir: { x, z } | null   휴대폰 조준 막대 방향. 컴퓨터에서는 null
+//       aimDir: { x, z } | null   휴대폰 공격 단추를 끈 방향. 끌지 않았거나 컴퓨터에서는 null
 //       fire                      공격 버튼을 누르고 있음
 //       firePressed               이번 장면에 막 누름
-//       autoAim                   가까운 미친토끼를 자동으로 겨누기 (휴대폰 오른쪽 톡 · 꾹)
+//       autoAim                   가까운 미친토끼를 자동으로 겨누기 (휴대폰 공격 단추를 끌지 않고 누름)
 //       rollPressed, switchPressed, reloadPressed, pausePressed   이번 장면에 막 누름
 //       slot: null | 'blaster' | 'sword'                          숫자 키 1 / 2
 //       usingTouch                지금 휴대폰 터치로 조작 중 (body 에 touch-mode 를 붙임)
@@ -24,7 +24,7 @@
 //
 // 컴퓨터 조작: WASD·화살표 이동, 마우스 조준, 왼쪽 버튼 공격(누르고 있으면 계속),
 //   오른쪽 버튼·Space·Shift 구르기, Q·마우스 휠 무기 바꾸기, 1·2 무기 고르기, R 장전, Esc·P 멈춤
-// 휴대폰 조작: js/fight/ui/touchControls.js (왼쪽 막대 이동, 오른쪽 막대 조준·공격, 단추)
+// 휴대폰 조작: js/fight/ui/touchControls.js (왼쪽 막대 이동, 오른쪽 공격·구르기·장전·총⇄칼 단추)
 // 정보판의 멈춤 단추(data-input="pause")도 여기서 받습니다.
 // 어떤 키가 무엇을 하는지는 아래 MOVE_KEYS / PRESS_KEYS 에서 바꿉니다.
 // (한글 입력 상태여도 되도록 글자가 아니라 '키 자리'(event.code)로 봅니다)
@@ -82,7 +82,7 @@ export function createInput(element, { screenToGround = null, touchRoot = docume
     usingTouch: false,
   };
   // 장면과 장면 사이에 '막 누른' 것들 (update 때 state 로 옮기고 endFrame 때 지움)
-  const edges = { firePressed: false, rollPressed: false, switchPressed: false, reloadPressed: false, pausePressed: false, slot: null, tap: false };
+  const edges = { firePressed: false, rollPressed: false, switchPressed: false, reloadPressed: false, pausePressed: false, slot: null, attackTap: false };
   const heldKeys = new Set();
   const mouse = { x: 0, y: 0, seen: false, buttons: 0, fire: false };
   const aimOut = new THREE.Vector3();
@@ -116,11 +116,9 @@ export function createInput(element, { screenToGround = null, touchRoot = docume
   }
 
   function pressFromTouch(name) {
-    if (name === 'tap') {
-      edges.tap = true; // 톡 → 이번 장면에 자동 조준 공격 한 번
-      edges.firePressed = true;
-    } else if (name === 'aimStart') {
-      edges.firePressed = true; // 조준 막대를 끌기 시작한 순간 바로 한 방 (칼은 바로 휘두름)
+    if (name === 'attackStart') {
+      edges.firePressed = true; // 공격 단추를 누른 순간 바로 한 방 (칼은 바로 휘두름)
+      edges.attackTap = true; // 아주 짧게 톡 치고 떼도 이번 장면에는 자동 조준으로 공격
     } else {
       press(name);
     }
@@ -236,8 +234,8 @@ export function createInput(element, { screenToGround = null, touchRoot = docume
     } else if (state.usingTouch) {
       state.aimPoint = null;
       state.aimDir = touch.aimDir;
-      state.fire = touch.aiming || touch.holding;
-      state.autoAim = !touch.aiming && (touch.holding || edges.tap);
+      state.fire = touch.attacking;
+      state.autoAim = !touch.aiming && (touch.attacking || edges.attackTap);
     } else {
       state.aimPoint = mouse.seen && screenToGround ? screenToGround(mouse.x, mouse.y, AIM_HEIGHT, aimOut) : null;
       state.aimDir = null;
@@ -261,7 +259,7 @@ export function createInput(element, { screenToGround = null, touchRoot = docume
   }
 
   function clearEdges() {
-    edges.firePressed = edges.rollPressed = edges.switchPressed = edges.reloadPressed = edges.pausePressed = edges.tap = false;
+    edges.firePressed = edges.rollPressed = edges.switchPressed = edges.reloadPressed = edges.pausePressed = edges.attackTap = false;
     edges.slot = null;
     state.firePressed = state.rollPressed = state.switchPressed = state.reloadPressed = state.pausePressed = false;
     state.slot = null;
