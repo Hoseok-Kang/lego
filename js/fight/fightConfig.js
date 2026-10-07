@@ -13,6 +13,7 @@ export const FIGHT = {
     groundColor: '#4B9F4A', // 잔디 바닥판 색
     outsideColor: '#237841', // 전장 바깥 땅 색
     studSegments: 8, // 바닥 돌기 둘레 조각 수 (작을수록 가벼움)
+    maxPixelRatio: 2, // 화면 선명도 최대 배율 (휴대폰이 버벅이면 1.5 로 → 약 25% 가벼워지지만 작은 토끼가 조금 흐려짐)
     playerSpawn: [0, 22], // 내 토끼 시작 위치 [x, z]
   },
 
@@ -21,11 +22,13 @@ export const FIGHT = {
     fov: 30, // 좁을수록 멀리서 찍어 키 큰 토끼가 덜 커 보임
     pitchDeg: 58, // 내려다보는 각도 (90 = 바로 위)
     minHalfWidth: 24, // 화면에 적어도 내 토끼 좌우로 이만큼은 보이게
-    minHalfDepth: 18, // 화면에 적어도 내 토끼 앞뒤로 이만큼은 보이게 (총 토끼가 쏘는 거리보다 넉넉히)
+    minHalfDepth: 22, // 화면에 적어도 내 토끼 앞뒤로 이만큼은 보이게 (총 토끼가 떨어져 서는 거리 22칸까지 보이게)
     portraitHalfWidth: 17, // 휴대폰 세로 화면에서는 좌우로 이만큼만 (넓게 보면 토끼가 너무 작아지고 전장 위아래가 남아돎)
     follow: 7, // 따라가는 빠르기 (클수록 딱 붙어 따라감)
     aimLead: 5, // 조준하는 쪽으로 화면을 미리 옮기는 거리
     shakeMax: 1.4, // 화면 흔들림 최대 세기
+    safeTopPx: 64, // 화면 위 정보 카드 높이 (내 토끼가 이 아래에 보이게)
+    touchBottomPx: { portrait: 180, landscape: 110 }, // 휴대폰 조작 단추 높이 (내 토끼가 단추 위에 보이게)
   },
 
   // 토끼 블록 인형 크기 (1 = 그림 그대로 키 18칸). 모든 토끼에 곱함 (망치 토끼는 enemies.brute.scale 도 한 번 더)
@@ -86,7 +89,8 @@ export const FIGHT = {
       ['gunner', 18, -21],
       ['brute', 0, -16],
     ],
-    sightRange: 30, // 이 거리 안에 내 토끼가 보이면 달려옴
+    sightRange: 24, // 이 거리 안에 내 토끼가 보이면 달려옴
+    wakeRadius: 14, // 깨어나거나 맞은 토끼가 이 거리 안의 쉬던 친구를 깨움 (칸, 작을수록 따로따로 옴)
     alertDelay: 0.45, // '!' 뜨고 움직이기 시작할 때까지
     alertSpread: 0.35, // 근처 친구도 함께 깨어나는 시간 차이
     separation: 4.5, // 적끼리 이 거리보다 가까우면 서로 비킴
@@ -95,11 +99,11 @@ export const FIGHT = {
     // 칼 토끼: 빠르게 달려와 휙 찌름
     knife: {
       name: '칼 미친토끼',
-      maxHp: 45,
+      maxHp: 90, // 체력이 넉넉해야 귀가 조금씩 여러 번 터짐
       radius: 2,
       speed: 10,
       attackRange: 5, // 이 거리에서 찌를 준비
-      windup: 0.38, // 찌르기 전 준비 (빨갛게 반짝 → 피할 시간)
+      windup: 0.5, // 찌르기 전 준비 (빨갛게 반짝 → 옆으로 걷거나 구르면 피할 시간)
       lungeSpeed: 24,
       lungeSeconds: 0.22,
       recover: 0.65, // 찌른 뒤 멍하니 있는 시간 (반격 기회)
@@ -109,7 +113,7 @@ export const FIGHT = {
     // 총 토끼: 거리를 두고 빙빙 돌며 세 발씩 쏨
     gunner: {
       name: '총 미친토끼',
-      maxHp: 40,
+      maxHp: 80,
       radius: 2,
       speed: 8,
       keepDistance: [13, 22], // 이 거리 사이를 유지하려고 함
@@ -126,7 +130,7 @@ export const FIGHT = {
     // 망치 토끼: 크고 느리지만 쾅 내려치면 아픔
     brute: {
       name: '망치 미친토끼',
-      maxHp: 150,
+      maxHp: 260,
       radius: 2.8,
       scale: 1.35, // 다른 토끼보다 얼마나 큰지
       speed: 6,
@@ -170,6 +174,7 @@ export const FIGHT = {
     rubbleCapacity: 2200, // 바닥에 남는 잔해 최대 수
     gravity: 52,
     lifeSeconds: 5,
+    stack: true, // 바닥에 떨어진 블록이 바닥 돌기 칸에 맞춰 놓이고 서로 위에 쌓임 (블록 더미)
   },
 
   // 게임 속도
