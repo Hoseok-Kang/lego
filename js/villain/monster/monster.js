@@ -1,0 +1,318 @@
+// 괴수 한 마리 (그림 → 블록 괴수가 되어 걷고, 부수고, 맞고, 터짐)
+// 그림은 늘 카메라를 보고 서 있고(종이 인형처럼), 어느 쪽으로든 뒤뚱뒤뚱 걸어갑니다.
+// 상대를 정해 주면(command) 알아서 다가가 쓸 수 있는 공격을 골라 씁니다: 뿔 돌진 → 불 뿜기 → 집게발 → 박치기.
+//
+//   const monster = createMonster(scene, design, { debris, fx, events, getTargets?, bounds? })
+//       getTargets: () => 상대 목록 (건물·영웅). 주면 불·돌진·집게가 주변 것도 같이 때리고, 길을 막는 건물부터 부숨
+//       bounds: { minX, maxX, minZ, maxZ } 걸어 다닐 수 있는 범위 (안 주면 마을 바닥판)
+//   monster.build(초?)            블록이 쏟아져 쌓이며 등장 (끝나면 'monsterBuilt' 소식)
+//   monster.isBuilt / alive / hp / maxHp / speed / position / radius / height / team('villain')
+//   monster.command(target | null)   노릴 상대 정하기 (null 이면 제자리에서 쉼)
+//   monster.setTargets(fn)           getTargets 를 나중에 정하기
+//   monster.takeDamage({ amount, from, kind }) → { dead }
+//   monster.update(dt) ; monster.dispose()
+//   monster.attacks                  지금 쓸 수 있는 공격 이름 목록 (부품이 떨어지면 줄어듦)
+//   monsterStats(design) → { blocks, hp, speed }   화면에 숫자를 보여 줄 때
+//
+// 보내는 소식: monsterBuilt, attack, hit, blocksBroken(source 'monster'), monsterPopped
+//            + monsterStep { position } (발걸음 쿵), buildTick { progress, position } (블록 쌓이는 딸깍), partLost { type, position }
+// 체력·빠르기·공격 숫자는 villainConfig.js, 맞을 때 떨어지는 블록 비율 등은 아래 상수에서 바꿉니다.
+
+import * as THREE from '../../lib/three.js';
+import { VILLAIN } from '../villainConfig.js';
+import { createMonsterFigure } from './monsterFigure.js';
+import { createMonsterMotion } from './monsterMotion.js';
+import { createBuildRain } from './monsterBuild.js';
+import { startAttack, attackCooldown, HORN_MIN_DISTANCE } from './monsterAttacks.js';
+
+const POP_SHARE = 0.6; // 체력이 0 이 될 때까지 떨어져 나가는 블록 비율 (나머지는 '펑' 할 때 한꺼번에)
+const CLOSE_GAP = 0.5; // 상대에게 이만큼 가까워지면 더 다가가지 않음 (칸)
+const FLASH_SECONDS = 0.16; // 맞았을 때 하얗게 번쩍이는 시간
+const PRIORITY = ['horn', 'fireMouth', 'claw']; // 쓸 수 있으면 먼저 쓰는 순서 (마지막은 박치기)
+const TICK_GAP = 0.055; // 쌓이는 딸깍 소식 간격 (초)
+
+export function monsterStats(design) {
+  let blocks = 0;
+  const cols = design?.cols || 0;
+  for (const line of (design?.cells || []).slice(0, design?.rows || 0)) for (const ch of String(line ?? '').slice(0, cols)) if (ch !== '.' && ch !== ' ') blocks++;
+  const m = VILLAIN.monster;
+  return { blocks, hp: Math.max(1, blocks * m.hpPerBlock), speed: Math.max(m.minSpeed, m.baseSpeed / (1 + blocks * m.slowPerBlock)) };
+}
+
+export function createMonster(scene, design, { debris = null, fx = null, events = null, getTargets = null, bounds = null } = {}) {
+  const bus = events || { emit() {} };
+  const figure = createMonsterFigure(scene, design);
+  const { fig, model, mounts } = figure;
+  const motion = createMonsterMotion(model);
+  const stats = monsterStats(design);
+  const town = VILLAIN.town;
+  const area = bounds || { minX: -town.width / 2 + 1, maxX: town.width / 2 - 1, minZ: -town.depth / 2 + 1, maxZ: town.depth / 2 - 1 };
+  const position = fig.root.position;
+  position.set(town.monsterStart[0], 0, town.monsterStart[1]);
+  fig.setVisible(false); // build() 를 부를 때까지 숨김
+
+  const maxHp = stats.hp;
+  const popTotal = Math.floor(model.popOrder.length * POP_SHARE);
+  const cellLeft = model.cells.map((cell) => cell.count);
+  const rz = model.depth / 2 + 0.4; // 앞뒤 반 두께
+  let hp = maxHp;
+  let popped = 0;
+  let alive = true;
+  let built = false;
+  let rain = null;
+  let tickTimer = 0;
+  let target = null;
+  let action = null;
+  let flash = 0;
+  let clock = 0;
+  let disposed = false;
+
+  // 공격 목록: 부품마다 하나 + 박치기
+  const attacks = mounts.map((mount, i) => ({ type: mount.type, mount, cd: 0.25 + i * 0.3, range: VILLAIN.parts.types[mount.type].range }));
+  attacks.sort((a, b) => PRIORITY.indexOf(a.type) - PRIORITY.indexOf(b.type));
+  attacks.push({ type: 'headbutt', mount: null, cd: 0.2, range: VILLAIN.monster.headbutt.range });
+
+  // ── 거리 계산 도우미 ──
+  const dirResult = { x: 0, z: 1, dist: 0 };
+  function dirTo(other) {
+    const dx = other.position.x - position.x;
+    const dz = other.position.z - position.z;
+    const dist = Math.hypot(dx, dz);
+    dirResult.x = dist > 1e-4 ? dx / dist : 0;
+    dirResult.z = dist > 1e-4 ? dz / dist : 1;
+    dirResult.dist = dist;
+    return dirResult;
+  }
+  // 그 방향으로 몸이 차지하는 거리 (옆으로 넓고 앞뒤로 얇은 타원)
+  const extent = (dx, dz) => (model.radius * rz) / Math.hypot(rz * dx, model.radius * dz || 1e-4);
+  function gapTo(other) {
+    const d = dirTo(other);
+    return d.dist - (other.radius || 0) - extent(d.x, d.z);
+  }
+  function others() {
+    const list = (getTargets ? getTargets() : []).filter((t) => t && t !== api && t.alive && t.team !== 'villain');
+    if (target && target.alive && !list.includes(target)) list.push(target);
+    return list;
+  }
+  function moveBy(dx, dz) {
+    const beforeX = position.x;
+    const beforeZ = position.z;
+    position.x = Math.min(area.maxX, Math.max(area.minX, position.x + dx));
+    position.z = Math.min(area.maxZ, Math.max(area.minZ, position.z + dz));
+    return Math.hypot(position.x - beforeX, position.z - beforeZ);
+  }
+  function strike(other, amount, kind, point, sparkHex) {
+    const at = point.clone();
+    const result = other.takeDamage?.({ amount, from: position.clone(), kind }) || {};
+    fx?.hitSpark?.(at, sparkHex);
+    bus.emit('hit', { target: other, amount, position: at, kind, dead: !!result.dead });
+    return result;
+  }
+  const ctx = { self: null, position, motion, figure, model, debris, fx, events: bus, dirTo, gapTo, extent, others, moveBy, strike };
+
+  // ── 등장: 블록이 쏟아져 쌓임 ──
+  function build(seconds = VILLAIN.monster.buildSeconds) {
+    if (built || rain || !alive) return;
+    if (seconds <= 0 || model.popOrder.length === 0) return finishBuild();
+    rain = createBuildRain(scene, model, position, seconds);
+  }
+  function finishBuild() {
+    rain?.dispose();
+    rain = null;
+    built = true;
+    fig.setVisible(true);
+    figure.attachAll();
+    for (const mount of mounts) mount.pop = 0.0001; // 부품이 뿅 하고 커지며 붙음
+    motion.bounce(2.4);
+    fx?.dust?.(position, Math.max(0.8, model.radius / 3));
+    bus.emit('monsterBuilt', { monster: api });
+  }
+
+  // ── 맞기 ──
+  function takeDamage({ amount = 0, from = null, kind = '' } = {}) {
+    if (!alive || !built || amount <= 0) return { dead: false };
+    hp = Math.max(0, hp - amount);
+    flash = 1;
+    let dx = 0, dz = 0;
+    if (from) {
+      dx = position.x - from.x;
+      dz = position.z - from.z;
+      const d = Math.hypot(dx, dz) || 1;
+      dx /= d;
+      dz /= d;
+    }
+    motion.flinch(dx, dz, Math.min(1.6, 0.5 + amount / 20));
+    motion.bounce(0.5);
+    if (hp <= 0) return pop(from);
+
+    // 체력이 준 만큼 겉 블록부터 떨어져 나감
+    const shouldBeGone = popTotal - Math.ceil((popTotal * hp) / maxHp);
+    const count = shouldBeGone - popped;
+    if (count > 0) {
+      for (let k = popped; k < popped + count; k++) cellLeft[model.cellOfVoxel[model.popOrder[k].index]]--;
+      popped += count;
+      const blocks = fig.popBlocks(count);
+      debris?.burst(blocks, { from: from || position, power: 7, upward: 8 });
+      bus.emit('blocksBroken', { count: blocks.length, source: 'monster', position: position.clone() });
+      // 밑의 칸이 사라진 부품은 떨어져 나감 → 그 공격을 잃음
+      for (const mount of mounts) {
+        if (!mount.attached || cellLeft[mount.cell] > 0) continue;
+        debris?.burst(figure.detach(mount), { from: position, power: 8, upward: 11 });
+        const index = attacks.findIndex((attack) => attack.mount === mount);
+        if (index >= 0) attacks.splice(index, 1);
+        bus.emit('partLost', { type: mount.type, position: position.clone(), kind });
+      }
+    }
+    return { dead: false };
+  }
+
+  // '펑!' 남은 블록이 전부 흩어짐
+  function pop(from) {
+    alive = false;
+    action = null;
+    hp = 0;
+    fig.root.updateMatrixWorld(true);
+    const blocks = fig.explode();
+    debris?.burst(blocks, { from: from ? new THREE.Vector3(from.x, 0, from.z).lerp(position, 0.8) : position, power: 10, upward: 14 });
+    fx?.popRing?.(position, Math.min(1.7, Math.max(0.6, model.height / 10)));
+    bus.emit('blocksBroken', { count: blocks.length, source: 'monster', position: position.clone() });
+    bus.emit('monsterPopped', { monster: api });
+    return { dead: true };
+  }
+
+  // ── 매 장면 ──
+  function update(dt) {
+    if (disposed || !alive) return;
+    clock += dt;
+    if (!built) {
+      if (!rain) return;
+      const { done, landed } = rain.update(dt);
+      tickTimer -= dt;
+      if (landed > 0 && tickTimer <= 0) {
+        tickTimer = TICK_GAP;
+        bus.emit('buildTick', { progress: rain.progress, position });
+      }
+      if (done) finishBuild();
+      else return;
+    }
+    for (const attack of attacks) attack.cd -= dt;
+
+    let move = null;
+    if (action) {
+      if (action.update(dt)) action = null;
+    } else {
+      motion.relax(dt);
+      const foe = pickFoe();
+      if (foe) {
+        const gap = gapTo(foe);
+        const ready = attacks.find((attack) => attack.cd <= 0 && gap <= attack.range && (attack.type !== 'horn' || gap >= HORN_MIN_DISTANCE));
+        if (ready) {
+          ready.cd = attackCooldown(ready.type);
+          action = startAttack(ready.type, ctx, foe, ready.mount);
+        } else if (gap > CLOSE_GAP) {
+          const d = dirTo(foe);
+          const stepLength = Math.min(stats.speed * dt, gap - CLOSE_GAP + 0.01);
+          moveBy(d.x * stepLength, d.z * stepLength);
+          move = { x: d.x, z: d.z, speed: stats.speed };
+        }
+      }
+    }
+
+    const landed = motion.step(dt, move);
+    if (landed) {
+      const foot = new THREE.Vector3(position.x + landed * motion.footHalf, 0, position.z);
+      fx?.dust?.(foot, 0.55);
+      bus.emit('monsterStep', { position: foot });
+    }
+    animateParts(dt);
+    motion.apply(fig.parts.body);
+    if (flash > 0) {
+      flash = Math.max(0, flash - dt / FLASH_SECONDS);
+      fig.setFlash(flash * 0.85);
+    }
+    fig.update();
+  }
+
+  // 노릴 상대: 정해 준 상대. 가는 길을 다른 건물이 막고 있으면 그것부터
+  function pickFoe() {
+    if (!target || !target.alive) return null;
+    if (!getTargets) return target;
+    const want = { ...dirTo(target) };
+    let blocker = null;
+    let nearest = Infinity;
+    for (const other of others()) {
+      if (other === target) continue;
+      const d = dirTo(other);
+      if (d.dist >= want.dist || d.x * want.x + d.z * want.z < 0.5) continue;
+      if (gapTo(other) > CLOSE_GAP + 0.3 || d.dist >= nearest) continue;
+      nearest = d.dist;
+      blocker = other;
+    }
+    return blocker || target;
+  }
+
+  // 부품의 작은 몸짓: 붙을 때 뿅, 평소에는 까딱까딱
+  function animateParts(dt) {
+    mounts.forEach((mount, i) => {
+      if (!mount.attached) return;
+      const acting = action && action.type === mount.type && attacks.some((attack) => attack.mount === mount);
+      if (mount.pop > 0 && mount.pop < 1) {
+        mount.pop = Math.min(1, mount.pop + dt / 0.35);
+        const p = mount.pop;
+        mount.node.scale.setScalar(p < 0.6 ? (p / 0.6) * 1.5 : 1.5 - ((p - 0.6) / 0.4) * 0.5);
+      } else if (!acting) {
+        const rest = mount.art.rest;
+        if (mount.type === 'claw') mount.node.rotation.z = rest.z + Math.sin(clock * 3.1 + i * 2) * 0.16 * mount.side;
+        else if (mount.type === 'fireMouth') mount.node.scale.setScalar(1 + Math.sin(clock * 4 + i) * 0.04);
+        else mount.node.scale.setScalar(1);
+      }
+    });
+  }
+
+  const api = {
+    team: 'villain',
+    kind: 'monster',
+    design,
+    position,
+    radius: model.radius,
+    height: model.height,
+    maxHp,
+    speed: stats.speed,
+    figure,
+    build,
+    update,
+    takeDamage,
+    command(next) {
+      target = next || null;
+    },
+    setTargets(fn) {
+      getTargets = typeof fn === 'function' ? fn : Array.isArray(fn) ? () => fn : null;
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      rain?.dispose();
+      figure.dispose();
+    },
+    get alive() {
+      return alive;
+    },
+    get isBuilt() {
+      return built;
+    },
+    get hp() {
+      return hp;
+    },
+    get target() {
+      return target;
+    },
+    get busy() {
+      return !!action;
+    },
+    get attacks() {
+      return attacks.map((attack) => attack.type);
+    },
+  };
+  ctx.self = api;
+  return api;
+}
