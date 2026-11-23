@@ -8,6 +8,7 @@
 //   const hud = createRaidHud(root, {
 //     onSpeed(배율),        빠르기 단추를 눌렀을 때 (1 → 2 → 1 …)
 //     onQuit(),             그만두기 (이 화면이 먼저 "정말요?" 를 물어봄)
+//     onPause(true|false),  (없어도 됨) "정말요?" 창이 떠 있는 동안 true → 그동안 게임을 멈추고 싶을 때
 //     speeds,               고를 수 있는 빠르기 목록 (기본: villainConfig 의 speedOptions)
 //   })
 //   hud.show({ name, thumb })       습격 시작: 괴수 이름과 작은 그림 주소. 숫자를 처음으로 되돌림
@@ -46,7 +47,7 @@ const TEXT = {
 const LOW_HP = 0.3; // 체력이 이 비율 아래면 막대가 빨갛게 깜빡임
 const MONEY_TICK = 9; // 번 돈 숫자가 따라가는 빠르기 (클수록 빨리)
 
-export function createRaidHud(root, { onSpeed, onQuit, speeds = VILLAIN.speedOptions } = {}) {
+export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN.speedOptions } = {}) {
   const hero = VILLAIN.hero;
   const heroAt = Math.round(hero.appearAtDestroyed * 100);
   const hud = el(`
@@ -111,7 +112,7 @@ export function createRaidHud(root, { onSpeed, onQuit, speeds = VILLAIN.speedOpt
   let lastTime = 0;
 
   function reset() {
-    shown = { earned: 0, percent: -1, monster: -1, hero: -1, heroVisible: false, phase: '', caption: '' };
+    shown = { earned: 0, percent: -1, monster: -1, hero: -1, heroVisible: false, passed: false, phase: '', caption: '' };
     moneyShown = 0;
     earnedEl.textContent = '0';
     percentEl.textContent = '0%';
@@ -158,7 +159,11 @@ export function createRaidHud(root, { onSpeed, onQuit, speeds = VILLAIN.speedOpt
       shown.percent = percent;
       percentEl.textContent = `${percent}%`;
       hud.style.setProperty('--town', ratio.toFixed(3));
-      townBar.classList.toggle('is-passed', percent >= heroAt);
+    }
+    const passed = percent >= heroAt || !!view.heroVisible || view.phase === 'alert' || view.phase === 'duel' || view.phase === 'cleanup';
+    if (passed !== shown.passed) {
+      shown.passed = passed;
+      townBar.classList.toggle('is-passed', passed);
     }
 
     // 괴수 체력 (줄어들면 움찔)
@@ -245,7 +250,9 @@ export function createRaidHud(root, { onSpeed, onQuit, speeds = VILLAIN.speedOpt
       bump(button, 'is-bump');
       onSpeed?.(next);
     } else if (button.dataset.act === 'quit') {
+      onPause?.(true);
       const yes = await askDialog(hud, { title: TEXT.quitAsk, message: TEXT.quitNote, yes: TEXT.quitYes, no: TEXT.quitNo, danger: true });
+      onPause?.(false);
       if (yes) onQuit?.();
     }
   });
@@ -282,7 +289,7 @@ export function createRaidHud(root, { onSpeed, onQuit, speeds = VILLAIN.speedOpt
       const top = q('.hud-top').getBoundingClientRect().bottom;
       const bottomBar = q('.hud-bottom').getBoundingClientRect();
       const portrait = innerHeight > innerWidth;
-      return { top: Math.round(top), bottom: portrait ? Math.round(innerHeight - bottomBar.top) : 0, left: 0, right: 0 };
+      return { top: Math.round(top), bottom: portrait && bottomBar.height > 0 ? Math.round(innerHeight - bottomBar.top) : 0, left: 0, right: 0 };
     },
   };
 }

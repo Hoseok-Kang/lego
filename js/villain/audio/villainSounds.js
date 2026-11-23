@@ -46,7 +46,7 @@ const EVENT_SOUNDS = {
   buildingDestroyed: 'collapse',
   partLost: 'partLost',
   heroAlert: 'siren',
-  heroLanded: 'heroLand',
+  heroLanded: ({ kind }) => (kind === 'leap' ? 'headbutt' : 'heroLand'), // kind: 'enter' 하늘에서 등장 | 'leap' 뛰어올라 내려찍기
   monsterPopped: 'pop',
   heroPopped: 'pop',
   raidEnded: ({ result }) => (result?.aborted ? null : result?.win ? [['win', 0.3]] : [['lose', 0.5]]),

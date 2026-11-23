@@ -5,6 +5,7 @@
 //
 //   const feedback = createRaidFeedback({ events, view, layer })
 //       view: 마을 카메라 (stage.view),  layer: 글자를 띄울 화면 위 상자 (안 주면 글자 없이 흔들림만)
+//       alertText: false 면 '영웅 출동!' 글자를 안 띄움 (정보판의 사이렌 띠가 대신 알릴 때)
 //   feedback.scale(dt) → 이번 장면에 게임을 움직일 시간 (맞는 순간에는 아주 작아짐). 괴수·마을·잔해 update 에는 이 값을 넘기세요
 //   feedback.update(dt)                 매 장면 (진짜 dt). 글자를 옮기고 멈춤 시간을 줄임
 //   feedback.float(위치, 글, { kind, lift })   글자 하나 띄우기. kind: 'money' | 'boom' | 'alert' | 'good' | 'bad'
@@ -39,7 +40,7 @@ const CSS = `
 .villain-float.bad{color:#9FC3E9;font-size:clamp(20px,3vmin + 10px,34px)}
 `;
 
-export function createRaidFeedback({ events, view = null, layer = null } = {}) {
+export function createRaidFeedback({ events, view = null, layer = null, alertText = true } = {}) {
   const bus = events || { on: () => () => {} };
   let root = null;
   if (layer && typeof document !== 'undefined') {
@@ -124,7 +125,7 @@ export function createRaidFeedback({ events, view = null, layer = null } = {}) {
       if (building) float(building.position, '와르르!', { kind: 'good', lift: Math.min(12, (building.height || 6) * 0.6) });
     }),
     bus.on('heroAlert', ({ position } = {}) => {
-      if (position) float(position, '영웅 출동!', { kind: 'alert', lift: 7, life: 1.6 });
+      if (position && alertText) float(position, '영웅 출동!', { kind: 'alert', lift: 7, life: 1.6 });
     }),
     bus.on('heroArrived', ({ hero } = {}) => {
       view?.shake(SHAKE.arrive);

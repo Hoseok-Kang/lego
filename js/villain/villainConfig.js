@@ -34,7 +34,7 @@ export const VILLAIN = {
     costPerBlock: 1, // 그림 한 칸(블록)마다 드는 돈
     hpPerBlock: 3, // 그림 한 칸마다 체력
     baseSpeed: 9, // 가장 작은 괴수의 걷는 빠르기 (초당 칸)
-    slowPerBlock: 0.03, // 그림 한 칸마다 느려지는 정도 → 빠르기 = baseSpeed / (1 + 칸 수 × 이 값)
+    slowPerBlock: 0.008, // 그림 한 칸마다 느려지는 정도 → 빠르기 = baseSpeed / (1 + 칸 수 × 이 값)
     minSpeed: 3,
     buildSeconds: 2.2, // 블록이 촤르륵 쌓여 괴수가 되는 시간
     headbutt: { damage: 10, interval: 1.1, range: 2.5 }, // 부품이 없어도 쓰는 기본 공격 (몸통 박치기)
@@ -45,8 +45,8 @@ export const VILLAIN = {
     slots: 2, // 괴수 한 마리에 붙일 수 있는 개수
     types: {
       claw: { name: '집게발', price: 0, cost: 15, damage: 16, interval: 0.9, range: 4, desc: '가까운 것을 세게 휘둘러 쳐요' },
-      fireMouth: { name: '불 뿜는 입', price: 120, cost: 25, damage: 5, interval: 0.25, range: 14, burstSeconds: 1.6, restSeconds: 1.4, desc: '멀리까지 불을 뿜어요' },
-      horn: { name: '돌진 뿔', price: 200, cost: 20, damage: 34, interval: 3.2, range: 16, dashSpeed: 30, desc: '멀리서 달려와 쿵 들이받아요' },
+      fireMouth: { name: '불 뿜는 입', price: 120, cost: 25, damage: 10, interval: 0.25, range: 14, burstSeconds: 1.6, restSeconds: 1.4, desc: '멀리까지 불을 뿜어요' },
+      horn: { name: '돌진 뿔', price: 200, cost: 20, damage: 60, interval: 3.2, range: 16, dashSpeed: 30, desc: '멀리서 달려와 쿵 들이받아요' },
     },
   },
 
@@ -56,8 +56,8 @@ export const VILLAIN = {
     depth: 44, // 바닥판 세로 칸
     groundColor: '#4B9F4A',
     name: '꼬마 마을',
-    hpPerBlock: 1.2, // 건물 블록 하나를 떼어 내는 데 필요한 피해
-    payPerBlock: 1, // 건물 블록 하나를 부술 때마다 버는 돈
+    hpPerBlock: 0.8, // 건물 블록 하나를 떼어 내는 데 필요한 피해
+    payPerBlock: 0.4, // 건물 블록 하나를 부술 때마다 버는 돈
     clearBonus: 150, // 영웅을 이기고 마을을 다 부수면 받는 보너스
     monsterStart: [-27, 4], // 괴수가 나타나는 자리 [x, z]
   },
@@ -67,8 +67,9 @@ export const VILLAIN = {
     name: '번개 기사',
     hint: '칼이 빨라요. 멀리서 불을 뿜으면 유리해요',
     appearAtDestroyed: 0.35, // 마을이 이만큼(비율) 부서지면 출동
+    appearLatestSeconds: 30, // 마을이 덜 부서졌어도 부수기 시작한 지 이 시간(초)이 지나면 출동 (판이 늘어지지 않게)
     alertSeconds: 2, // '영웅 출동!' 경보 뒤 나타날 때까지
-    maxHp: 220,
+    maxHp: 500,
     speed: 11,
     damage: 14, // 칼 한 번
     interval: 0.7,
@@ -76,6 +77,11 @@ export const VILLAIN = {
     leapEvery: 5, // 이 시간(초)마다 한 번 높이 뛰어올라 내려찍기
     leapDamage: 30,
     payForWin: 100, // 영웅을 이기면 받는 돈
+  },
+
+  // 습격 한 판의 박자
+  raid: {
+    cleanupSeconds: 15, // 영웅을 이긴 뒤 남은 마을을 마저 부술 수 있는 시간 (끝나면 남은 건물은 저절로 와르르)
   },
 
   // 돈

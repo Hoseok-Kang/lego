@@ -302,7 +302,7 @@ dd {
   height: 28px;
 }
 
-.vt-btn--big > span {
+.vt-btn--big > span:not(.coin) {
   display: grid;
   justify-items: start;
   gap: 1px;

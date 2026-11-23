@@ -19,7 +19,7 @@
 //            raidPhase { phase, previous }, raidStarted { design, cost }
 // 듣는 소식: blocksBroken (건물 블록 → 돈), heroArrived, monsterPopped, heroPopped
 //
-// 돈·영웅 등장 시점 같은 게임 숫자는 villainConfig.js, 장면 사이 뜸 들이는 시간·카메라 다가가기는 아래 상수에서 바꿉니다.
+// 돈·영웅 등장 시점(hero.appearAtDestroyed, hero.appearLatestSeconds)·마무리 시간(raid.cleanupSeconds) 같은 게임 숫자는 villainConfig.js, 장면 사이 뜸 들이는 시간·카메라 다가가기는 아래 상수에서 바꿉니다.
 
 import { VILLAIN } from '../villainConfig.js';
 import { designCost } from '../data/bestiary.js';
@@ -27,14 +27,12 @@ import { pickLandingSpot, pickBuilding, gapBetween } from './raidTargets.js';
 
 const HERO_NEAR = 10; // 영웅이 이만큼 가까우면 괴수가 영웅과 싸움 (칸)
 const HERO_FAR = 14; // 싸우다가 영웅이 이만큼 멀어지면 다시 건물을 부숨
-const HERO_LATEST = 36; // 마을이 덜 부서졌어도 부수기 시작한 지 이 시간(초)이 지나면 영웅이 출동 (판이 늘어지지 않게)
 const MAX_STEP = 1 / 30; // 한 번에 계산하는 가장 긴 시간 (초). 이보다 길면 나눠서 계산
 const MAX_STEPS = 8; // 한 장면에 나눠 계산하는 최대 횟수
 const ARRIVE_WAIT = 2.5; // 영웅이 내려오기 시작한 뒤 이 시간이 지나면 도착 소식이 없어도 맞대결로 넘어감
 const STUCK_SECONDS = 4; // 이 시간 동안 아무것도 못 부수고 제자리면 다른 건물을 노림
 const STUCK_MOVE = 1.5; // 이만큼(칸)은 움직여야 '가고 있다' 로 침
 const AVOID_SECONDS = 6; // 막혔던 건물은 이 시간 동안 다시 안 노림
-const CLEANUP_SECONDS = 20; // 영웅을 이긴 뒤 남은 마을을 부술 수 있는 시간
 const COLLAPSE_HOLD = 2.2; // 남은 건물이 와르르 무너진 뒤 결과가 뜰 때까지
 const LOSE_HOLD = 2.0; // 괴수가 터진 뒤 결과가 뜰 때까지
 const CLEAR_HOLD = 1.6; // 마을을 다 부순 뒤 결과가 뜰 때까지
@@ -154,7 +152,7 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
       case 'smashing':
         direct(dt);
         smashTime += dt;
-        if (town.destroyedRatio >= heroConfig.appearAtDestroyed || smashTime >= HERO_LATEST || town.aliveCount === 0 || !town.nearestAlive(monster.position)) startAlert();
+        if (town.destroyedRatio >= heroConfig.appearAtDestroyed || smashTime >= (heroConfig.appearLatestSeconds ?? 36) || town.aliveCount === 0 || !town.nearestAlive(monster.position)) startAlert();
         break;
       case 'alert':
         direct(dt);
@@ -247,7 +245,7 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
   // ── 영웅을 이긴 뒤: 남은 마을 부수기 ──
   function startCleanup() {
     setPhase('cleanup');
-    state.cleanupLeft = CLEANUP_SECONDS;
+    state.cleanupLeft = VILLAIN.raid?.cleanupSeconds ?? 20;
     target = null;
     resetStuck();
   }

@@ -646,8 +646,9 @@
   aspect-ratio: 1;
   border-radius: 16px;
   background:
-    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.1) 0 2px, transparent 2.6px) 0 0 / 14px 14px,
-    radial-gradient(90% 80% at 50% 90%, #8a63f2 0%, var(--night-2) 60%, var(--night) 100%);
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.35) 0 2px, transparent 2.6px) 0 0 / 14px 14px,
+    radial-gradient(80% 70% at 50% 62%, #fff8dc 0%, #dccdfb 62%, #b7a2ee 100%);
+  box-shadow: inset 0 0 0 2px rgb(60 30 120 / 0.1);
 }
 
 .pcard-pic img {
@@ -1283,5 +1284,30 @@
   .shop-buy,
   .shop-owned {
     min-height: 46px;
+  }
+}
+
+/* 아주 작은 휴대폰 가로 (예: 568×320): 왼쪽 기둥을 더 좁게 */
+@media (max-height: 520px) and (min-width: 560px) and (max-width: 640px) {
+  .lair {
+    grid-template-columns: 216px minmax(0, 1fr);
+    gap: 10px 12px;
+  }
+
+  .vt-logo {
+    font-size: 19px;
+  }
+
+  .lair-welcome {
+    font-size: 14.5px;
+  }
+
+  .lair-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .lair-actions .vt-btn small {
+    display: none;
   }
 }

@@ -72,7 +72,7 @@
   grid-template-columns: 50px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  width: min(100%, 300px);
+  width: min(100%, 330px);
   padding: 7px 14px 8px 8px;
   border-radius: 18px;
   border-bottom: 4px solid rgb(0 0 0 / 0.14);
@@ -133,7 +133,7 @@
 .hud-name {
   overflow: hidden;
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -142,10 +142,10 @@
 /* ── 체력 막대: 줄어들 때 흰 잔상이 뒤따라 줄어듦 ── */
 .hud-bar {
   position: relative;
-  height: 16px;
+  height: 18px;
   overflow: hidden;
   border: 2px solid var(--outline);
-  border-radius: 9px;
+  border-radius: 10px;
   background: var(--track);
 }
 
@@ -554,6 +554,7 @@
 .result-card {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* 안의 내용이 넓어도 카드 밖으로 밀려 나가지 않게 */
   gap: 12px;
   width: min(440px, 100%);
   max-height: 100%;
@@ -580,24 +581,33 @@
   }
 }
 
-/* 이겼을 때 머리 뒤에서 빙글빙글 도는 햇살 */
+/* 이겼을 때 머리 뒤에서 빙글빙글 도는 햇살 (카드 밖으로 삐져나오지 않게 틀 안에서만 보임) */
 .result-burst {
   position: absolute;
-  top: -150px;
-  left: 50%;
+  inset: 0;
   z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.result-burst::before {
+  content: "";
+  position: absolute;
+  top: -150px;
+  left: var(--burst-x, 50%);
   width: 520px;
   aspect-ratio: 1;
   translate: -50% 0;
   border-radius: 50%;
-  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--slime) 34%, transparent) 0 12deg, transparent 12deg 24deg);
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--slime) 26%, var(--sheet)) 0 12deg, transparent 12deg 24deg);
   -webkit-mask: radial-gradient(circle, #000 0 30%, transparent 68%);
   mask: radial-gradient(circle, #000 0 30%, transparent 68%);
   animation: burst-spin 14s linear infinite;
 }
 
-.result[data-kind="lose"] .result-burst,
-.result[data-kind="quit"] .result-burst {
+.result[data-kind="lose"] .result-burst::before,
+.result[data-kind="quit"] .result-burst::before {
   background: radial-gradient(circle, color-mix(in srgb, var(--hero-soft) 40%, transparent) 0 40%, transparent 66%);
   animation: none;
 }
@@ -871,9 +881,18 @@
 
 .result-actions {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
   gap: 10px;
   margin-top: 2px;
+}
+
+/* 좁은 휴대폰: 단추 글자를 조금 줄여 카드 안에 들어가게 */
+@media (max-width: 420px) {
+  .result .result-actions .vt-btn {
+    gap: 6px;
+    padding-inline: 8px;
+    font-size: 18px;
+  }
 }
 
 .result-actions .vt-btn {
@@ -882,8 +901,16 @@
   font-size: 20px;
 }
 
-.result-actions .vt-btn > span {
+.result-actions .vt-btn > span:not(.coin) {
   display: inline;
+}
+
+/* 결과가 떠 있는 동안에는 습격 단추와 안내를 숨김 */
+body.screen-result .hud-bottom,
+body.screen-result .hud-caption,
+body.screen-result .hud-alert,
+body.screen-result .hud-edge {
+  display: none;
 }
 
 /* 항목이 다 나온 뒤 '다시 출동' 단추가 살랑살랑 */
@@ -1163,6 +1190,85 @@
   }
 
   .result-burst {
-    left: 24%;
+    --burst-x: 24%;
+  }
+}
+
+/* 아주 낮은 가로 화면 (작은 휴대폰): 결과 카드가 한 화면에 다 들어오게 더 촘촘히 */
+@media (max-height: 400px) and (min-width: 560px) {
+  .result {
+    padding-block: 6px;
+  }
+
+  .result-card {
+    gap: 5px 16px;
+    padding: 10px 16px 9px;
+    border-bottom-width: 5px;
+  }
+
+  .result-face {
+    width: 56px;
+    height: 56px;
+  }
+
+  .result-title {
+    font-size: 36px;
+  }
+
+  .result-meter {
+    padding: 6px 10px 7px;
+  }
+
+  .result-row {
+    padding: 2px 10px 3px;
+    font-size: 14px;
+  }
+
+  .result-row .coin {
+    font-size: 16px;
+  }
+
+  .result-total {
+    padding: 4px 12px 6px;
+    font-size: 17px;
+  }
+
+  .result-total strong {
+    font-size: 26px;
+  }
+
+  .result-total strong .ico {
+    width: 28px;
+    height: 28px;
+  }
+
+  .result-actions .vt-btn {
+    min-height: 46px;
+    border-bottom-width: 5px;
+  }
+}
+
+/* 아주 작은 휴대폰 가로 (예: 568×320) */
+@media (max-height: 400px) and (min-width: 560px) and (max-width: 640px) {
+  .result-meters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .result-meter--time {
+    display: none;
+  }
+
+  .result-actions {
+    gap: 6px;
+  }
+
+  .result-actions .vt-btn {
+    gap: 5px;
+    padding-inline: 6px;
+    font-size: 17px;
+  }
+
+  .result-actions .vt-btn > .ico {
+    display: none;
   }
 }

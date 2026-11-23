@@ -54,7 +54,7 @@ export const VILLAIN_SOUNDS = {
 
   // 박치기 '퍽'
   headbutt: {
-    volume: 0.7,
+    volume: 0.6,
     gap: 90,
     vary: 0.1,
     make(kit) {
@@ -66,7 +66,7 @@ export const VILLAIN_SOUNDS = {
 
   // 집게 휘두름 '휙-착'
   claw: {
-    volume: 0.7,
+    volume: 0.95,
     gap: 90,
     vary: 0.1,
     make(kit) {
@@ -143,7 +143,7 @@ export const VILLAIN_SOUNDS = {
 
   // 건물 무너짐 '우르르 쾅'
   collapse: {
-    volume: 0.85,
+    volume: 0.6,
     gap: 220,
     important: true,
     make(kit) {
@@ -168,7 +168,7 @@ export const VILLAIN_SOUNDS = {
 
   // 돈 많이 '짤랑짤랑짤랑' (결과 화면)
   cash: {
-    volume: 0.45,
+    volume: 0.7,
     gap: 200,
     important: true,
     make(kit) {
@@ -183,7 +183,7 @@ export const VILLAIN_SOUNDS = {
 
   // 영웅 출동 사이렌 '위-오 위-오'
   siren: {
-    volume: 0.5,
+    volume: 0.8,
     gap: 1200,
     important: true,
     make(kit) {
@@ -197,7 +197,7 @@ export const VILLAIN_SOUNDS = {
 
   // 영웅 착지 '번쩍-쿵'
   heroLand: {
-    volume: 0.9,
+    volume: 0.6,
     gap: 300,
     important: true,
     make(kit) {
@@ -211,7 +211,7 @@ export const VILLAIN_SOUNDS = {
 
   // 영웅 칼 '챙'
   sword: {
-    volume: 0.5,
+    volume: 0.8,
     gap: 80,
     vary: 0.1,
     make(kit) {
@@ -244,7 +244,7 @@ export const VILLAIN_SOUNDS = {
 
   // 펑! (괴수나 영웅이 블록으로 터짐 — 가장 신나는 소리)
   pop: {
-    volume: 1,
+    volume: 0.55,
     gap: 200,
     important: true,
     make(kit) {
@@ -271,7 +271,7 @@ export const VILLAIN_SOUNDS = {
 
   // 패배 '뿌우-웅' (슬프지만 웃기게)
   lose: {
-    volume: 0.55,
+    volume: 0.9,
     gap: 1500,
     important: true,
     make(kit) {
@@ -293,7 +293,7 @@ export const VILLAIN_SOUNDS = {
 
   // 화면이 넘어감 '슉'
   open: {
-    volume: 0.35,
+    volume: 0.55,
     gap: 120,
     make(kit) {
       noise(kit, { filter: 'bandpass', freq: 700, to: 2600, glide: 0.1, q: 1.5, attack: 0.02, decay: 0.08, volume: 0.7 });
@@ -303,7 +303,7 @@ export const VILLAIN_SOUNDS = {
 
   // 부품을 샀어요 '짤랑-띠링'
   buy: {
-    volume: 0.55,
+    volume: 0.75,
     gap: 300,
     important: true,
     make(kit) {

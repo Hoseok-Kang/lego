@@ -68,7 +68,7 @@ export function createLairScreen(root, options = {}) {
           <div class="town-info">
             <span class="vt-tag">${TEXT.target}</span>
             <h2 class="town-name">${escapeHTML(town.name)}</h2>
-            <p class="town-pay">${icon('block')} 블록 하나 부수면 ${coin(town.payPerBlock)}</p>
+            <p class="town-pay">${icon('block')} 블록 10개 부수면 ${coin(Math.round(town.payPerBlock * 10))}</p>
           </div>
           <div class="town-hero">
             <span class="town-hero-face">${HERO_FACE}</span>

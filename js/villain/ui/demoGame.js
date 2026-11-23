@@ -94,6 +94,9 @@ export async function startDemo({ root = document.getElementById('ui') } = {}) {
       if (fake) fake.speed = scale;
     },
     onQuit: () => fake && endRaid(false, true),
+    onPause: (on) => {
+      if (fake) fake.paused = on;
+    },
   });
 
   const result = createResultScreen(root, {
@@ -140,7 +143,7 @@ export async function startDemo({ root = document.getElementById('ui') } = {}) {
 
   function tick(now) {
     if (!fake) return;
-    const dt = Math.min(0.05, (now - fake.last) / 1000) * fake.speed;
+    const dt = fake.paused ? 0 : Math.min(0.05, (now - fake.last) / 1000) * fake.speed;
     fake.last = now;
     fake.time += dt;
     const f = fake;
