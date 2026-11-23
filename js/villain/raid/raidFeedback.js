@@ -30,7 +30,8 @@ const CSS = `
 .villain-floats{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:5}
 .villain-float{position:absolute;left:0;top:0;white-space:nowrap;font-family:'Jua','IBM Plex Sans KR',sans-serif;
   font-size:clamp(17px,2.6vmin + 9px,30px);line-height:1;color:#fff;will-change:transform,opacity;
-  -webkit-text-stroke:5px #1B2A34;paint-order:stroke fill;text-shadow:0 3px 0 rgba(27,42,52,.55)}
+  font-weight:700;text-shadow:-2px -2px 0 #1B2A34,2px -2px 0 #1B2A34,-2px 2px 0 #1B2A34,2px 2px 0 #1B2A34,0 -2.5px 0 #1B2A34,0 2.5px 0 #1B2A34,
+  -2.5px 0 0 #1B2A34,2.5px 0 0 #1B2A34,0 5px 0 rgba(27,42,52,.6)}
 .villain-float.money{color:#F2CD37}
 .villain-float.boom{color:#FF698F;font-size:clamp(30px,5.5vmin + 12px,64px)}
 .villain-float.alert{color:#FE8A18;font-size:clamp(24px,4vmin + 10px,46px)}

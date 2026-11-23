@@ -1,10 +1,11 @@
 // 영웅 '번개 기사' (마을이 부서지면 하늘에서 번개와 함께 내려와 괴수와 싸움)
 // 알아서 괴수를 쫓아가 칼을 휘두르고, 몇 초마다 높이 뛰어올라 내려찍습니다. 맞으면 망토·방패·깃털부터 떨어지고 체력이 0 이면 '펑'.
 //
-//   const hero = createHero(scene, { debris, fx, events, bounds? })
+//   const hero = createHero(scene, { debris, fx, events, bounds?, obstacles? })
+//       obstacles: () => 건물 목록 (예: () => town.buildings) — 주면 남아 있는 건물을 뚫고 지나가지 않고 돌아서 감
 //   hero.enter(position)          그 자리에 하늘에서 떨어져 등장 (번개 + 충격 고리). 착지하면 'heroArrived' 소식
 //   hero.setTarget(monster)       싸울 상대 (과녁: position, radius, alive, takeDamage)
-//   hero.setObstacles(() => 건물 목록)   돌아서 갈 건물들 (안 줘도 됨)
+//   hero.setObstacles(() => 건물 목록)   돌아서 갈 건물들을 나중에 정하기 (위 obstacles 와 같음)
 //   hero.update(dt)
 //   hero.active                   마을에 나와 있고 살아 있음
 //   hero.team('town') / position(바닥 점) / radius / height / alive / hp / maxHp / state
@@ -35,12 +36,14 @@ const LEAP_REACH = 20; // 괴수가 이보다 멀면 뛰지 않고 달려감
 const SLAM_RADIUS = 3.4; // 내려찍기가 닿는 둘레 (괴수 몸 둘레에 더함)
 const RECOVER_SECONDS = 0.3; // 내려찍은 뒤 잠깐 멈춤
 const CIRCLE_SPEED = 0.4; // 가까이서 옆으로 도는 빠르기 (달리기의 몇 배)
+const SIDE_SLOPE = 0.6; // 괴수의 앞·뒤쪽으로 이만큼 넘어가면 옆구리 쪽으로 되돌아감 (클수록 앞뒤로 더 돌아다님)
+const SIDE_SPEED = 0.75; // 옆구리로 되돌아가는 빠르기 (달리기의 몇 배)
 const KNOCKBACK = 7; // 맞았을 때 밀려나는 빠르기
 const EXTRA_POP = 14; // 망토·방패·깃털 말고도 더 떨어질 수 있는 블록 수
 const FLASH_SECONDS = 0.16;
 const TURN_SPEED = 12; // 몸을 돌리는 빠르기
 
-export function createHero(scene, { debris = null, fx = null, events = null, bounds = null } = {}) {
+export function createHero(scene, { debris = null, fx = null, events = null, bounds = null, obstacles: obstaclesOption = null } = {}) {
   const config = VILLAIN.hero;
   const town = VILLAIN.town;
   const area = bounds || { minX: -town.width / 2 + 1, maxX: town.width / 2 - 1, minZ: -town.depth / 2 + 1, maxZ: town.depth / 2 - 1 };
@@ -61,7 +64,7 @@ export function createHero(scene, { debris = null, fx = null, events = null, bou
   let stateTime = 0;
   let time = 0;
   let target = null;
-  let obstacles = null;
+  let obstacles = obstaclesOption;
   let facing = Math.PI / 2;
   let y = 0; // 발 높이
   let runPhase = 0;
@@ -88,6 +91,7 @@ export function createHero(scene, { debris = null, fx = null, events = null, bou
   function enter(at) {
     reset();
     position.set(clamp(at.x, area.minX, area.maxX), 0, clamp(at.z, area.minZ, area.maxZ));
+    avoidObstacles(); // 건물 지붕 위가 아니라 옆 빈 땅에 내려앉게
     y = DROP_HEIGHT;
     fig.setVisible(true);
     warning = fx?.telegraph?.(position, 3.2, DROP_SECONDS) || null;
@@ -149,9 +153,9 @@ export function createHero(scene, { debris = null, fx = null, events = null, bou
   function startLeap() {
     leapClock = 0;
     leapFrom.copy(position);
-    // 괴수 바로 앞(지금 내가 있는 쪽)에 내려앉음
-    const dx = position.x - target.position.x;
-    const dz = position.z - target.position.z;
+    // 괴수 옆구리(지금 내가 있는 쪽)에 내려앉음 — 앞뒤로는 조금만 벗어나게
+    const dx = position.x - target.position.x || 1;
+    const dz = clamp(position.z - target.position.z, -Math.abs(dx) * 0.4, Math.abs(dx) * 0.4);
     const d = Math.hypot(dx, dz) || 1;
     const stand = (target.radius || 1) + api.radius + 0.4;
     leapTo.set(clamp(target.position.x + (dx / d) * stand, area.minX, area.maxX), 0, clamp(target.position.z + (dz / d) * stand, area.minZ, area.maxZ));
@@ -224,10 +228,13 @@ export function createHero(scene, { debris = null, fx = null, events = null, bou
         circleClock = 1.2 + Math.random() * 1.6;
         circleDir = Math.random() < 0.5 ? -1 : 1;
       }
+      // 괴수는 종이 인형처럼 옆으로 넓고 앞뒤로 얇아서, 앞·뒤쪽에 서 있으면 칼이 안 닿아 보임 → 옆구리 쪽으로 돌아감
+      const offSide = Math.abs(dz) > Math.abs(dx) * SIDE_SLOPE;
+      if (offSide) circleDir = dx * dz >= 0 ? 1 : -1;
       const back = gap < config.range * 0.25 ? -0.6 : 0;
       moveX = (-dz / d) * circleDir + (dx / d) * back;
       moveZ = (dx / d) * circleDir + (dz / d) * back;
-      speed = config.speed * CIRCLE_SPEED;
+      speed = config.speed * (offSide ? SIDE_SPEED : CIRCLE_SPEED);
     }
     position.x += moveX * speed * dt;
     position.z += moveZ * speed * dt;
@@ -247,16 +254,23 @@ export function createHero(scene, { debris = null, fx = null, events = null, bou
     if (swing >= SWING_SECONDS) swing = -1;
   }
 
-  function avoidObstacles() {
+  function avoidObstacles(slide = 0) {
     for (const o of obstacles ? obstacles() : []) {
       if (!o || !o.alive || o === target) continue;
-      const dx = position.x - o.position.x;
-      const dz = position.z - o.position.z;
-      const d = Math.hypot(dx, dz) || 1e-3;
+      let dx = position.x - o.position.x;
+      let dz = position.z - o.position.z;
+      if (Math.abs(dx) + Math.abs(dz) < 1e-3) dz = 1; // 딱 한가운데면 앞쪽(카메라 쪽)으로 밀어냄
+      const d = Math.hypot(dx, dz);
       const min = (o.radius || 0) + api.radius + 0.3;
       if (d < min) {
         position.x = o.position.x + (dx / d) * min;
         position.z = o.position.z + (dz / d) * min;
+        // 건물 뒤에 끼지 않게, 상대가 있는 쪽으로 벽을 따라 미끄러짐
+        if (target && slide > 0) {
+          const side = (-dz / d) * (target.position.x - position.x) + (dx / d) * (target.position.z - position.z) >= 0 ? 1 : -1;
+          position.x += (-dz / d) * side * slide;
+          position.z += (dx / d) * side * slide;
+        }
       }
     }
   }
@@ -313,7 +327,7 @@ export function createHero(scene, { debris = null, fx = null, events = null, bou
       position.x += push.x * dt;
       position.z += push.z * dt;
       push.multiplyScalar(Math.max(0, 1 - dt * 7));
-      avoidObstacles();
+      avoidObstacles(config.speed * 0.5 * dt);
       position.x = clamp(position.x, area.minX, area.maxX);
       position.z = clamp(position.z, area.minZ, area.maxZ);
       pose.run = runBlend;

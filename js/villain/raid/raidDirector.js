@@ -27,6 +27,9 @@ import { pickLandingSpot, pickBuilding, gapBetween } from './raidTargets.js';
 
 const HERO_NEAR = 10; // 영웅이 이만큼 가까우면 괴수가 영웅과 싸움 (칸)
 const HERO_FAR = 14; // 싸우다가 영웅이 이만큼 멀어지면 다시 건물을 부숨
+const HERO_LATEST = 36; // 마을이 덜 부서졌어도 부수기 시작한 지 이 시간(초)이 지나면 영웅이 출동 (판이 늘어지지 않게)
+const MAX_STEP = 1 / 30; // 한 번에 계산하는 가장 긴 시간 (초). 이보다 길면 나눠서 계산
+const MAX_STEPS = 8; // 한 장면에 나눠 계산하는 최대 횟수
 const ARRIVE_WAIT = 2.5; // 영웅이 내려오기 시작한 뒤 이 시간이 지나면 도착 소식이 없어도 맞대결로 넘어감
 const STUCK_SECONDS = 4; // 이 시간 동안 아무것도 못 부수고 제자리면 다른 건물을 노림
 const STUCK_MOVE = 1.5; // 이만큼(칸)은 움직여야 '가고 있다' 로 침
@@ -54,6 +57,7 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
   let landing = null; // 영웅이 내려올 자리
   let telegraph = null;
   let arriveTimer = 0;
+  let smashTime = 0; // 부수기 시작한 뒤 흐른 시간
   let target = null; // 괴수가 지금 노리는 것
   let paidBlocks = 0; // 돈을 받은 건물 블록 수
   let collapsing = false; // 마지막 와르르 중 (이때 무너지는 블록은 돈이 안 됨)
@@ -119,8 +123,15 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
   }
 
   // ── 매 장면 ──
+  // 2배속·느린 휴대폰처럼 한 번에 긴 시간이 들어오면 잘게 나눠서 계산 (빠르기에 따라 싸움 결과가 달라지지 않게)
   function update(dt) {
-    if (!isRunning() || dt <= 0) return;
+    if (!(dt > 0)) return;
+    const steps = Math.min(MAX_STEPS, Math.ceil(dt / MAX_STEP - 1e-6));
+    for (let i = 0; i < steps; i++) tick(dt / steps);
+  }
+
+  function tick(dt) {
+    if (!isRunning()) return;
     state.time += dt;
     monster?.update(dt);
     hero?.update(dt);
@@ -142,7 +153,8 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
         break;
       case 'smashing':
         direct(dt);
-        if (town.destroyedRatio >= heroConfig.appearAtDestroyed || town.aliveCount === 0 || !town.nearestAlive(monster.position)) startAlert();
+        smashTime += dt;
+        if (town.destroyedRatio >= heroConfig.appearAtDestroyed || smashTime >= HERO_LATEST || town.aliveCount === 0 || !town.nearestAlive(monster.position)) startAlert();
         break;
       case 'alert':
         direct(dt);
@@ -316,7 +328,8 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
       bus.emit('moneyChanged', { money: saved.money, delta: earned });
     }
     setPhase('ended');
-    view?.setFocus(null);
+    if (monster) view?.setFocus(monster.position, ZOOM.finale);
+    else view?.setFocus(null);
     bus.emit('raidEnded', { result });
   }
 
@@ -325,7 +338,7 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
   function aimCamera() {
     if (!view || !monster) return;
     const m = monster.position;
-    if (collapsing || state.phase === 'ended') return view.setFocus(null);
+    if (collapsing || state.phase === 'ended') return view.setFocus(m, ZOOM.finale); // 마을 전체 (세로 화면은 괴수 쪽을 가까이)
     if (pending) {
       const at = pending.win ? m : hero?.alive ? mid(m, hero.position, 0.5) : m;
       return view.setFocus(at, ZOOM.cleanup);
@@ -366,6 +379,7 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
     landing = null;
     heroArrived = false;
     heroEntered = false;
+    smashTime = 0;
     paidBlocks = 0;
     collapsing = false;
     cleared = false;
