@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2a1a4d">
+<title>악당 타이쿤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<!-- 순서가 중요해요: 공통(색·단추) → 소굴·상점 → 습격 정보판·결과 → 괴수 그리기 -->
+<link rel="stylesheet" href="css/villain.css">
+<link rel="stylesheet" href="css/villain-lair.css">
+<link rel="stylesheet" href="css/villain-raid.css">
+<link rel="stylesheet" href="css/villain-draw.css">
+</head>
+<body data-screen="boot">
+<!--
+  악당 타이쿤 화면
+  괴수를 그려서 마을로 보내 부수고, 번 돈으로 공격 부품을 사는 게임입니다.
+  이 파일에는 틀만 있고, 화면(소굴 · 상점 · 습격 정보판 · 결과)은 js/villain/ui/*.js 가 만들어 #ui 안에 넣습니다.
+    화면에 보이는 글자  → 각 화면 파일 맨 위의 TEXT (예: js/villain/ui/lairScreen.js)
+    색 · 글꼴 · 단추 모양 → css/villain.css 맨 위 한 곳
+    소굴 · 상점 모양     → css/villain-lair.css        습격 정보판 · 결과 모양 → css/villain-raid.css
+    괴수 그리기 화면     → css/villain-draw.css, js/villain/draw/*.js
+    소리               → js/villain/audio/villainSoundBank.js
+    게임 숫자(값 · 체력) → js/villain/villainConfig.js
+  id="..." 는 프로그램이 찾아 쓰는 이름이라 바꾸면 안 됩니다.
+-->
+
+<!-- 3D 마을이 그려지는 곳 (그림판이 아직 없을 때는 잔디색 블록 판 무늬) -->
+<div id="stage" class="stage"></div>
+
+<!-- 화면들이 들어가는 곳 -->
+<div id="ui" class="ui"></div>
+
+<!-- 처음 여는 동안 잠깐 보이는 글 -->
+<p id="bootMessage" class="boot-message">악당 소굴 문 여는 중…</p>
+
+<noscript><p class="boot-message">이 게임은 자바스크립트가 켜져 있어야 해요.</p></noscript>
+
+<!-- 게임(js/villain/main.js)이 있으면 그것을, 아직 없으면 화면 미리보기(js/villain/ui/demoGame.js)를 엽니다 -->
+<script type="module" src="js/villain/ui/boot.js"></script>
+</body>
+</html>
