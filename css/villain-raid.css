@@ -1,0 +1,1168 @@
+/* 악당 타이쿤 — 습격 정보판과 결과 화면
+   js/villain/ui/raidHud.js, resultScreen.js 가 만드는 화면의 모양입니다. 색은 css/villain.css 맨 위에서 정합니다.
+
+   차례: 정보판 틀 → 위쪽 줄(괴수 체력 · 번 돈과 마을 부서짐 · 영웅 체력) → 체력 막대 → 영웅 출동 사이렌 띠
+        → 한 줄 안내 → 아래 단추 → 결과 화면 → 휴대폰 세로 → 휴대폰 가로 */
+
+/* ── 정보판 틀: 3D 마을 위에 떠 있고, 단추만 눌림 ── */
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  color: var(--ink);
+}
+
+.hud-floats {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* 영웅 출동 때 화면 가장자리가 빨갛게 번쩍 */
+.hud-edge {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  box-shadow: inset 0 0 0 6px rgb(229 38 47 / 0.9), inset 0 0 90px 20px rgb(229 38 47 / 0.55);
+}
+
+.hud.is-alert .hud-edge {
+  animation: edge-pulse 0.56s ease-in-out infinite;
+}
+
+@keyframes edge-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+/* ── 위쪽 줄 ── */
+.hud-top {
+  position: absolute;
+  top: var(--edge-top);
+  left: var(--edge-left);
+  right: var(--edge-right);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px) minmax(0, 1fr);
+  grid-template-areas: "monster town hero";
+  align-items: start;
+  gap: 12px;
+}
+
+.hud.is-enter .hud-top {
+  animation: hud-drop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@keyframes hud-drop {
+  from {
+    translate: 0 -120%;
+  }
+}
+
+/* 싸우는 이 한 칸: 얼굴 + 이름 + 체력 막대 */
+.hud-fighter {
+  grid-area: monster;
+  justify-self: start;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 300px);
+  padding: 7px 14px 8px 8px;
+  border-radius: 18px;
+  border-bottom: 4px solid rgb(0 0 0 / 0.14);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.hud-fighter--hero {
+  grid-area: hero;
+  justify-self: end;
+  grid-template-columns: minmax(0, 1fr) 46px;
+  padding: 7px 8px 8px 14px;
+  text-align: right;
+}
+
+.hud-fighter--hero.is-arrive {
+  animation: hero-arrive 0.5s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes hero-arrive {
+  from {
+    opacity: 0;
+    translate: 60% 0;
+    scale: 1.2;
+  }
+}
+
+.hud-face {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: radial-gradient(90% 80% at 50% 96%, #8a63f2 0%, var(--night-2) 62%, var(--night) 100%);
+}
+
+.hud-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  scale: 1.12;
+}
+
+.hud-fighter--hero .hud-face {
+  width: 46px;
+  height: 46px;
+  padding: 6px;
+  background: color-mix(in srgb, var(--hero) 28%, var(--sheet));
+}
+
+.hud-fighter-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hud-name {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 체력 막대: 줄어들 때 흰 잔상이 뒤따라 줄어듦 ── */
+.hud-bar {
+  position: relative;
+  height: 16px;
+  overflow: hidden;
+  border: 2px solid var(--outline);
+  border-radius: 9px;
+  background: var(--track);
+}
+
+.hud-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--hp, 1) * 100%);
+  border-radius: 0 5px 5px 0;
+}
+
+.hud-fighter--hero .hud-bar i {
+  inset: 0 0 0 auto;
+  border-radius: 5px 0 0 5px;
+}
+
+.hud-bar-ghost {
+  background: #ffffff;
+  transition: width 0.5s ease-in 0.18s;
+}
+
+.hud-bar-fill {
+  background: linear-gradient(180deg, #e2ff73 0 38%, var(--slime) 38% 100%);
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.16);
+  transition: width 0.12s ease-out;
+}
+
+.hud-fighter--hero .hud-bar-fill {
+  background: linear-gradient(180deg, #8fc0ff 0 38%, var(--hero) 38% 100%);
+}
+
+.hud-fighter.is-low .hud-bar-fill {
+  background: linear-gradient(180deg, #ff9c8f 0 38%, #e5262f 38% 100%);
+  animation: low-blink 0.5s steps(2, jump-none) infinite;
+}
+
+@keyframes low-blink {
+  50% {
+    filter: brightness(1.35);
+  }
+}
+
+.hud-fighter.is-hurt {
+  animation: hurt 0.28s ease-out;
+}
+
+@keyframes hurt {
+  20% {
+    translate: -5px 2px;
+    filter: brightness(1.5);
+  }
+  50% {
+    translate: 4px -1px;
+  }
+  80% {
+    translate: -2px 0;
+  }
+}
+
+.hud-fighter.is-out {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+/* ── 가운데: 번 돈 + 마을 부서짐 막대 ── */
+.hud-town {
+  grid-area: town;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hud-earned {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 18px 6px 9px;
+  border: 2px solid rgb(255 255 255 / 0.18);
+  border-bottom: 5px solid rgb(0 0 0 / 0.4);
+  border-radius: 999px;
+  background: var(--night);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+  box-shadow: var(--shadow);
+}
+
+.hud-earned .ico {
+  width: 34px;
+  height: 34px;
+}
+
+.hud-earned b {
+  min-width: 2ch;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.hud-earned.is-bump .ico {
+  animation: coin-flip 0.3s ease-out;
+}
+
+@keyframes coin-flip {
+  50% {
+    scale: 0.2 1.15;
+  }
+}
+
+.hud-town-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 14px 7px 12px;
+  border-radius: 16px;
+  border-bottom: 4px solid rgb(0 0 0 / 0.14);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.hud-town-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hud-town-label .ico {
+  color: var(--accent);
+}
+
+.hud-town-bar {
+  position: relative;
+  height: 16px;
+  border: 2px solid var(--outline);
+  border-radius: 9px;
+  background: var(--track);
+}
+
+/* 부서진 만큼 주황 빗금이 차오름 */
+.hud-town-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--town, 0) * 100%);
+  border-radius: 6px;
+  background: repeating-linear-gradient(-55deg, #fe8a18 0 8px, #f2cd37 8px 16px);
+  background-size: 200% 100%;
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.16);
+  transition: width 0.25s ease-out;
+  animation: stripes 1.2s linear infinite;
+}
+
+@keyframes stripes {
+  to {
+    background-position: -39px 0;
+  }
+}
+
+/* 영웅이 출동하는 지점 표시 (작은 영웅 얼굴) */
+.hud-town-mark {
+  position: absolute;
+  top: 50%;
+  width: 24px;
+  translate: -50% -50%;
+  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.3));
+  transition: scale 0.3s, filter 0.3s;
+}
+
+.hud-town-mark::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  z-index: -1;
+  width: 3px;
+  translate: -50% 0;
+  background: var(--outline);
+}
+
+.hud-town-bar.is-passed .hud-town-mark {
+  scale: 0.8;
+  filter: grayscale(0.9) opacity(0.7);
+}
+
+.hud-town-num {
+  min-width: 3.3ch;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── 영웅 출동! 사이렌 띠 ── */
+.hud-alert {
+  position: absolute;
+  top: 30%;
+  left: -4%;
+  right: -4%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 4vw, 44px);
+  padding: 20px 0 22px;
+  background: #e5262f;
+  color: #ffffff;
+  rotate: -3deg;
+  box-shadow: 0 10px 0 rgb(0 0 0 / 0.22);
+  animation: alert-slam 0.42s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+/* 위아래 노랑·검정 경고 빗금 */
+.hud-alert::before,
+.hud-alert::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: repeating-linear-gradient(-45deg, var(--gold) 0 14px, var(--outline) 14px 28px);
+  animation: hazard 0.7s linear infinite;
+}
+
+.hud-alert::before {
+  top: 0;
+}
+
+.hud-alert::after {
+  bottom: 0;
+  animation-direction: reverse;
+}
+
+@keyframes hazard {
+  to {
+    background-position: 39.6px 0;
+  }
+}
+
+@keyframes alert-slam {
+  from {
+    opacity: 0;
+    scale: 2.2;
+    rotate: 6deg;
+  }
+}
+
+.hud-alert-text {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.hud-alert-text strong {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 8vw, 76px);
+  font-weight: 400;
+  line-height: 1;
+  -webkit-text-stroke: 0.12em var(--outline);
+  paint-order: stroke fill;
+  text-shadow: 0 0.08em 0 var(--outline);
+  animation: alert-beat 0.56s ease-in-out infinite;
+}
+
+@keyframes alert-beat {
+  50% {
+    scale: 1.07;
+  }
+}
+
+.hud-alert-text span {
+  font-size: clamp(13px, 2.2vw, 18px);
+  font-weight: 600;
+}
+
+/* 빙글빙글 경광등 */
+.hud-siren {
+  position: relative;
+  flex: none;
+  width: clamp(36px, 7vw, 60px);
+  aspect-ratio: 1;
+  border: 3px solid var(--outline);
+  border-radius: 50% 50% 12% 12%;
+  background: radial-gradient(circle at 50% 60%, #fff7b0 0 22%, var(--gold) 55%);
+  animation: siren-blink 0.56s steps(2, jump-none) infinite;
+}
+
+.hud-siren:last-child {
+  animation-delay: 0.28s;
+}
+
+@keyframes siren-blink {
+  50% {
+    background: radial-gradient(circle at 50% 60%, #ffffff 0 30%, #fff03a 70%);
+    box-shadow: 0 0 0 8px rgb(255 240 58 / 0.4), 0 0 34px 14px rgb(255 240 58 / 0.7);
+  }
+}
+
+/* ── 한 줄 안내 (괴수 조립 중, 맞대결, 남은 시간) ── */
+.hud-caption {
+  position: absolute;
+  top: calc(var(--edge-top) + 112px);
+  left: 50%;
+  translate: -50% 0;
+  padding: 6px 16px 7px;
+  border-radius: 999px;
+  border-bottom: 4px solid rgb(0 0 0 / 0.35);
+  background: var(--night);
+  color: var(--night-ink);
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+
+.hud-caption[data-phase="duel"] {
+  background: var(--hero);
+  color: #ffffff;
+}
+
+.hud-caption[data-phase="cleanup"] {
+  background: var(--slime);
+  color: var(--slime-ink);
+  border-bottom-color: var(--slime-edge);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-caption.is-enter {
+  animation: caption-in 0.36s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+/* ── 아래 단추 줄: 그만두기 · 소리 · 빠르기 ── */
+.hud-bottom {
+  position: absolute;
+  left: var(--edge-left);
+  right: var(--edge-right);
+  bottom: var(--edge-bottom);
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.hud-bottom-gap {
+  flex: 1;
+}
+
+.hud-btn {
+  pointer-events: auto;
+  box-shadow: var(--shadow);
+}
+
+.hud-speed {
+  min-width: 92px;
+  min-height: 56px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.hud-speed b {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-speed.is-fast {
+  border-color: var(--gold-edge);
+  background: linear-gradient(180deg, #ffe36b 0%, var(--gold) 60%);
+  color: var(--gold-ink);
+}
+
+.hud-speed.is-fast .ico {
+  animation: speed-run 0.5s linear infinite;
+}
+
+@keyframes speed-run {
+  50% {
+    translate: 3px 0;
+  }
+}
+
+/* ── 결과 화면: 부서진 마을 위에 겹쳐 뜨는 카드 ── */
+.result {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  background: var(--veil);
+  animation: fade-in 0.3s ease-out;
+}
+
+.result-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  width: min(440px, 100%);
+  max-height: 100%;
+  padding: 20px 20px 18px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+  border: 2px solid var(--line);
+  border-bottom: 7px solid var(--edge);
+  border-radius: 26px;
+  background: var(--sheet);
+  box-shadow: var(--shadow-big);
+  isolation: isolate;
+}
+
+.result.is-enter .result-card {
+  animation: result-in 0.5s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@keyframes result-in {
+  from {
+    opacity: 0;
+    translate: 0 40px;
+    scale: 0.86;
+  }
+}
+
+/* 이겼을 때 머리 뒤에서 빙글빙글 도는 햇살 */
+.result-burst {
+  position: absolute;
+  top: -150px;
+  left: 50%;
+  z-index: -1;
+  width: 520px;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--slime) 34%, transparent) 0 12deg, transparent 12deg 24deg);
+  -webkit-mask: radial-gradient(circle, #000 0 30%, transparent 68%);
+  mask: radial-gradient(circle, #000 0 30%, transparent 68%);
+  animation: burst-spin 14s linear infinite;
+}
+
+.result[data-kind="lose"] .result-burst,
+.result[data-kind="quit"] .result-burst {
+  background: radial-gradient(circle, color-mix(in srgb, var(--hero-soft) 40%, transparent) 0 40%, transparent 66%);
+  animation: none;
+}
+
+@keyframes burst-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.result-head {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.result-face {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  margin-bottom: 2px;
+  overflow: hidden;
+  border: 3px solid var(--outline);
+  border-radius: 50%;
+  background: radial-gradient(90% 80% at 50% 96%, #8a63f2 0%, var(--night-2) 62%, var(--night) 100%);
+  box-shadow: 0 5px 0 rgb(0 0 0 / 0.2);
+}
+
+.result-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  scale: 1.1;
+}
+
+.result[data-kind="win"] .result-face {
+  animation: face-cheer 0.7s ease-in-out infinite;
+}
+
+@keyframes face-cheer {
+  50% {
+    translate: 0 -7px;
+    rotate: 5deg;
+  }
+}
+
+/* 졌을 때 괴수 그림은 기우뚱 + 잿빛 */
+.result[data-kind="lose"] .result-face img {
+  rotate: 24deg;
+  filter: grayscale(0.75);
+}
+
+.result-title {
+  display: flex;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 11vw, 56px);
+  font-weight: 400;
+  line-height: 1.05;
+  color: var(--slime);
+  -webkit-text-stroke: 0.13em var(--outline);
+  paint-order: stroke fill;
+  text-shadow: 0 0.08em 0 var(--outline);
+}
+
+.result-title span {
+  display: inline-block;
+  animation: letter-in 0.5s cubic-bezier(0.3, 1.7, 0.5, 1) backwards;
+  animation-delay: calc(var(--i) * 70ms + 180ms);
+}
+
+@keyframes letter-in {
+  from {
+    opacity: 0;
+    translate: 0 -40px;
+    scale: 1.8;
+    rotate: -14deg;
+  }
+}
+
+.result[data-kind="lose"] .result-title {
+  color: var(--hero-soft);
+}
+
+.result[data-kind="lose"] .result-title span:nth-child(odd) {
+  rotate: -5deg;
+}
+
+.result[data-kind="lose"] .result-title span:nth-child(even) {
+  rotate: 4deg;
+  translate: 0 3px;
+}
+
+.result[data-kind="quit"] .result-title {
+  color: var(--gold);
+}
+
+.result-sub {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* 마을 부서짐 · 걸린 시간 */
+.result-meters {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 8px;
+}
+
+.result-meter {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 9px 12px 10px;
+  border-radius: 15px;
+  background: var(--soft);
+}
+
+.result-meter > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.result-meter > b {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-meter > b i {
+  font-style: normal;
+}
+
+.result-meter--time {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+.result-meter-bar {
+  grid-column: 1 / -1;
+  height: 12px;
+  overflow: hidden;
+  border: 2px solid var(--outline);
+  border-radius: 7px;
+  background: var(--track);
+}
+
+.result-meter-bar i {
+  display: block;
+  width: var(--to);
+  height: 100%;
+  background: repeating-linear-gradient(-55deg, #fe8a18 0 8px, #f2cd37 8px 16px);
+  animation: meter-fill 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+}
+
+@keyframes meter-fill {
+  from {
+    width: 0;
+  }
+}
+
+/* 돈 항목: 하나씩 통 하고 나타남 */
+.result-rows {
+  display: grid;
+  gap: 5px;
+  list-style: none;
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 12px 8px;
+  border: 2px solid var(--line);
+  border-radius: 13px;
+  font-weight: 600;
+  animation: row-in 0.34s cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
+  animation-delay: calc(var(--i) * 0.28s + 0.55s);
+}
+
+.result-row .coin {
+  font-size: 18px;
+}
+
+.result-row[data-id="hero"],
+.result-row[data-id="clear"] {
+  border-color: var(--slime-edge);
+  background: color-mix(in srgb, var(--slime) 20%, var(--sheet));
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    translate: -26px 0;
+    scale: 0.92;
+  }
+}
+
+/* 합계: 밤 보라 판에 큰 노란 숫자 */
+.result-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px 11px;
+  border-bottom: 5px solid rgb(0 0 0 / 0.4);
+  border-radius: 17px;
+  background: var(--night);
+  color: var(--night-ink);
+  font-family: var(--font-display);
+  font-size: 19px;
+}
+
+.result-total strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--gold);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.result-total strong .ico {
+  width: 36px;
+  height: 36px;
+}
+
+.result-total strong b {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-total strong b::before {
+  content: "+";
+}
+
+.result-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-inline: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.result-note .coin {
+  color: var(--ink);
+}
+
+.result-profit {
+  margin-top: -6px;
+  padding-inline: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.result-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.result-actions .vt-btn {
+  min-height: 60px;
+  padding-inline: 12px;
+  font-size: 20px;
+}
+
+.result-actions .vt-btn > span {
+  display: inline;
+}
+
+/* 항목이 다 나온 뒤 '다시 출동' 단추가 살랑살랑 */
+.result.is-done .result-actions .vt-btn--go:not([aria-disabled="true"]) {
+  animation: go-wiggle 1.6s ease-in-out infinite;
+}
+
+@keyframes go-wiggle {
+  0%,
+  70%,
+  100% {
+    rotate: 0deg;
+    scale: 1;
+  }
+  78% {
+    rotate: -2deg;
+    scale: 1.04;
+  }
+  86% {
+    rotate: 2deg;
+    scale: 1.04;
+  }
+}
+
+/* ── 휴대폰 세로: 위에 번 돈과 마을 막대, 그 아래 괴수와 영웅이 나란히 ── */
+@media (max-width: 700px) {
+  .hud-top {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "town town"
+      "monster hero";
+    gap: 7px 8px;
+  }
+
+  .hud-town {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 7px;
+  }
+
+  .hud-earned {
+    padding: 3px 13px 4px 7px;
+    border-bottom-width: 4px;
+    font-size: 23px;
+  }
+
+  .hud-earned .ico {
+    width: 27px;
+    height: 27px;
+  }
+
+  .hud-town-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 9px 11px 10px;
+  }
+
+  .hud-town-label {
+    display: none;
+  }
+
+  .hud-fighter {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 7px;
+    width: 100%;
+    padding: 5px 10px 6px 6px;
+    border-radius: 15px;
+  }
+
+  .hud-fighter--hero {
+    grid-template-columns: minmax(0, 1fr) 38px;
+    padding: 5px 6px 6px 10px;
+  }
+
+  .hud-face {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .hud-fighter--hero .hud-face {
+    width: 38px;
+    height: 38px;
+    padding: 5px;
+  }
+
+  .hud-name {
+    font-size: 14.5px;
+  }
+
+  .hud-bar {
+    height: 14px;
+  }
+
+  .hud-caption {
+    top: calc(var(--edge-top) + 122px);
+    font-size: 15.5px;
+  }
+
+  .hud-alert {
+    top: 34%;
+    padding: 18px 0 20px;
+  }
+
+  .hud-btn {
+    min-height: 52px;
+  }
+
+  .result-card {
+    padding: 16px 14px 14px;
+    gap: 10px;
+    border-radius: 23px;
+  }
+
+  .result-face {
+    width: 78px;
+    height: 78px;
+  }
+}
+
+/* ── 휴대폰 가로 (화면이 낮음): 한 줄로 납작하게, 결과는 두 칸으로 ── */
+@media (max-height: 520px) and (min-width: 560px) {
+  .hud-top {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 340px) minmax(0, 1fr);
+    grid-template-areas: "monster town hero";
+    gap: 8px;
+  }
+
+  .hud-town {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-earned {
+    padding: 2px 12px 4px 6px;
+    border-bottom-width: 4px;
+    font-size: 22px;
+  }
+
+  .hud-earned .ico {
+    width: 26px;
+    height: 26px;
+  }
+
+  .hud-town-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 8px 10px 9px;
+  }
+
+  .hud-town-label {
+    display: none;
+  }
+
+  .hud-fighter {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 7px;
+    width: min(100%, 220px);
+    padding: 4px 10px 5px 5px;
+    border-radius: 14px;
+  }
+
+  .hud-fighter--hero {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    padding: 4px 5px 5px 10px;
+  }
+
+  .hud-face {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .hud-fighter--hero .hud-face {
+    width: 34px;
+    height: 34px;
+    padding: 4px;
+  }
+
+  .hud-name {
+    font-size: 14px;
+  }
+
+  .hud-bar {
+    height: 13px;
+  }
+
+  .hud-caption {
+    top: calc(var(--edge-top) + 58px);
+    font-size: 15px;
+  }
+
+  .hud-alert {
+    top: 32%;
+    padding: 14px 0 16px;
+  }
+
+  .hud-alert-text strong {
+    font-size: 46px;
+  }
+
+  .hud-btn {
+    min-height: 46px;
+  }
+
+  .hud-speed {
+    min-height: 50px;
+  }
+
+  /* 결과: 왼쪽에 제목과 막대, 오른쪽에 돈과 단추 */
+  .result-card {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    grid-template-areas:
+      "head rows"
+      "head total"
+      "meters note"
+      "meters actions";
+    align-items: center;
+    gap: 6px 18px;
+    width: min(760px, 100%);
+    padding: 14px 18px 12px;
+  }
+
+  .result-head {
+    grid-area: head;
+  }
+
+  .result-face {
+    width: 70px;
+    height: 70px;
+  }
+
+  .result-title {
+    font-size: 42px;
+  }
+
+  .result-sub {
+    font-size: 13.5px;
+  }
+
+  .result-meters {
+    grid-area: meters;
+  }
+
+  .result-rows {
+    grid-area: rows;
+    gap: 4px;
+  }
+
+  .result-row {
+    padding: 4px 11px 5px;
+  }
+
+  .result-total {
+    grid-area: total;
+    padding: 6px 14px 8px;
+  }
+
+  .result-total strong {
+    font-size: 30px;
+  }
+
+  .result-note {
+    grid-area: note;
+  }
+
+  .result-profit {
+    display: none;
+  }
+
+  .result-actions {
+    grid-area: actions;
+  }
+
+  .result-actions .vt-btn {
+    min-height: 52px;
+    font-size: 19px;
+  }
+
+  .result-burst {
+    left: 24%;
+  }
+}

@@ -667,12 +667,13 @@ dd {
   }
 }
 
-/* ── 영상 녹화: body 에 class="capture" 가 붙으면 화면 위 글자·단추를 모두 숨김 (3D 마을만 찍힘) ── */
-body.capture .ui,
+/* ── 영상 녹화: body 에 class="capture" 가 붙으면 화면 위 정보판·단추·창을 모두 숨김 (3D 마을과 떠오르는 글자만 찍힘) ── */
+body.capture .vt-screen,
+body.capture .hud > :not(.hud-floats),
+body.capture .result,
 body.capture .vt-toast,
 body.capture .boot-message,
-body.capture .vd-editor,
-body.capture .villain-floats {
+body.capture .vd-editor {
   display: none !important;
 }
 

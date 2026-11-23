@@ -125,12 +125,12 @@ export function createLairScreen(root, options = {}) {
         <div class="mcard-pic">
           ${design.builtIn ? `<span class="vt-tag mcard-tag">${TEXT.builtIn}</span>` : ''}
           <img class="mcard-img" src="${thumb(design)}" alt="" draggable="false">
-          <span class="mcard-parts">${parts}</span>
         </div>
         <h3 class="mcard-name">${escapeHTML(design.name || '이름 없는 괴수')}</h3>
         <p class="mcard-stats">
           <span class="vt-chip" title="블록 수">${icon('block')}${money(blocks)}</span>
           <span class="vt-chip vt-chip--hp" title="체력">${icon('heart')}${money(hp)}</span>
+          <span class="mcard-parts">${parts}</span>
         </p>
         <button type="button" class="vt-btn vt-btn--go mcard-go" data-act="raid" ${poor ? 'aria-disabled="true"' : ''}>${icon('play')}<span>${TEXT.raid}</span>${coin(cost)}</button>
         <div class="mcard-tools">
