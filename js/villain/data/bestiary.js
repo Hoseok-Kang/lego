@@ -127,7 +127,7 @@ export function partsCost(parts) {
 }
 
 export function designCost(design) {
-  return countBlocks(design) * VILLAIN.monster.costPerBlock + partsCost(design?.parts);
+  return Math.ceil(countBlocks(design) * VILLAIN.monster.costPerBlock) + partsCost(design?.parts); // 반 칸 값은 올림
 }
 
 export function validate(design) {

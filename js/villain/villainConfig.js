@@ -9,7 +9,7 @@ export const VILLAIN = {
   draw: {
     cols: 16, // 가로 칸 수
     rows: 16, // 세로 칸 수
-    minBlocks: 12, // 이보다 적게 칠하면 괴수를 만들 수 없음
+    minBlocks: 30, // 이보다 적게 칠하면 괴수를 만들 수 없음
     // 고를 수 있는 색 (글자 = 저장할 때 쓰는 기호, js/bricks/brickColors.js 의 색만)
     palette: [
       { ch: 'G', hex: '#4B9F4A', name: '초록' },
@@ -31,13 +31,15 @@ export const VILLAIN = {
   // 그림 → 괴수
   monster: {
     maxDepth: 5, // 가장 통통한 곳의 앞뒤 두께 (칸). 그림 가장자리는 1칸, 안쪽으로 갈수록 두꺼워짐
-    costPerBlock: 1, // 그림 한 칸(블록)마다 드는 돈
+    costPerBlock: 0.5, // 그림 한 칸(블록)마다 드는 돈 (16×16 을 꽉 채우면 128)
     hpPerBlock: 3, // 그림 한 칸마다 체력
     baseSpeed: 9, // 가장 작은 괴수의 걷는 빠르기 (초당 칸)
-    slowPerBlock: 0.008, // 그림 한 칸마다 느려지는 정도 → 빠르기 = baseSpeed / (1 + 칸 수 × 이 값)
-    minSpeed: 3,
+    slowPerBlock: 0.005, // 그림 한 칸마다 느려지는 정도 → 빠르기 = baseSpeed / (1 + 칸 수 × 이 값)
+    minSpeed: 4,
     buildSeconds: 2.2, // 블록이 촤르륵 쌓여 괴수가 되는 시간
     headbutt: { damage: 10, interval: 1.1, range: 2.5 }, // 부품이 없어도 쓰는 기본 공격 (몸통 박치기)
+    // 큰 괴수일수록 건물을 더 잘 부숨: 건물에 주는 피해 × (base + 칸 수 × perBlock). 영웅에게 주는 피해는 그대로
+    smashPower: { base: 0.35, perBlock: 0.009 }, // 30칸 → 0.6배, 130칸 → 1.5배, 256칸 → 2.65배
   },
 
   // 공격 부품 (상점에서 사서 괴수 그림에 붙임)
@@ -66,10 +68,10 @@ export const VILLAIN = {
   hero: {
     name: '번개 기사',
     hint: '칼이 빨라요. 멀리서 불을 뿜으면 유리해요',
-    appearAtDestroyed: 0.35, // 마을이 이만큼(비율) 부서지면 출동
+    appearAtDestroyed: 0.55, // 마을이 이만큼(비율) 부서지면 출동
     appearLatestSeconds: 30, // 마을이 덜 부서졌어도 부수기 시작한 지 이 시간(초)이 지나면 출동 (판이 늘어지지 않게)
     alertSeconds: 2, // '영웅 출동!' 경보 뒤 나타날 때까지
-    maxHp: 500,
+    maxHp: 420,
     speed: 11,
     damage: 14, // 칼 한 번
     interval: 0.7,

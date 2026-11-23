@@ -2,7 +2,9 @@
 // 그림(design)을 통통한 블록 인형으로 만들고, 그림 칸에 붙인 공격 부품을 그 자리에 달아 줍니다.
 // 싸우는 괴수(monster.js)와 미리보기(monsterPreview.js)가 같이 씁니다.
 //
-//   const figure = createMonsterFigure(scene, design, { castShadow = true })
+//   const figure = createMonsterFigure(scene, design, { castShadow = true, partHold? })
+//       partHold: 0~1. 주면 부품이 붙은 칸의 블록이 맨 나중에(전체 블록의 이 비율쯤에서) 떨어지게 순서를 바꿈
+//                 → 부품을 그림 가장자리(머리 위 뿔, 손끝 집게)에 붙여도 금방 떨어지지 않음
 //   figure.fig                  블록 인형 (voxelFigure.js) — fig.root 가 서 있는 자리, fig.parts.body 가 몸 손잡이
 //   figure.model                설계도 (monsterVoxels.js)
 //   figure.mounts               붙인 부품 [{ type, name, cell, side, art, node, attached, at }]
@@ -17,9 +19,8 @@ import { VILLAIN } from '../villainConfig.js';
 import { buildMonsterModel } from './monsterVoxels.js';
 import { getPartArt } from './partArt.js';
 
-export function createMonsterFigure(scene, design, { castShadow = true } = {}) {
+export function createMonsterFigure(scene, design, { castShadow = true, partHold = null } = {}) {
   const model = buildMonsterModel(design);
-  const fig = createVoxelFigure(scene, model, { castShadow });
 
   // 붙일 부품 목록 (빈 칸에 놓였거나 모르는 부품은 건너뜀)
   const mounts = [];
@@ -40,6 +41,16 @@ export function createMonsterFigure(scene, design, { castShadow = true } = {}) {
       attached: false,
     });
   }
+
+  // 부품이 붙은 칸의 블록은 맨 나중에 떨어지게 순서를 뒤로 미룸 (어디에 붙였는지에 따라 승패가 갈리지 않게)
+  if (partHold !== null && mounts.length > 0) {
+    const held = new Set(mounts.map((mount) => mount.cell));
+    const first = model.popOrder.filter((entry) => !held.has(model.cellOfVoxel[entry.index]));
+    const last = model.popOrder.filter((entry) => held.has(model.cellOfVoxel[entry.index]));
+    const cut = Math.max(0, Math.min(first.length, Math.floor(model.popOrder.length * partHold) - last.length));
+    model.popOrder = [...first.slice(0, cut), ...last, ...first.slice(cut)];
+  }
+  const fig = createVoxelFigure(scene, model, { castShadow });
 
   function attach(mount) {
     if (mount.attached) return mount.node;

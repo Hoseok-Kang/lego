@@ -686,6 +686,11 @@ button.vd-step {
   color: var(--vd-warn);
 }
 
+.vd-editor.is-over .vd-note {
+  color: var(--vd-warn);
+  font-weight: 600;
+}
+
 .vd-note {
   grid-column: 1 / -1;
   min-height: 1.4em;
@@ -1110,6 +1115,12 @@ button.vd-step {
     font-size: 11px;
   }
 
+  /* 글자가 가장 긴 '전부 지우기' 는 단추 밖으로 삐져나오지 않게 조금 작게 */
+  .pb-tool[data-action="clear"] .pb-tool-label {
+    font-size: 10px;
+    letter-spacing: -0.06em;
+  }
+
   .pb-tool .pb-icon {
     width: 24px;
     height: 24px;
@@ -1198,6 +1209,14 @@ button.vd-step {
 
   .vd-note {
     display: none;
+  }
+
+  /* 돈이 모자랄 때는 좁은 화면에서도 안내 한 줄을 보여 줌 */
+  .vd-editor.is-over .vd-note {
+    display: block;
+    min-height: 0;
+    font-size: 12.5px;
+    line-height: 1.25;
   }
 
   .vd-actions {
@@ -1302,6 +1321,22 @@ button.vd-step {
     min-height: 50px;
     border-radius: 12px;
   }
+
+  /* 돈이 모자랄 때: 값 칸은 숨긴 채 안내 한 줄만 단추 위에 */
+  .vd-editor.is-over[data-step="draw"] .vd-dock {
+    grid-template-areas: "preview bill" "preview actions";
+    gap: 2px 10px;
+  }
+
+  .vd-editor.is-over[data-step="draw"] .vd-bill {
+    display: block;
+    padding: 0;
+    background: none;
+  }
+
+  .vd-editor.is-over[data-step="draw"] .vd-bill > div {
+    display: none;
+  }
 }
 
 /* ── 휴대폰 가로: 높이가 낮으므로 모두 작게, 옆으로 나란히 ── */
@@ -1356,6 +1391,11 @@ button.vd-step {
     border-radius: 11px;
     font-size: 11px;
     gap: 0;
+  }
+
+  .pb-tool[data-action="clear"] .pb-tool-label {
+    font-size: 10px;
+    letter-spacing: -0.06em;
   }
 
   .pb-tool .pb-icon {

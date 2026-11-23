@@ -22,8 +22,21 @@ import { icon } from './paintIcons.js';
 import { createPartPlacer } from './partPlacer.js';
 import { drawDesign } from './pixelThumb.js';
 
+const FIRST_COLOR = 'P'; // 화면을 열 때 골라 두는 색 (보라). 초록은 마을 잔디와 같은 색이라 괴수가 안 보여서 피함
 const PREVIEW_DELAY = 140; // 그리는 동안 미리보기를 너무 자주 다시 만들지 않게 (1/1000초)
 const SAVED_DELAY = 650; // '저장했어요' 를 보여 주고 나가기까지
+
+// 두 그림이 서로 좌우 거울 모양인지 (좌우가 똑같은 그림은 뒤집어도 그대로라 false)
+function isMirrored(before, after) {
+  let changed = false;
+  for (let r = 0; r < after.length; r++) {
+    const a = before[r] ?? '';
+    const b = after[r] ?? '';
+    if (a !== b) changed = true;
+    if (a !== [...b].reverse().join('')) return false;
+  }
+  return changed;
+}
 
 export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, root } = {}) {
   const el = document.createElement('section');
@@ -87,6 +100,7 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
   let doneTimer = 0;
   let preview = null;
   let flatCanvas = null;
+  let lastCells = null; // 바로 전 그림 (좌우 뒤집기를 알아채는 데 씀)
 
   // ── 미리보기 ────────────────────────────────────────────
   function setupPreview() {
@@ -156,7 +170,7 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
     el.classList.toggle('is-over', check.ok && cost > money);
     nextBtn.classList.toggle('is-waiting', !check.ok);
     if (!check.ok) noteEl.textContent = check.message;
-    else if (cost > money) noteEl.textContent = `출동하려면 돈이 ${cost - money} 더 필요해요.`;
+    else if (cost > money) noteEl.textContent = `돈이 ${cost - money} 모자라요. 저장은 할 수 있어요.`;
     else noteEl.textContent = step === 'draw' ? '멋져요! 이제 부품을 붙여요.' : '준비 끝! 저장하고 출동해요.';
   }
 
@@ -197,9 +211,12 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
     (drawing ? board.extra : placer.extra).append(dock);
     if (drawing) board.refresh();
     else if (next === 'parts') {
+      const before = parts.length;
       placer.setOwnedParts(saveStore.getSave().ownedParts);
       placer.setDesign(currentDesign());
       parts = placer.getParts();
+      // 그림을 지우거나 옮겨서 부품 밑의 칸이 사라졌으면 알려 줌
+      if (parts.length < before) toast('그림이 바뀌어서 부품이 떨어졌어요. 다시 붙여 주세요.');
     }
     refreshBill();
     showPreviewNow();
@@ -243,7 +260,10 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
   }
 
   // ── 이어 붙이기 ─────────────────────────────────────────
-  board.onChange(() => {
+  board.onChange((cells) => {
+    // 좌우 뒤집기(되돌리기 포함)로 그림이 거울처럼 바뀌었으면 붙인 부품도 같이 뒤집음
+    if (lastCells && isMirrored(lastCells, cells)) parts = parts.map((p) => ({ ...p, col: VILLAIN.draw.cols - 1 - p.col }));
+    lastCells = cells;
     dirty = true;
     refreshBill();
     queuePreview();
@@ -280,7 +300,10 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
     nameInput.value = source ? design.name : '';
     el.hidden = false;
     toastEl.hidden = true;
+    lastCells = null;
     board.setCells(design.cells ?? []);
+    lastCells = board.getCells();
+    board.setColor(FIRST_COLOR);
     board.setTool('pencil');
     board.setMirror(false);
     setStep('draw');

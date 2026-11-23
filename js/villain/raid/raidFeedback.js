@@ -154,7 +154,8 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
     if (stopLeft > 0) stopLeft = Math.max(0, stopLeft - dt);
     // '+돈' 은 잠깐씩 모아서 한 번에
     money.timer -= dt;
-    if (money.has && money.timer <= 0) {
+    if (money.has && money.timer <= 0 && Math.round(money.amount) >= 1) {
+      // 1원이 안 되면 '+0' 을 띄우지 않고 더 모음
       float(money.position, `+${Math.round(money.amount)}`, { kind: 'money', lift: 5 });
       money.amount = 0;
       money.has = false;

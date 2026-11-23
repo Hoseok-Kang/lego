@@ -24,6 +24,8 @@ const SCREEN_TOP = 0.98; // 높은 건물 꼭대기는 정보판 뒤로는 가�
 const SHIFT_STEPS = 12; // 앞뒤 옮김을 몇 단계로 나눠 시험할지 (한쪽 방향)
 const SIZE_TOLERANCE = 1.03; // 가운데에 오게 하려고 이만큼까지는 조금 작게 보여도 됨
 const PORTRAIT_FILL = 0.92; // 세로 화면: 마을 세로가 빈 화면을 이만큼 채울 때까지 더 다가감 (1 = 꽉)
+const PORTRAIT_PAN_Z = 0.75; // 세로 화면에서 볼거리를 앞뒤로 따라가는 정도 (0 = 안 따라감, 1 = 바닥판 끝까지)
+const PORTRAIT_BODY_LIFT = 3; // 세로 화면: 발밑이 아니라 몸통이 가운데에 오도록 이만큼(칸) 뒤쪽을 봄
 const MAX_PORTRAIT_BOOST = 2.1; // 세로 화면에서 더 다가가는 한도 (배)
 const MAX_ZOOM = 3.2; // 가장 가까이 다가갈 수 있는 한도 (배)
 const FOLLOW_RATE = 2.6; // 볼거리를 따라가는 빠르기 (클수록 빨리)
@@ -177,9 +179,12 @@ export function createTownCamera(camera, element, { width = 64, depth = 44, pitc
     const zoom = current.zoom;
     // 다가간 만큼만 볼거리 쪽으로 옮길 수 있음 (바닥판 밖이 화면에 들어오지 않게)
     const roomX = halfW * Math.max(0, 1 - solved.fillX / zoom);
-    const roomZ = halfD * Math.max(0, 1 - solved.fillZ / zoom);
+    const portrait = goal.active && solved.fillZ > solved.fillX;
+    let roomZ = halfD * Math.max(0, 1 - solved.fillZ / zoom);
+    // 세로 화면: 위아래로 남는 자리가 많으므로 볼거리가 빈 화면 가운데에 오도록 앞뒤로도 따라감 (바닥판 밖 잔디가 조금 보여도 괜찮음)
+    if (portrait) roomZ = Math.max(roomZ, halfD * PORTRAIT_PAN_Z * Math.max(0, 1 - solved.fillX / zoom));
     const panX = clamp(current.x, -roomX, roomX);
-    const panZ = clamp(current.z, -roomZ, roomZ);
+    const panZ = clamp(current.z - (portrait ? PORTRAIT_BODY_LIFT : 0), -roomZ, roomZ);
     const distance = solved.distance / zoom;
     aim.set(panX + solved.slideX / zoom, LOOK_HEIGHT, panZ + solved.shift / zoom);
     camera.position.set(aim.x, aim.y + Math.sin(pitch) * distance, aim.z + Math.cos(pitch) * distance);

@@ -39,6 +39,7 @@ const TEXT = {
   removed: '괴수를 지웠어요',
   rescue: (amount) => `돈이 다 떨어져서 악당 협회가 지원금 ${amount}원을 줬어요`,
   noMonster: '출동할 괴수를 찾지 못했어요',
+  keepMoney: (amount) => `괴수를 보낼 돈 ${amount}원은 남겨 둬야 해요. 조금 더 벌고 와요`,
 };
 
 export function createVillainGame({ container, uiRoot, capture = false }) {
@@ -92,6 +93,12 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
       const part = VILLAIN.parts.types[type];
       const save = saveStore.getSave();
       if (!part || save.ownedParts.includes(type) || save.money < part.price) return false;
+      // 가장 싼 괴수를 보낼 돈은 남겨 둠 (다 쓰고 지원금을 받아 부품을 거의 공짜로 사는 일을 막음)
+      const keep = Math.min(...bestiary.list().map((d) => bestiary.designCost(d)));
+      if (Number.isFinite(keep) && save.money - part.price < keep) {
+        sounds.play('nope');
+        return { ok: false, message: TEXT.keepMoney(keep) };
+      }
       const saved = saveStore.update((s) => {
         s.money -= part.price;
         s.ownedParts.push(type);
@@ -254,10 +261,8 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
   function update(dt) {
     if (!in3d()) return;
     world.update(dt, state.paused ? 0 : state.speed);
-    if (state.screen === 'raid') {
-      hud.sync(raid);
-      if (resultDue) showResult();
-    }
+    hud.sync(raid); // 결과 화면 뒤에서도 번 돈 숫자가 끝까지 따라 올라가게
+    if (state.screen === 'raid' && resultDue) showResult();
   }
 
   function render() {

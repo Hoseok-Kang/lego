@@ -9,9 +9,10 @@
 //   raid.update(dt)                    매 장면. 괴수·영웅의 update 도 여기서 부릅니다. (마을·잔해·효과·카메라는 바깥에서)
 //   raid.state                         { phase, time, earned, destroyedRatio, cost, alertLeft, cleanupLeft, finishing, outcome }
 //       phase: 'idle' | 'building' | 'smashing' | 'alert' | 'duel' | 'cleanup' | 'ended'
-//   raid.result                        끝난 뒤 { win, earned, destroyedPercent, time, bonuses:[{ id, label, amount }], cost, aborted }
+//   raid.result                        끝난 뒤 { win, earned, destroyedPercent, time, bonuses:[{ id, label, amount }], cost, aborted, heroLeft }
+//       heroLeft: 영웅에게 남은 체력 비율 0~1 (영웅이 안 나왔으면 1) — 진 판에서 '거의 이겼어요' 도움말에 씀
 //   raid.monster / raid.hero           지금 판의 괴수 / 영웅 (없으면 null) — 체력 막대에 씀
-//   raid.abort()                       그만두기 (그때까지 번 돈은 받음, 진 판으로 끝남)
+//   raid.abort()                       그만두기 (그때까지 번 돈은 받음. 영웅을 이미 이겼으면 이긴 판, 아니면 진 판으로 끝남)
 //   raid.clear()                       괴수·영웅을 치우고 'idle' 로 (마을·잔해 되돌리기는 바깥에서 town.reset() 등)
 //   raid.dispose()
 //
@@ -60,7 +61,6 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
   let paidBlocks = 0; // 돈을 받은 건물 블록 수
   let collapsing = false; // 마지막 와르르 중 (이때 무너지는 블록은 돈이 안 됨)
   let cleared = false; // 괴수가 제 힘으로 마을을 다 부숨
-  let frozenRatio = null; // 와르르 직전의 부서진 비율 (결과에 씀)
   let holdTimer = 0;
   let pending = null; // 끝나기를 기다리는 결과 { win, aborted }
   const stuck = { timer: 0, mark: -1, x: 0, z: 0 };
@@ -133,7 +133,7 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
     state.time += dt;
     monster?.update(dt);
     hero?.update(dt);
-    if (!collapsing) state.destroyedRatio = town.destroyedRatio;
+    state.destroyedRatio = town.destroyedRatio; // 마지막 와르르 때는 100% 까지 차오름 (돈은 제 힘으로 부순 만큼만)
 
     if (pending) {
       holdTimer -= dt;
@@ -262,7 +262,6 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
     state.cleanupLeft = Math.max(0, state.cleanupLeft - dt);
     if (state.cleanupLeft <= 0) {
       // 시간 끝: 남은 건물은 구경거리로 한꺼번에 와르르 (돈은 안 됨)
-      frozenRatio = town.destroyedRatio;
       collapsing = true;
       monster.command(null);
       target = null;
@@ -290,7 +289,8 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
   function finish() {
     const { win, aborted = false } = pending;
     pending = null;
-    const ratio = frozenRatio ?? town.destroyedRatio;
+    const ratio = town.destroyedRatio;
+    const heroLeft = hero && hero.maxHp > 0 ? Math.max(0, Math.min(1, (hero.hp ?? 0) / hero.maxHp)) : 1;
     const bonuses = [];
     const blockPay = Math.round(paidBlocks * VILLAIN.town.payPerBlock);
     bonuses.push({ id: 'blocks', label: `부순 블록 ${paidBlocks}개`, amount: blockPay });
@@ -312,6 +312,7 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
       time: Math.round(state.time * 10) / 10,
       bonuses,
       designId: design?.id ?? null,
+      heroLeft,
     };
     state.earned = earned;
     state.finishing = false;
@@ -381,7 +382,6 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
     paidBlocks = 0;
     collapsing = false;
     cleared = false;
-    frozenRatio = null;
     pending = null;
     holdTimer = 0;
     avoid.clear();
@@ -397,8 +397,10 @@ export function createRaid({ stage = null, town, events, debris = null, fx = nul
     clear,
     abort() {
       if (!isRunning()) return;
+      // 영웅을 이미 물리친 뒤라면 그만둬도 이긴 판 (영웅 격파 돈도 받음)
+      const heroBeaten = state.phase === 'cleanup' || pending?.win === true;
       pending = null;
-      hold({ win: false, aborted: true }, ABORT_HOLD);
+      hold({ win: heroBeaten, aborted: !heroBeaten }, ABORT_HOLD);
     },
     dispose() {
       clear();

@@ -26,6 +26,7 @@ import { createBuildRain } from './monsterBuild.js';
 import { startAttack, attackCooldown, HORN_MIN_DISTANCE } from './monsterAttacks.js';
 
 const POP_SHARE = 0.6; // 체력이 0 이 될 때까지 떨어져 나가는 블록 비율 (나머지는 '펑' 할 때 한꺼번에)
+const PART_HOLD = 0.85; // 부품이 붙은 칸은 맨 나중에 떨어짐: 떨어질 블록의 이만큼이 사라질 때까지 버팀 (체력이 약 15% 남을 때 부품이 떨어짐)
 const CLOSE_GAP = 0.5; // 상대에게 이만큼 가까워지면 더 다가가지 않음 (칸)
 const FLASH_SECONDS = 0.16; // 맞았을 때 하얗게 번쩍이는 시간
 const PRIORITY = ['horn', 'fireMouth', 'claw']; // 쓸 수 있으면 먼저 쓰는 순서 (마지막은 박치기)
@@ -41,7 +42,7 @@ export function monsterStats(design) {
 
 export function createMonster(scene, design, { debris = null, fx = null, events = null, getTargets = null, bounds = null } = {}) {
   const bus = events || { emit() {} };
-  const figure = createMonsterFigure(scene, design);
+  const figure = createMonsterFigure(scene, design, { partHold: POP_SHARE * PART_HOLD });
   const { fig, model, mounts } = figure;
   const motion = createMonsterMotion(model);
   const stats = monsterStats(design);
@@ -101,7 +102,11 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
     position.z = Math.min(area.maxZ, Math.max(area.minZ, position.z + dz));
     return Math.hypot(position.x - beforeX, position.z - beforeZ);
   }
-  function strike(other, amount, kind, point, sparkHex) {
+  // 건물을 칠 때는 몸집만큼 더 세게 (큰 괴수가 더 많이 부수고 더 많이 벌게)
+  const smash = VILLAIN.monster.smashPower;
+  const smashScale = smash ? smash.base + stats.blocks * smash.perBlock : 1;
+  function strike(other, hitAmount, kind, point, sparkHex) {
+    const amount = other.totalBlocks ? hitAmount * smashScale : hitAmount; // totalBlocks 가 있으면 건물
     const at = point.clone();
     const result = other.takeDamage?.({ amount, from: position.clone(), kind }) || {};
     fx?.hitSpark?.(at, sparkHex);

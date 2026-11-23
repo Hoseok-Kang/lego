@@ -160,6 +160,8 @@ export function createLairScreen(root, options = {}) {
   }
 
   screen.addEventListener('click', async (event) => {
+    // 확인 창이 떠 있는 동안에는 뒤에 있는 단추가 눌리지 않게 (키보드로도)
+    if (screen.querySelector(':scope > .vt-dialog') && !event.target.closest('.vt-dialog')) return;
     const button = event.target.closest('[data-act]');
     if (!button || !screen.contains(button)) return;
     const act = button.dataset.act;
@@ -195,6 +197,7 @@ export function createLairScreen(root, options = {}) {
       bump(screen, 'is-enter');
     },
     hide() {
+      screen.querySelector(':scope > .vt-dialog [data-answer="no"]')?.click(); // 떠 있던 확인 창은 '아니요' 로 닫음
       screen.hidden = true;
     },
   };

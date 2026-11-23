@@ -114,7 +114,7 @@ export function createPaintBoard(rootEl, { cols = VILLAIN.draw.cols, rows = VILL
 
   function refreshCounts() {
     const blocks = countBlocks(work);
-    ui.showCounts(blocks, blocks * VILLAIN.monster.costPerBlock + extraCost, VILLAIN.draw.minBlocks);
+    ui.showCounts(blocks, Math.ceil(blocks * VILLAIN.monster.costPerBlock) + extraCost, VILLAIN.draw.minBlocks);
   }
 
   function emitChange() {

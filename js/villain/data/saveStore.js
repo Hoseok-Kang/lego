@@ -114,5 +114,12 @@ export function onChange(fn) {
   return () => listeners.delete(fn);
 }
 
+// 다른 탭(창)에서 저장하면 여기서도 다시 읽음 (서로 덮어써서 괴수가 사라지지 않게)
+globalThis.addEventListener?.('storage', (event) => {
+  if (event.key !== SAVE_KEY) return;
+  load();
+  notify();
+});
+
 export const saveStore = { load, save, getSave, update, resetAll, onChange };
 export default saveStore;
