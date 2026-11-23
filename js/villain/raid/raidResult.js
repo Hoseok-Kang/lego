@@ -6,8 +6,9 @@
 //       result = { win, aborted, earned, cost, destroyedPercent, time, bonuses: [{ id, label, amount }], designId, heroLeft,
 //                  townId, townName, heroKind, heroName, notoriety, blocksBroken, heroBeaten }
 //   saveResult(saveStore, result) → 저장된 save
-//       save.money += earned, save.notoriety += notoriety, 이기면 save.townWins[townId] += 1,
-//       save.stats: raids, wins, bestPay, blocksBroken (+부순 블록), heroesBeaten (+1 이기면)
+//       save.money += earned, save.stats: raids, wins, bestPay (1단계와 같음)
+//       악명·마을별 승리·부순 블록·영웅 격파는 여기서 안 넣어요 → 게임 본체가 raidEnded 때
+//       lair/goalTracker.js 의 recordRaid(save, result, { townId: result.townId, notoriety: result.notoriety }) 로 넣음 (두 번 세지 않게)
 //
 // 돈 숫자(블록당 돈, 싹쓸이 보너스, 수고비)는 villainConfig.js 의 town · economy, 영웅 격파 돈은 heroes(hero).payForWin.
 
@@ -66,16 +67,9 @@ export function saveResult(saveStore, result) {
   if (!saveStore) return null;
   return saveStore.update((save) => {
     save.money += result.earned;
-    save.notoriety = (Number(save.notoriety) || 0) + result.notoriety;
-    if (result.win) {
-      if (!save.townWins || typeof save.townWins !== 'object') save.townWins = {};
-      save.townWins[result.townId] = (save.townWins[result.townId] || 0) + 1;
-    }
     const stats = save.stats || (save.stats = {});
     stats.raids = (stats.raids || 0) + 1;
     if (result.win) stats.wins = (stats.wins || 0) + 1;
     stats.bestPay = Math.max(stats.bestPay || 0, result.earned);
-    stats.blocksBroken = (stats.blocksBroken || 0) + result.blocksBroken;
-    if (result.heroBeaten) stats.heroesBeaten = (stats.heroesBeaten || 0) + 1;
   });
 }

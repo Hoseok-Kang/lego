@@ -62,8 +62,8 @@ export function createGameWorld({ container, events, saveStore, floatLayer = nul
       buildTown(def.id);
     },
     makeMonster: (design, mods) => createMonster(stage.scene, design, { debris, fx, events, start: town.monsterStart, ...mods }),
-    // 영웅은 남아 있는 건물을 돌아서 감
-    makeHero: (kind, { hpMul = 1 } = {}) => createHero(stage.scene, { kind, hpMul, debris, fx, events, obstacles: () => town.buildings }),
+    // 영웅은 남아 있는 건물을 돌아서 감 (얼음 마법사는 물 위로 안 감)
+    makeHero: (kind, { hpMul = 1 } = {}) => createHero(stage.scene, { kind, hpMul, debris, fx, events, obstacles: () => town.buildings, isWet: (x, z) => town.isWet(x, z) }),
   });
 
   // '영웅 출동!' 은 정보판의 큰 사이렌 띠가 알리므로, 떠오르는 글자 쪽은 끔 (겹쳐 보이지 않게)

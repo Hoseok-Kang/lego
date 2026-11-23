@@ -11,6 +11,7 @@
 import * as THREE from '../../lib/three.js';
 
 const POOL = 8; // 한 번에 날아갈 수 있는 얼음 수
+const SIZE = 1.6; // 얼음 덩어리 크기 배율 (클수록 멀리서도 잘 보임)
 const CORE_HEX = '#F4F4F4'; // 가운데 (흰색)
 const SIDE_HEX = '#9FC3E9'; // 둘레 (연하늘)
 const DEEP_HEX = '#36AEBF'; // 속 (청록)
@@ -30,6 +31,7 @@ export function createIceShards(scene, { debris = null } = {}) {
   const pool = [];
   for (let i = 0; i < POOL; i++) {
     const node = new THREE.Group();
+    node.scale.setScalar(SIZE);
     const spin = new THREE.Group();
     node.add(spin);
     // 앞(+z)으로 뾰족한 얼음: 긴 흰 심 + 옆 결정 넷 + 뒤쪽 청록

@@ -29,21 +29,21 @@ const ICE_MAGE = {
   appearAtDestroyed: 0.5,
   appearLatestSeconds: 28,
   alertSeconds: 2,
-  maxHp: 380,
-  speed: 9,
-  damage: 12, // 얼음 화살 한 번
-  interval: 1.3,
+  maxHp: 320, // (D 조정: 380 → 320)
+  speed: 6.5, // (D 조정: 9 → 6.5, 빠른 괴수가 따라잡을 수 있게)
+  damage: 14, // 얼음 화살 한 번 (D 조정: 12 → 14)
+  interval: 1.4, // (D 조정: 1.3 → 1.4)
   range: 16, // 이만큼 떨어져서도 던짐
   keepDistance: 9, // 괴수와 이 거리를 지키려고 함
   slowMul: 0.6, // 얼음에 맞으면 괴수 빠르기가 이만큼으로
-  slowSeconds: 1.6,
-  blinkEvery: 4, // 괴수가 가까이 오면 이 시간(초)마다 한 번 순간 이동
+  slowSeconds: 1.2, // (D 조정: 1.6 → 1.2)
+  blinkEvery: 5.5, // 괴수가 가까이 오면 이 시간(초)마다 한 번 순간 이동 (D 조정: 4 → 5.5)
   blinkDistance: 12,
   payForWin: 180,
   // (D) 마법사 움직임 숫자
   blinkGap: 3.8, // 괴수가 이만큼(칸)보다 가까이 오면 순간 이동
   tooFar: 14, // 괴수가 이보다 멀면 다가감
-  boltSpeed: 24, // 얼음 화살 빠르기 (초당 칸)
+  boltSpeed: 18, // 얼음 화살 빠르기 (초당 칸)
   engage: 16, // 괴수가 이만큼 가까우면 건물 대신 마법사를 쫓아감
 };
 

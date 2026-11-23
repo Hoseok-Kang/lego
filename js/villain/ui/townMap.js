@@ -38,6 +38,8 @@ const TEXT = {
   mods: '소굴 효과',
 };
 
+// 괴수 고르기 위에 보여 줄 소굴 효과 (습격에 바로 드러나는 것만)
+const RAID_KEYS = ['cost', 'pay', 'hp', 'dmg', 'partDmg', 'smash', 'heroHp', 'heroDelay'];
 const HERO_NAMES = { knight: '번개 기사', iceMage: '얼음 마법사', guardian: '황금 수호자' };
 const heroNameOf = (t) => t.heroName ?? VILLAIN.heroes?.[t.hero]?.name ?? (t.hero === 'knight' ? VILLAIN.hero?.name : null) ?? HERO_NAMES[t.hero] ?? '영웅';
 const heroHintOf = (t) => t.heroHint ?? VILLAIN.heroes?.[t.hero]?.hint ?? (t.hero === 'knight' ? VILLAIN.hero?.hint : '') ?? '';
@@ -135,7 +137,7 @@ export function createTownMap(options = {}) {
     if (sig === lastPickSig) return;
     lastPickSig = sig;
     if (t) {
-      const mods = (state.modsSummary ?? []).filter((m) => /출동|수입|체력|공격|부수|영웅/.test(m.label)).slice(0, 4);
+      const mods = (state.modsSummary ?? []).filter((m) => (m.key ? RAID_KEYS.includes(m.key) : /출동|수입|체력|공격|부수|영웅/.test(m.label))).slice(0, 5);
       box.querySelector('[data-picktown]').innerHTML = `
         <span class="pick-town-art tcard--${escapeHTML(t.id)}">${townArt(t.id)}</span>
         <span class="pick-town-info"><b>${escapeHTML(t.name)}</b><span><span class="pick-town-face">${heroFace(t.hero)}</span>${escapeHTML(heroNameOf(t))} · ${TEXT.pay(t.payMul)}</span></span>

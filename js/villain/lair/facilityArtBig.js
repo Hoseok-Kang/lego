@@ -80,8 +80,8 @@ function factory(level) {
   const s = createArtShape();
   const H = level >= 2 ? 4 : 3;
   s.box(1, 0, 3, 7, 0, 8, C.black);
-  s.walls(1, 1, 3, 7, H, 8, C.dark);
-  for (const [x, z] of [[1, 3], [7, 3], [1, 8], [7, 8]]) s.box(x, 0, z, x, H, z, C.black);
+  s.walls(1, 1, 3, 7, H, 8, C.gray);
+  for (const [x, z] of [[1, 3], [7, 3], [1, 8], [7, 8]]) s.box(x, 0, z, x, H, z, C.dark);
   // 큰 문 (노랑·검정 줄무늬 틀) + 빛나는 창 띠
   s.box(3, 1, 8, 5, 2, 8, C.black);
   for (let x = 2; x <= 6; x++) s.set(x, 3, 8, x % 2 ? C.yellow : C.black);
@@ -94,11 +94,12 @@ function factory(level) {
     s.glow(1, 2, z, C.lime);
     s.glow(7, 2, z, C.lime);
   }
-  // 톱니 지붕
-  s.box(1, H + 1, 3, 7, H + 1, 8, C.purple);
-  for (const z of [4, 7]) {
+  // 톱니 지붕: 보라 비탈 + 유리창 줄 (2단계부터 안에서 초록 괴수 빛이 새어 나옴)
+  s.box(1, H + 1, 3, 7, H + 1, 8, C.dark);
+  for (const z of [4, 6, 8]) {
     s.box(1, H + 2, z - 1, 7, H + 2, z - 1, C.purple);
-    s.box(1, H + 2, z, 7, H + 2, z, C.lavender);
+    s.box(1, H + 2, z, 7, H + 2, z, C.sky);
+    if (level >= 2) for (let x = 2; x <= 6; x += 2) s.glow(x, H + 2, z, C.lime);
   }
   // 굴뚝 (뒤 오른쪽)
   const chimneyTop = level >= 3 ? 11 : level >= 2 ? 10 : 8;
@@ -151,12 +152,15 @@ function lab(level) {
   for (const x of [2, 7]) s.glow(x, 2, 8, C.teal); // 창
   s.glow(1, 2, 5, C.teal);
   s.glow(8, 2, 6, C.teal);
-  // 유리 돔
-  s.box(2, 5, 4, 7, 5, 7, C.sky);
-  s.box(3, 6, 4, 6, 6, 7, C.sky);
+  // 둥근 유리 돔 (계단처럼 쌓아 둥글게) + 안에서 빛나는 초록 약물
+  s.box(2, 5, 4, 7, 5, 7, C.teal);
+  for (const [x, z] of [[2, 4], [7, 4], [2, 7], [7, 7]]) s.set(x, 5, z, null);
+  s.box(3, 6, 5, 6, 6, 6, C.sky);
+  s.box(4, 6, 4, 5, 6, 7, C.sky);
   s.box(4, 7, 5, 5, 7, 6, C.sky);
   s.glow(4, 5, 5, C.lime);
   s.glow(5, 5, 6, C.lime);
+  s.glow(4, 6, 6, C.lime);
   // 앞 탁자 위 플라스크
   s.box(1, 0, 9, 3, 0, 9, C.brown);
   s.glow(1, 1, 9, C.lime);

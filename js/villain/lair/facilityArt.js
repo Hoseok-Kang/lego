@@ -8,7 +8,8 @@
 //             solid: [{ x, y, z, hex }], glow: [{ x, y, z, hex }]   보통 블록 / 빛나는 블록 (시설 가운데 = 0, 땅 = y 0)
 //             anims: [{ kind, pivot: {x,y,z}, solid, glow, speed, axis, amount, phase }]   움직이는 조각
 //             emitters: [{ kind, x, y, z }]                                             연기·불티 나오는 자리
-//             height, top: {x,y,z}, bounds: { minX, maxX, minY, maxY, minZ, maxZ } }
+//             height, top: {x,y,z}, bounds: { minX, maxX, minY, maxY, minZ, maxZ },
+//             pick: { minX, maxX, minZ, maxZ, maxY } (누르기 상자: 시설 자리 안 + 움직이는 조각 뺌) }
 //   facilitySize(type) → [w, h]          시설 크기 (칸). 시설 표에 없으면 [1, 1]
 //   FACILITY_ART_KEYS                     직접 그린 그림이 있는 시설 종류 목록
 //
@@ -16,7 +17,7 @@
 
 import { FACILITIES } from '../data/facilities.js';
 import { TILE } from './lairKit.js';
-import { C, createArtShape, crown, flag } from './artShape.js';
+import { C, createArtShape, crown, smallCrown, flag } from './artShape.js';
 import { BIG_ART } from './facilityArtBig.js';
 import { SMALL_ART } from './facilityArtSmall.js';
 
@@ -105,7 +106,7 @@ function finish(type, level, w, h, made) {
   const top = made.top ?? [Math.floor(W / 2), s.topAt(Math.floor(W / 2), Math.floor(D / 2)), Math.floor(D / 2)];
   if (made.badge !== false) {
     if (level === 2) flag(s, top[0], top[1], top[2], C.magenta, 3);
-    if (level === 3) crown(s, top[0], top[1], top[2]);
+    if (level === 3) (w > 1 ? crown : smallCrown)(s, top[0], top[1], top[2]);
   }
   const ox = -W / 2 + 0.5;
   const oz = -D / 2 + 0.5;
@@ -124,6 +125,14 @@ function finish(type, level, w, h, made) {
     (v.glow ? glow : solid).push(voxel);
     grow(voxel.x, voxel.y, voxel.z);
   }
+  // 누르기 상자: 움직이는 조각은 빼고, 시설 자리(칸) 밖으로는 안 나가게
+  const pick = {
+    minX: Math.max(-W / 2, bounds.minX),
+    maxX: Math.min(W / 2, bounds.maxX),
+    minZ: Math.max(-D / 2, bounds.minZ),
+    maxZ: Math.min(D / 2, bounds.maxZ),
+    maxY: Math.max(1.2, bounds.maxY),
+  };
   const anims = (made.anims ?? []).map((a) => {
     const pivot = { x: a.pivot[0] + ox, y: a.pivot[1] + 0.5, z: a.pivot[2] + oz };
     const parts = { solid: [], glow: [] };
@@ -149,5 +158,6 @@ function finish(type, level, w, h, made) {
     height: bounds.maxY,
     top: { x: top[0] + ox, y: top[1] + 2, z: top[2] + oz },
     bounds,
+    pick,
   };
 }

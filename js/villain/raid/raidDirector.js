@@ -17,6 +17,7 @@
 //       heroAt: 마을이 이만큼(0~1) 부서지면 영웅 출동 (정보판의 영웅 표시 자리)
 //   raid.result   끝난 뒤 (raidResult.js 의 buildResult): { win, earned, destroyedPercent, time, bonuses, cost, aborted, heroLeft,
 //                 townId, heroKind, heroName, notoriety, blocksBroken, heroBeaten }
+//       저장: 끝날 때 돈·stats(raids, wins, bestPay)만 넣음. 악명·마을별 승리 등은 게임 본체가 goalTracker.recordRaid 로
 //   raid.plan / raid.monster / raid.hero / raid.target / raid.design
 //   raid.abort()  그만두기 (그때까지 번 돈은 받음. 영웅을 이미 이겼으면 이긴 판, 아니면 진 판)
 //   raid.clear()  괴수·영웅을 치우고 'idle' 로 (마을·잔해 되돌리기는 바깥에서) ; raid.dispose()

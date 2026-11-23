@@ -175,7 +175,7 @@ export function createGuardian(scene, { stats, hpMul = 1, ...options } = {}) {
     const f = body.facing;
     barrier.position.set(position.x + Math.sin(f) * BARRIER_AHEAD, BARRIER_SIZE[1] / 2 + 0.3, position.z + Math.cos(f) * BARRIER_AHEAD);
     barrier.rotation.y = f;
-    barrierMat.opacity = guard * (0.16 + 0.06 * Math.sin(body.time * 8)) + blockFlash * 0.45;
+    barrierMat.opacity = guard * (0.24 + 0.08 * Math.sin(body.time * 8)) + blockFlash * 0.4;
   }
 
   function update(dt) {

@@ -11,6 +11,7 @@
 //   fx.ring(x, y, z, 색, { radius, life })   땅 위로 퍼지는 빛 고리
 //   fx.label(x, y, z, 글자, 색)         위로 떠오르는 큰 글자 (계책 이름)
 //   fx.update(dt)   fx.busy (블록·빛 점이 남았는지)   fx.dispose()
+//   fx.setFloor(반너비)                 블록 조각이 튀는 땅판 범위 (가운데에서 ±반너비)
 //   fx.setPixelScale(값)               빛 점 크기 맞추기 (화면 높이 px ÷ (2 × tan(시야각/2)))
 //
 // 효과 크기 · 개수는 아래 상수에서 바꿉니다.
@@ -18,13 +19,15 @@
 import * as THREE from '../../lib/three.js';
 import { getBlockAssets } from '../../game/core/blockAssets.js';
 import { getLairMaterials } from './lairKit.js';
+import { createGlowPointMaterial, drawLabel, makeRingTexture, easeOutBack } from './lairFxArt.js';
 
 const MAX_BLOCKS = 700;
 const MAX_POINTS = 1600;
 const MAX_RINGS = 10;
 const MAX_LABELS = 4;
 const GRAVITY = 30;
-const LABEL_HEIGHT = 0.034; // 글자 높이 (화면 높이에 대한 비율의 약 1/2)
+const FLOOR = 0.45; // 블록 조각이 튀는 땅 높이 (블록 가운데)
+const LABEL_HEIGHT = 0.046; // 글자 크기 (화면 높이에 맞춰 늘 같은 크기로 보임)
 
 export function createLairFx(scene) {
   const mats = getLairMaterials();
@@ -111,6 +114,7 @@ export function createLairFx(scene) {
     labels.push(sprite);
   }
 
+  let floorHalf = 20; // 땅판 반 너비 (이 밖으로 나간 조각은 밤하늘로 떨어짐)
   const matrix = new THREE.Matrix4();
   const quat = new THREE.Quaternion();
   const euler = new THREE.Euler();
@@ -201,6 +205,15 @@ export function createLairFx(scene) {
       for (let k = 0; k < 3; k++) {
         B.pos[i * 3 + k] += B.vel[i * 3 + k] * dt;
         B.rot[i * 3 + k] += B.spin[i * 3 + k] * dt;
+      }
+      // 땅에 닿으면 통 튀기 (땅판 위에서만, 떨어지는 블록만)
+      if (!B.grow[i] && B.pos[i * 3 + 1] < FLOOR && B.vel[i * 3 + 1] < 0 && Math.abs(B.pos[i * 3]) < floorHalf && Math.abs(B.pos[i * 3 + 2]) < floorHalf) {
+        B.pos[i * 3 + 1] = FLOOR;
+        B.vel[i * 3 + 1] *= -0.35;
+        B.vel[i * 3] *= 0.6;
+        B.vel[i * 3 + 2] *= 0.6;
+        B.spin[i * 3] *= 0.5;
+        B.spin[i * 3 + 2] *= 0.5;
       }
       const t = B.life[i] / B.max[i];
       const s = B.grow[i] ? B.size[i] * Math.sin(Math.PI * Math.min(1, t * 1.1)) * (0.6 + t) : B.size[i] * (t > 0.75 ? (1 - t) / 0.25 : 1);
@@ -355,6 +368,9 @@ export function createLairFx(scene) {
     setPixelScale(value) {
       pointMat.uniforms.scale.value = value;
     },
+    setFloor(half) {
+      floorHalf = half;
+    },
     get busy() {
       return B.count > 0 || P.count > 0;
     },
@@ -376,91 +392,4 @@ export function createLairFx(scene) {
       }
     },
   };
-}
-
-// 빛 점 재질: 동그랗게 번지는 빛 (더하기 섞기). 크기는 블록 단위 → 멀리 있으면 작게
-export function createGlowPointMaterial() {
-  return new THREE.ShaderMaterial({
-    uniforms: { scale: { value: 600 } },
-    vertexShader: `
-      attribute vec3 color; attribute float size; attribute float alpha;
-      uniform float scale;
-      varying vec3 vColor; varying float vAlpha;
-      void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = max(1.5, size * scale / -mv.z);
-        gl_Position = projectionMatrix * mv;
-        vColor = color; vAlpha = alpha;
-      }`,
-    fragmentShader: `
-      varying vec3 vColor; varying float vAlpha;
-      void main() {
-        float d = length(gl_PointCoord - 0.5) * 2.0;
-        float a = smoothstep(1.0, 0.0, d);
-        float core = pow(a, 5.0);
-        a = a * a * vAlpha;
-        gl_FragColor = vec4((vColor + vec3(core * 0.8)) * a, a);
-      }`,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-}
-
-// 글자 그림: 굵은 글자 + 짙은 보라 테두리 + 양옆 별. 가로세로 비율을 돌려줌
-function drawLabel(canvas, text, hex) {
-  const g = canvas.getContext('2d');
-  g.clearRect(0, 0, canvas.width, canvas.height);
-  g.font = '64px "Jua", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
-  const width = Math.min(canvas.width - 20, g.measureText(text).width + 110);
-  const x0 = (canvas.width - width) / 2;
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.lineJoin = 'round';
-  g.lineWidth = 14;
-  g.strokeStyle = '#1b0f33';
-  g.strokeText(text, canvas.width / 2, 68);
-  g.fillStyle = hex;
-  g.fillText(text, canvas.width / 2, 68);
-  g.fillStyle = '#FFF03A';
-  for (const x of [x0 + 26, x0 + width - 26]) star(g, x, 64, 20);
-  return canvas.width / canvas.height;
-}
-
-function star(g, x, y, r) {
-  g.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const a = -Math.PI / 2 + (i * Math.PI) / 5;
-    const rr = i % 2 ? r * 0.45 : r;
-    g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
-  }
-  g.closePath();
-  g.lineWidth = 6;
-  g.strokeStyle = '#1b0f33';
-  g.stroke();
-  g.fill();
-}
-
-function makeRingTexture() {
-  const size = 128;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const g = canvas.getContext('2d');
-  const grad = g.createRadialGradient(size / 2, size / 2, size * 0.28, size / 2, size / 2, size / 2);
-  grad.addColorStop(0, 'rgba(255,255,255,0)');
-  grad.addColorStop(0.55, 'rgba(255,255,255,0.95)');
-  grad.addColorStop(0.75, 'rgba(255,255,255,0.35)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, size, size);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
-
-function easeOutBack(t) {
-  const c = 1.9;
-  const u = t - 1;
-  return 1 + (c + 1) * u * u * u + c * u * u;
 }

@@ -17,13 +17,14 @@
 // ─────────────────────────────────────────────────────────────
 
 import { el, escapeHTML, money, coin, bump, toast } from './uiKit.js';
-import { art, lairIcon } from './lairArt.js';
+import { artOf, lairIcon } from './lairArt.js';
 import { describeEffect, effectChips, lockText, schemeOf, sheetHead, signature } from './lairKit.js';
 
 const TEXT = {
   title: '무엇을 지을까요?',
   sub: '칸에 놓고, 옆에 붙여서 계책을 찾아요',
   locked: '악명이 오르면 열려요',
+  empty: '아직 지을 수 있는 시설이 없어요',
   poor: (n) => `돈이 ${money(n)} 모자라요. 마을을 부숴서 벌어 와요`,
   max: (n) => (n > 1 ? `${n}개까지만 지을 수 있어요` : '하나만 지을 수 있어요'),
   maxShort: '다 지었어요',
@@ -67,10 +68,11 @@ export function createBuildMenu({ onChoose, onClose } = {}) {
     if (!unlocked) foot = `<span class="fcard-lock">${lairIcon('lock')}${escapeHTML(lockText(def.unlockRank ?? 0, state.ranks))}</span>`;
     else if (atMax) foot = `<span class="fcard-max">${lairIcon('check')}${TEXT.maxShort}</span>`;
     else foot = `<span class="fcard-price">${coin(price)}</span>`;
-    const count = def.maxCount != null && unlocked ? `<span class="fcard-count">${def.count ?? 0}/${def.maxCount}</span>` : def.count ? `<span class="fcard-count">${def.count}개</span>` : '';
+    // 이미 지은 개수 (최대 개수가 있으면 '1/2')
+    const count = def.count > 0 && unlocked ? `<span class="fcard-count">${def.maxCount != null ? `${def.count}/${def.maxCount}` : `${def.count}개`}</span>` : '';
     return `
       <button type="button" class="fcard${cls}" data-key="${escapeHTML(def.key)}" style="--i:${index}" ${!unlocked || atMax || !affordable ? 'aria-disabled="true"' : ''}>
-        <span class="fcard-pic">${art(def.icon ?? def.key)}<span class="fcard-size">${sizeText(def)}</span>${count}</span>
+        <span class="fcard-pic">${artOf(def)}<span class="fcard-size">${sizeText(def)}</span>${count}</span>
         <b class="fcard-name">${escapeHTML(def.name)}</b>
         <span class="fcard-fx">${effectChips(fx.slice(0, 2))}</span>
         <small class="fcard-desc">${escapeHTML(def.desc ?? '')}</small>
@@ -88,7 +90,7 @@ export function createBuildMenu({ onChoose, onClose } = {}) {
     const shut = list.filter((f) => !info(f).unlocked).sort((a, b) => (a.unlockRank ?? 0) - (b.unlockRank ?? 0));
     const scroll = body.scrollTop;
     body.innerHTML =
-      `<div class="fgrid">${open.map(cardHTML).join('')}</div>` +
+      (list.length ? `<div class="fgrid">${open.map(cardHTML).join('')}</div>` : `<p class="lpanel-empty">${TEXT.empty}</p>`) +
       (shut.length ? `<h3 class="lpanel-sub">${lairIcon('lock')}${TEXT.locked}</h3><div class="fgrid">${shut.map((f, i) => cardHTML(f, open.length + i)).join('')}</div>` : '');
     body.scrollTop = scroll;
   }
@@ -103,7 +105,7 @@ export function createBuildMenu({ onChoose, onClose } = {}) {
     let why = '';
     if (!unlocked) why = lockText(def.unlockRank ?? 0, state.ranks);
     else if (atMax) why = TEXT.max(def.maxCount);
-    else if (!affordable) why = TEXT.poor(price - state.money);
+    else if (!affordable) why = TEXT.poor(Math.max(1, price - state.money));
     if (why) {
       bump(card, 'is-shake');
       toast(why, { kind: 'bad' });
@@ -136,7 +138,7 @@ export function createPlaceBar({ onConfirm, onCancel } = {}) {
   function schemeChip(key, sign) {
     const def = schemeOf(key, state.schemes) ?? { key, name: key };
     const fresh = sign === '+' && !(state.schemesSeen ?? []).includes(key);
-    return `<span class="pchip ${sign === '+' ? 'is-gain' : 'is-lose'}${fresh ? ' is-fresh' : ''}"><i>${sign === '+' ? '+' : '−'}</i>${art(def.icon ?? 'book')}<b>${escapeHTML(def.name)}</b>${fresh ? `<em>${lairIcon('spark')}${TEXT.fresh}</em>` : ''}</span>`;
+    return `<span class="pchip ${sign === '+' ? 'is-gain' : 'is-lose'}${fresh ? ' is-fresh' : ''}"><i>${sign === '+' ? '+' : '−'}</i>${artOf(def)}<b>${escapeHTML(def.name)}</b>${fresh ? `<em>${lairIcon('spark')}${TEXT.fresh}</em>` : ''}</span>`;
   }
 
   function render(next = {}) {
@@ -152,7 +154,7 @@ export function createPlaceBar({ onConfirm, onCancel } = {}) {
     const def = (state.facilities ?? []).find((f) => f.key === placing.type) ?? { key: placing.type, name: placing.type };
     const price = moving ? null : def.price?.[0] ?? 0;
     const whatHTML = `
-      <span class="placebar-icon">${art(def.icon ?? def.key)}</span>
+      <span class="placebar-icon">${artOf(def)}</span>
       <span class="placebar-title"><b>${moving ? TEXT.whereMove : TEXT.where}</b><small>${escapeHTML(def.name)} ${price == null ? `· ${TEXT.free}` : coin(price)}</small></span>`;
     if (whatHTML !== lastWhat) {
       what.innerHTML = whatHTML;
@@ -161,7 +163,7 @@ export function createPlaceBar({ onConfirm, onCancel } = {}) {
     const p = placing.preview;
     let chipHTML;
     if (!p) chipHTML = `<span class="pchip is-hint">${lairIcon('info')}${TEXT.tapHint}</span>`;
-    else if (!p.valid) chipHTML = `<span class="pchip is-nope">${lairIcon('stop')}<b>${escapeHTML(p.reason || '여기는 안 돼요')}</b></span>`;
+    else if (p.valid === false) chipHTML = `<span class="pchip is-nope">${lairIcon('stop')}<b>${escapeHTML(p.reason || '여기는 안 돼요')}</b></span>`;
     else {
       const gained = (p.gained ?? []).map((k) => schemeChip(k, '+')).join('');
       const lost = (p.lost ?? []).map((k) => schemeChip(k, '-')).join('');

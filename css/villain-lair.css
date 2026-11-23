@@ -143,6 +143,11 @@
   padding: 16px var(--edge-right) 4px var(--edge-left);
 }
 
+/* 목표 목록이 없으면(숨김) 빈자리도 줄임 */
+.lair-goals:has(> .goals[hidden]) {
+  padding-block: 0 4px;
+}
+
 /* ── 3D 칸: game.js 가 3D 소굴을 .lair-view 에 붙임. 판이 가리면 lairScreen.js 가 bottom/left 를 줄임 ── */
 .lair-viewcell {
   grid-area: view;

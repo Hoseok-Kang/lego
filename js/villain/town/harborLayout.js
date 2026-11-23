@@ -21,9 +21,9 @@ export const HARBOR_LAYOUT = {
     { kind: 'netShed', x0: 21, z0: -9 },
     // 바다 쪽
     { kind: 'lighthouse', x0: 25, z0: 11 },
-    { kind: 'fishingBoat', x0: -28, z0: 15 },
-    { kind: 'sailboat', x0: -13, z0: 15 },
-    { kind: 'fishingBoat', x0: 5, z0: 16 },
+    { kind: 'fishingBoat', x0: -28, z0: 17 },
+    { kind: 'sailboat', x0: -13, z0: 17 },
+    { kind: 'fishingBoat', x0: 5, z0: 17 },
   ],
   ground: [
     { kind: 'sand', x0: -32, z0: 8, x1: 32, z1: 12 },

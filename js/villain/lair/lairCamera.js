@@ -22,8 +22,8 @@ const DEG = Math.PI / 180;
 const PITCH = 54; // 내려다보는 각도 (클수록 위에서 똑바로)
 const FOV = 30; // 시야각 (작을수록 장난감 디오라마처럼 납작)
 const RIM = 1.2; // 땅 둘레 테두리 + 여유 (블록)
-const HEADROOM = 7; // 뒤쪽 줄 위로 남길 높이 (높은 시설 · 횃불)
-const FRONT_DROP = 3.5; // 앞쪽 바위 몸통에서 화면에 꼭 넣을 깊이 (그 아래 늘어진 바위는 단추 뒤로 가도 됨)
+const HEADROOM = 5; // 뒤쪽 줄 위로 남길 높이 (높은 시설 꼭대기는 위 정보판 뒤로 살짝 가도 됨)
+const FRONT_DROP = 3; // 앞쪽 바위 몸통에서 화면에 꼭 넣을 깊이 (그 아래 늘어진 바위는 단추 뒤로 가도 됨)
 const MARGIN_X = 0.035; // 화면 양옆 여유 (-1 ~ 1 기준)
 const MARGIN_Y = 0.045; // 화면 위아래 여유
 const EASE_RATE = 3.2; // 새 자리로 옮겨 가는 빠르기
@@ -41,6 +41,8 @@ export function createLairCamera(camera, element) {
   const insets = { top: 0, bottom: 0, left: 0, right: 0 };
   let land = 8;
   let key = '';
+  let lastW = 0;
+  let lastH = 0;
   const goal = { a: 0, b: 0, d: 120 };
   const current = { a: 0, b: 0, d: 120 };
   let needSnap = true;
@@ -72,6 +74,9 @@ export function createLairCamera(camera, element) {
     const h = Math.max(1, element.clientHeight || 1);
     const next = [w, h, land, insets.top, insets.bottom, insets.left, insets.right].join('|');
     if (next === key) return;
+    if (lastW < 8 || lastH < 8) needSnap = true; // 숨어 있다가(크기 0) 나타나면 미끄러지지 말고 바로
+    lastW = w;
+    lastH = h;
     key = next;
     fillPoints();
     const tanY = Math.tan((FOV * DEG) / 2);

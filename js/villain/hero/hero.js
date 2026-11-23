@@ -1,9 +1,10 @@
 // 영웅 만들기 (마을마다 다른 영웅: 꼬마 마을 = 번개 기사, 바닷가 마을 = 얼음 마법사, 왕궁 성곽 = 황금 수호자)
 // 마을이 부서지면 하늘에서 내려와 괴수와 싸웁니다. 싸움은 전부 저절로 흘러가요.
 //
-//   const hero = createHero(scene, { kind, hpMul, debris, fx, events, bounds?, obstacles? })
+//   const hero = createHero(scene, { kind, hpMul, debris, fx, events, bounds?, obstacles?, isWet? })
 //       kind: 'knight' | 'iceMage' | 'guardian' (안 주면 'knight'),  hpMul: 체력 배율 (소굴의 함정 효과, 1 = 그대로)
 //       obstacles: () => 건물 목록 (예: () => town.buildings) — 주면 남아 있는 건물을 뚫고 지나가지 않고 돌아서 감
+//       isWet: (x, z) => 물 위인지 (예: town.isWet) — 얼음 마법사는 물 위로 걷거나 순간 이동하지 않음
 //   hero.enter(position)          그 자리에 하늘에서 떨어져 등장. 착지하면 'heroArrived' 소식
 //   hero.setTarget(monster)       싸울 상대 (과녁: position, radius, alive, takeDamage)
 //   hero.setObstacles(() => 건물 목록)

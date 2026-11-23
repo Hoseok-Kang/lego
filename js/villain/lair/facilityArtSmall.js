@@ -47,15 +47,17 @@ function paint(level) {
   return { shape: s, anims, top };
 }
 
-// ── 금고: 두꺼운 쇠 금고 + 금 손잡이 + 동전 더미 ──
+// ── 금고: 두꺼운 쇠 금고 + 금 다이얼 + 동전 더미 ──
 function vault(level) {
   const s = createArtShape();
   const H = level >= 2 ? 3 : 2;
-  s.box(1, 0, 1, 3, H, 3, C.dark);
-  s.box(1, 0, 3, 3, H, 3, C.gray);
-  s.set(2, Math.ceil(H / 2), 3, C.yellow); // 다이얼
+  s.box(1, 0, 1, 3, H, 3, C.gray);
+  for (const [x, z] of [[1, 1], [3, 1], [1, 3], [3, 3]]) s.box(x, 0, z, x, H, z, C.dark);
+  s.box(1, 0, 3, 3, H, 3, C.dark); // 앞 문
+  s.glow(2, Math.ceil(H / 2), 3, C.yellow); // 다이얼
   s.set(3, 1, 3, C.black); // 손잡이
-  s.box(1, H + 1, 1, 3, H + 1, 3, C.black);
+  s.box(1, H + 1, 1, 3, H + 1, 3, C.gray); // 뚜껑
+  s.set(2, H + 1, 2, C.black); // 동전 넣는 구멍
   s.set(0, 0, 4, C.yellow); // 동전
   s.set(1, 0, 4, C.tangerine);
   s.set(4, 0, 3, C.yellow);
@@ -128,18 +130,15 @@ function traps(level) {
   for (let x = 0; x <= 4; x += 2) s.set(x, 0, 4, C.gray);
   if (level >= 2) for (let x = 1; x <= 3; x += 2) s.set(x, 0, 4, C.white);
   const anims = [];
-  // 톱날
+  // 톱날 (지붕 위 기둥에 달려 빙글빙글): 가운데 빨강, 팔 회색, 끝 이빨 흰색
   const saw = createArtShape();
-  const r = level >= 2 ? 2 : 1;
-  for (let a = -r; a <= r; a++) {
-    for (let b = -r; b <= r; b++) {
-      if (Math.abs(a) + Math.abs(b) > r + (r > 1 ? 1 : 0)) continue;
-      saw.set(a, b, 0, (a + b) % 2 ? C.white : C.gray);
-    }
-  }
   saw.set(0, 0, 0, C.red);
-  anims.push({ kind: 'spin', axis: 'z', pivot: [2, 4 + r - 1, 2], voxels: saw.voxels(), speed: 3.2 });
-  s.box(2, 3, 2, 2, 3, 2, C.black);
+  for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) saw.set(a, b, 0, C.dark);
+  for (const [a, b] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) saw.set(a, b, 0, C.white);
+  if (level >= 2) for (const [a, b] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) saw.set(a, b, 0, C.gray);
+  const sawY = level >= 2 ? 5 : 4;
+  s.box(2, 3, 1, 2, sawY - 1, 1, C.black);
+  anims.push({ kind: 'spin', axis: 'z', pivot: [2, sawY, 1], voxels: saw.voxels(), speed: 3.2 });
   let top = [3, 3, 1];
   if (level >= 2) {
     // 곰 덫 (옆)
@@ -158,7 +157,7 @@ function traps(level) {
     axe.box(-1, -4, 0, 1, -3, 0, C.gray);
     axe.set(0, -4, 0, C.white);
     anims.push({ kind: 'swing', axis: 'z', pivot: [2, 4.5, 3], voxels: axe.voxels(), speed: 2.4, amount: 0.55 });
-    top = [0, 6, 3];
+    top = [2, 6, 3];
   }
   return { shape: s, anims, top };
 }
@@ -167,10 +166,11 @@ function traps(level) {
 function bats(level) {
   const s = createArtShape();
   const tall = level >= 3 ? 4 : level >= 2 ? 3 : 2;
-  s.box(0, 0, 0, 4, 0, 3, C.dark);
-  s.box(1, 1, 0, 3, tall, 3, C.black);
-  s.box(0, 1, 1, 0, Math.max(1, tall - 1), 2, C.dark);
-  s.box(4, 1, 1, 4, Math.max(1, tall - 1), 2, C.dark);
+  s.box(0, 0, 0, 4, 0, 3, C.black);
+  s.box(1, 1, 0, 3, tall, 3, C.dark);
+  for (const [x, y, z] of [[1, tall, 3], [3, 1, 0], [2, tall, 0], [1, 1, 2]]) s.set(x, y, z, C.gray);
+  s.box(0, 1, 1, 0, Math.max(1, tall - 1), 2, C.black);
+  s.box(4, 1, 1, 4, Math.max(1, tall - 1), 2, C.black);
   s.set(2, tall + 1, 1, C.dark);
   // 굴 입구 + 반짝 눈
   s.clear(2, 0, 3, 2, 1, 3);
@@ -186,8 +186,9 @@ function bats(level) {
     const bat = createArtShape();
     const radius = 2 + (i % 2);
     bat.set(radius, 0, 0, C.black);
-    bat.set(radius, 0, -1, C.purple);
-    bat.set(radius, 0, 1, C.purple);
+    bat.set(radius, 0, -1, C.lavender);
+    bat.set(radius, 0, 1, C.lavender);
+    bat.glow(radius + 1, 0, 0, C.red); // 눈
     anims.push({ kind: 'orbit', pivot: [2, tall + 2 + (i % 2), 2], voxels: bat.voxels(), speed: 1.4 + i * 0.35, amount: 0.4, phase: i * 2.1 });
   }
   if (level >= 2) {

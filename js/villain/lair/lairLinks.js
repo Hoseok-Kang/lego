@@ -13,11 +13,11 @@
 // 알갱이 수 · 크기 · 흐르는 빠르기 · 색은 아래 상수에서 바꿉니다.
 
 import * as THREE from '../../lib/three.js';
-import { createGlowPointMaterial } from './lairFx.js';
+import { createGlowPointMaterial } from './lairFxArt.js';
 
-const DOTS = 14; // 줄 하나의 빛 알갱이 수
-const DOT_SIZE = 0.75;
-const NODE_SIZE = 2.1; // 끝 구슬 크기
+const DOTS = 20; // 줄 하나의 빛 알갱이 수
+const DOT_SIZE = 1.8;
+const NODE_SIZE = 3.4; // 끝 구슬 크기
 const FLOW = 0.45; // 흐르는 빠르기 (초당 줄 길이 비율)
 const ARC = 2.2; // 줄이 위로 휘는 높이 (+ 길이의 일부)
 const TIER_COLORS = { 1: '#BBE90B', 2: '#FF698F', 3: '#FFF03A' };

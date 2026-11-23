@@ -2,7 +2,8 @@
 // 하늘에서 빛줄기와 함께 떨어지는 등장, 착지 충격, 맞으면 번쩍·움찔·밀려남, 체력만큼 블록이 조금씩 떨어지다 0 이면 '펑'.
 // 영웅마다 다른 싸움 방식(쫓아가기·거리 두기·방패 들기)은 각 영웅 파일이 맡고, 여기 도구를 가져다 씁니다.
 //
-//   const body = createHeroBody(scene, { model, scale, stats, hpMul, weapons, popExtra, radius, beam, debris, fx, events, bounds, obstacles })
+//   const body = createHeroBody(scene, { model, scale, stats, hpMul, weapons, popExtra, radius, beam, debris, fx, events, bounds, obstacles, isWet })
+//       isWet(x, z) → 물 위인지 (마을이 줌). 얼음 마법사는 물 위로 가거나 순간 이동하지 않음
 //       model: 그림 설계도 { parts, parents, popOrder, height },  weapons: [{ name, voxels, parent, pivot, at }] 손에 드는 것
 //       stats: 영웅 숫자 (maxHp 등),  hpMul: 체력 배율 (소굴의 함정 효과, 1 = 그대로),  beam: 등장 빛줄기 색 { core, glow, width }
 //   body.fig / rig 가 쓸 값: position, facing, y, state, stateTime, time, target, flash, hurtLevel, squash
@@ -60,6 +61,7 @@ export function createHeroBody(scene, options) {
     time: 0,
     target: null,
     obstacles: options.obstacles || null,
+    isWet: typeof options.isWet === 'function' ? options.isWet : () => false,
     flash: 0,
     hurtLevel: 0,
     squash: 0,

@@ -8,14 +8,16 @@
 //       host: 축하 카드를 띄울 상자 (소굴 화면),  onClaim(key): 보상 받기 (없으면 '받기!' 단추 없이 완료 표시만)
 //       coinTarget(): 동전이 날아갈 요소 (돈 표시)
 //   goals.el
-//   goals.render(목록)   목록: [{ key, name, icon, desc, progress, need, done, reward: { money, notoriety }, quip }]
-//   goals.celebrate(goal)   축하 카드만 띄우기 (게임이 목표를 저절로 받을 때 부름. goal.done 이 글이면 그 한마디를 보여 줌)
+//   goals.render(목록)   목록: goalTracker.activeGoals 결과 [{ key, name, icon, emoji, desc, progress, need, done(true/false),
+//                              reward: { money, notoriety }, doneText(끝냈을 때 한마디) }]
+//                        (목록을 안 주면 띠를 숨김, 빈 목록이면 '모든 목표를 이뤘어요')
+//   goals.celebrate(goal)   축하 카드만 띄우기 (게임이 목표를 저절로 받을 때 부름. goal.doneText 한마디를 보여 줌)
 //
 // 글자는 아래 TEXT, 모양은 css/villain-lair2.css (.goals, .goal, .goal-party) 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
 import { el, escapeHTML, money, coin, bump, isCalm } from './uiKit.js';
-import { art, lairIcon } from './lairArt.js';
+import { artOf, lairIcon } from './lairArt.js';
 
 const TEXT = {
   title: '목표',
@@ -33,7 +35,7 @@ const CLAIM_MS = 720; // 도장 · 동전 효과가 끝나고 onClaim 을 부를
 const PARTY_MS = 2600; // 축하 카드가 떠 있는 시간
 
 const isDone = (g) => g.done === true || (typeof g.done === 'string' && g.progress >= g.need) || (g.need > 0 && g.progress >= g.need);
-const quipOf = (g) => g.quip ?? (typeof g.done === 'string' ? g.done : '');
+const quipOf = (g) => g.quip ?? g.doneText ?? (typeof g.done === 'string' ? g.done : '');
 
 function rewardHTML(reward = {}) {
   const parts = [];
@@ -65,7 +67,7 @@ export function createGoalsBar({ host = null, onClaim = null, coinTarget = null 
     return `
       <li class="goal${done ? ' is-done' : ''}${claimable ? ' is-claimable' : ''}${fresh ? ' is-new' : ''}${claiming.has(g.key) ? ' is-claiming' : ''}" data-key="${escapeHTML(g.key)}" style="--p:${ratio.toFixed(3)};--i:${index}">
         <button type="button" class="goal-btn" data-act="${claimable ? 'claim' : 'open'}" aria-expanded="${openKey === g.key}">
-          <span class="goal-icon">${art(g.icon ?? 'trophy')}</span>
+          <span class="goal-icon">${artOf(g)}</span>
           <span class="goal-text">
             <b class="goal-name">${escapeHTML(g.name)}</b>
             <small class="goal-desc">${escapeHTML(g.desc ?? '')}</small>
@@ -77,7 +79,8 @@ export function createGoalsBar({ host = null, onClaim = null, coinTarget = null 
       </li>`;
   }
 
-  function render(next = []) {
+  function render(next) {
+    bar.hidden = !Array.isArray(next); // 목표 목록을 안 주면 띠를 숨김 (빈 목록이면 '다 이뤘어요')
     goals = Array.isArray(next) ? next : [];
     const sig = JSON.stringify(goals.map((g) => [g.key, g.name, g.progress, g.need, isDone(g), g.icon])) + [...claiming].join();
     if (sig === lastSig) return;
@@ -93,7 +96,7 @@ export function createGoalsBar({ host = null, onClaim = null, coinTarget = null 
     if (!g) return closePop();
     openKey = key;
     pop.innerHTML = `
-      <div class="goal-pop-head">${art(g.icon ?? 'trophy')}<b>${escapeHTML(g.name)}</b></div>
+      <div class="goal-pop-head">${artOf(g)}<b>${escapeHTML(g.name)}</b></div>
       <p>${escapeHTML(g.desc ?? '')}</p>
       <p class="goal-pop-foot"><span class="goal-pop-progress">${TEXT.progress(g.progress ?? 0, g.need ?? 1)}</span>${rewardHTML(g.reward) ? `<span class="goal-pop-reward"><small>${TEXT.reward}</small>${rewardHTML(g.reward)}</span>` : ''}</p>`;
     pop.hidden = false;
@@ -148,7 +151,7 @@ export function createGoalsBar({ host = null, onClaim = null, coinTarget = null 
         <div class="goal-party-card">
           <span class="goal-party-burst" aria-hidden="true">${confetti}</span>
           <span class="goal-party-stamp">${TEXT.party}</span>
-          <span class="goal-party-icon">${art(goal.icon ?? 'trophy')}</span>
+          <span class="goal-party-icon">${artOf(goal)}</span>
           <b class="goal-party-name">${escapeHTML(goal.name ?? '')}</b>
           ${quipOf(goal) ? `<p class="goal-party-quip">${escapeHTML(quipOf(goal))}</p>` : ''}
           ${rewardHTML(goal.reward) ? `<p class="goal-party-reward">${rewardHTML(goal.reward)}</p>` : ''}

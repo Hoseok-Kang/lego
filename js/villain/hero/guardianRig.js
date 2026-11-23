@@ -13,6 +13,8 @@ const RUN_LEG = 0.6; // 걸을 때 다리를 젓는 각도 (무거워서 작게)
 const STOMP_SWAY = 0.07; // 걸을 때 좌우로 기우뚱
 const HAMMER_REST = -0.4; // 평소 망치 든 팔 각도
 const SHIELD_FRONT = [0, 1.6, 4]; // 방패를 들었을 때 방패 손잡이 자리 (몸 손잡이 기준, 앞 가운데)
+// 망치가 세상에서 기우는 각도 (0 = 똑바로 위, + = 앞으로, - = 뒤로). 팔이 어떻게 돌든 이 각도가 되게 맞춤
+const HAMMER_TILT = { rest: -0.55, windup: -1.9, strike: 1.7, slam: -1.0, impact: 1.9, cheer: 0, fall: -0.3 };
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = (t) => t * t * (3 - 2 * t);
@@ -43,6 +45,7 @@ export function createGuardianRig(fig) {
     P.armR.rotation.z = 0.12;
     P.armL.rotation.x = -0.3 - stride * 0.2 * run;
     P.armL.rotation.z = -0.1;
+    let tilt = HAMMER_TILT.rest;
     P.shield.position.copy(shieldBase);
     P.shield.rotation.y = -1.25; // 옆으로 세움
     P.shield.rotation.x = 0.05 * run;
@@ -61,9 +64,16 @@ export function createGuardianRig(fig) {
     // 망치 내려치기: 머리 위로 들었다가 → 앞으로 쾅 → 돌아옴
     if (swing >= 0) {
       let arm;
-      if (swing < 0.45) arm = lerp(HAMMER_REST, -2.9, ease(swing / 0.45));
-      else if (swing < 0.6) arm = lerp(-2.9, -0.6, ease((swing - 0.45) / 0.15));
-      else arm = lerp(-0.6, HAMMER_REST, ease((swing - 0.6) / 0.4));
+      if (swing < 0.45) {
+        arm = lerp(HAMMER_REST, -2.9, ease(swing / 0.45));
+        tilt = lerp(HAMMER_TILT.rest, HAMMER_TILT.windup, ease(swing / 0.45));
+      } else if (swing < 0.6) {
+        arm = lerp(-2.9, -0.6, ease((swing - 0.45) / 0.15));
+        tilt = lerp(HAMMER_TILT.windup, HAMMER_TILT.strike, ease((swing - 0.45) / 0.15));
+      } else {
+        arm = lerp(-0.6, HAMMER_REST, ease((swing - 0.6) / 0.4));
+        tilt = lerp(HAMMER_TILT.strike, HAMMER_TILT.rest, ease((swing - 0.6) / 0.4));
+      }
       P.armR.rotation.x = arm;
       P.armR.rotation.z = 0.05;
       const lean = swing < 0.45 ? -0.12 * ease(swing / 0.45) : swing < 0.6 ? lerp(-0.12, 0.3, (swing - 0.45) / 0.15) : lerp(0.3, 0, (swing - 0.6) / 0.4);
@@ -81,6 +91,7 @@ export function createGuardianRig(fig) {
       P.body.rotation.x += -0.2 * p;
       P.legL.rotation.x = lerp(0, -0.25, p);
       P.legR.rotation.x = lerp(0, 0.25, p);
+      tilt = lerp(HAMMER_TILT.rest, HAMMER_TILT.slam, p) + shake;
     }
 
     // 쾅! 한 뒤: 망치를 땅에 박고 웅크림
@@ -92,6 +103,7 @@ export function createGuardianRig(fig) {
       P.body.rotation.x += 0.4 * impact;
       P.legL.rotation.x = lerp(P.legL.rotation.x, -0.6, impact);
       P.legR.rotation.x = lerp(P.legR.rotation.x, 0.5, impact);
+      tilt = lerp(tilt, HAMMER_TILT.impact, impact);
     }
 
     // 하늘에서 떨어지는 중: 망치를 머리 위로, 망토는 위로 펄럭
@@ -102,6 +114,7 @@ export function createGuardianRig(fig) {
       P.legL.rotation.x = -0.4;
       P.legR.rotation.x = 0.3;
       P.crest.rotation.x = -0.6;
+      tilt = HAMMER_TILT.fall;
     }
 
     // 착지: 무릎 꿇듯 웅크렸다가 일어남
@@ -118,7 +131,11 @@ export function createGuardianRig(fig) {
     if (cheer > 0) {
       P.armR.rotation.x = lerp(P.armR.rotation.x, -2.7, cheer);
       P.head.rotation.x = lerp(P.head.rotation.x, -0.2, cheer);
+      tilt = lerp(tilt, HAMMER_TILT.cheer, cheer);
     }
+
+    // 망치: 팔이 돌아간 만큼 되돌려서 세상에서 원하는 기울기가 되게
+    if (P.hammer) P.hammer.rotation.x = tilt - P.armR.rotation.x - P.body.rotation.x;
   }
 
   return { pose };

@@ -15,12 +15,14 @@
 //     onOpenEditor(design|null), onCopy(design), onRemove(design), onShop(),
 //     onRaid(design, townId),                                                마을 지도에서 [출동!]
 //     costOf(design) (소굴 효과 반영 값), baseCostOf(design)?, blocksOf(design), hpOf(design)?, thumbOf(design)?,
-//     refundOf(building, def)?, onViewResize()?, onPanelChange(name|null)?,
+//     refundOf(building, def)?, onPanelChange(name|null)?,
+//     onViewResize(rect, insets)?   3D 상자 크기가 바뀜 → view.resize(); view.setInsets(insets) (insets: 계책 단추가 가리는 위쪽 px)
 //   })
 //   lair.render(state)   state = { money, notoriety, rank, nextRank, ranks?, goals, facilities, lair, evaluation,
 //                                  modsSummary, designs, towns, placing, selectedId, schemes, schemesSeen,
 //                                  lastDesignId?, welcome? }      (일부만 줘도 됨: 앞의 값과 합침)
-//   lair.viewBox         3D 소굴을 붙일 상자 (크기가 바뀌면 onViewResize)
+//   lair.viewBox         3D 소굴을 붙일 상자 (판이 열리면 가려지지 않게 줄어듦 → onViewResize)
+//   lair.getViewInsets() { top, bottom, left, right } 3D 상자 위에 떠 있는 단추가 가리는 px
 //   lair.openPanel('build' | 'facility' | 'schemes' | 'bestiary' | 'towns') / lair.closePanel() / lair.panel
 //   lair.celebrateGoal(goal)    목표 달성 축하 카드 (게임이 목표를 저절로 받을 때)
 //   lair.show(state?) / lair.hide() / lair.el
@@ -94,7 +96,7 @@ export function createLairScreen(root, options = {}) {
   const hello = screen.querySelector('[data-hello]');
   const dock = screen.querySelector('.lair-dock');
 
-  let state = { money: 0, notoriety: 0, goals: [], facilities: [], designs: [], towns: null, placing: null, selectedId: null };
+  let state = { money: 0, notoriety: 0, goals: undefined, facilities: [], designs: [], towns: null, placing: null, selectedId: null };
   let panel = null; // 지금 열린 판 이름
   let resumePanel = null; // 자리 고르기가 끝나면 다시 열 판
   let prevSelected = null;
@@ -194,7 +196,7 @@ export function createLairScreen(root, options = {}) {
     if (name === 'build') panels.build.render({ facilities: s.facilities, money: s.money, rank: s.rank, ranks: s.ranks });
     else if (name === 'facility') {
       const b = selectedBuilding();
-      if (b) panels.facility.render({ building: b, def: defOf(b.type), evaluation: s.evaluation, schemes: s.schemes, schemesSeen: s.schemesSeen, facilities: s.facilities, money: s.money });
+      if (b) panels.facility.render({ building: b, def: defOf(b.type) ?? { key: b.type, name: b.type, price: [] }, evaluation: s.evaluation, schemes: s.schemes, schemesSeen: s.schemesSeen, facilities: s.facilities, money: s.money });
     } else if (name === 'schemes') panels.schemes.render({ schemes: s.schemes, schemesSeen: s.schemesSeen, evaluation: s.evaluation, facilities: s.facilities, modsSummary: s.modsSummary });
     else if (name === 'bestiary') panels.bestiary.render({ designs: s.designs, money: s.money });
   }
@@ -225,6 +227,15 @@ export function createLairScreen(root, options = {}) {
     screen.style.setProperty('--cover-left', `${Math.round(left)}px`); // 아래 단추 · 계책 단추도 비켜 서게
   }
 
+  // 3D 상자 위에 떠 있는 것(계책 단추)이 가리는 만큼 (3D 카메라가 땅판을 그 아래로 맞추게)
+  function viewInsets() {
+    const book = screen.querySelector('.lair-bookbtn');
+    if (screen.hidden || !book.offsetParent) return { top: 0, bottom: 0, left: 0, right: 0 };
+    const v = viewBox.getBoundingClientRect();
+    const b = book.getBoundingClientRect();
+    return { top: Math.max(0, Math.round(b.bottom - v.top + 6)), bottom: 0, left: 0, right: 0 };
+  }
+
   // 3D 상자 크기가 바뀌면 알려 줌 (한 장면에 한 번만)
   let resizeQueued = false;
   if (typeof ResizeObserver === 'function') {
@@ -233,7 +244,7 @@ export function createLairScreen(root, options = {}) {
       resizeQueued = true;
       requestAnimationFrame(() => {
         resizeQueued = false;
-        cb.onViewResize?.(viewBox.getBoundingClientRect());
+        cb.onViewResize?.(viewBox.getBoundingClientRect(), viewInsets());
       });
     }).observe(viewBox);
     new ResizeObserver(() => updateCover()).observe(screen);
@@ -246,7 +257,7 @@ export function createLairScreen(root, options = {}) {
     const s = state;
     countTo(moneyEl, s.money, { from: firstRender ? s.money : null });
     badge.render({ notoriety: s.notoriety ?? 0, rank: s.rank, nextRank: s.nextRank });
-    goals.render(s.goals ?? []);
+    goals.render(s.goals);
     // 컴퓨터 화면 왼쪽 기둥: 지금 소굴 효과
     const modsKey = JSON.stringify(s.modsSummary ?? []);
     if (modsKey !== lastMods) {
@@ -361,6 +372,7 @@ export function createLairScreen(root, options = {}) {
     },
     celebrateGoal: (goal) => goals.celebrate(goal),
     getViewRect: () => viewBox.getBoundingClientRect(),
+    getViewInsets: viewInsets,
     show(next) {
       screen.hidden = false;
       if (next) render(next);

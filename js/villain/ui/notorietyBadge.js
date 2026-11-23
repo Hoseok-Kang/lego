@@ -39,17 +39,18 @@ export function createNotorietyBadge({ onClick } = {}) {
 
   function render({ notoriety = 0, rank = null, nextRank = null } = {}) {
     const r = rank ?? { rank: 0, name: '동네 말썽꾼', at: 0 };
-    const key = `${notoriety}|${r.rank}|${nextRank?.at ?? '-'}`;
+    const isMax = !!rank && !nextRank; // 단계 정보가 아예 없으면 '최고 단계'라고 하지 않음
+    const key = `${notoriety}|${r.rank}|${nextRank?.at ?? '-'}|${isMax}`;
     if (key === lastKey) return;
     lastKey = key;
     const span = nextRank ? Math.max(1, nextRank.at - r.at) : 1;
-    const ratio = nextRank ? Math.max(0, Math.min(1, (notoriety - r.at) / span)) : 1;
+    const ratio = nextRank ? Math.max(0, Math.min(1, (notoriety - r.at) / span)) : isMax ? 1 : 0;
     badge.querySelector('[data-emblem]').innerHTML = rankEmblem(r.rank);
     badge.querySelector('[data-level]').textContent = TEXT.level(r.rank);
     badge.querySelector('[data-name]').textContent = r.name ?? '';
     badge.querySelector('[data-fill]').style.width = `${(ratio * 100).toFixed(1)}%`;
-    badge.querySelector('[data-count]').textContent = nextRank ? TEXT.toNext(notoriety, nextRank.at) : TEXT.max;
-    badge.classList.toggle('is-max', !nextRank);
+    badge.querySelector('[data-count]').textContent = nextRank ? TEXT.toNext(notoriety, nextRank.at) : isMax ? TEXT.max : money(notoriety);
+    badge.classList.toggle('is-max', isMax);
     badge.title = TEXT.title(r.name ?? '', nextRank ? nextRank.at - notoriety : 0);
     badge.setAttribute('aria-label', `${TEXT.level(r.rank)} ${r.name ?? ''}, ${badge.querySelector('[data-count]').textContent}`);
     // 단계가 오르면 반짝

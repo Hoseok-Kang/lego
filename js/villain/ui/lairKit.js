@@ -4,6 +4,7 @@
 //
 // 쓰는 법
 //   describeEffect({ cost: -0.06 }, 2) → [{ key:'cost', label:'출동 값', value:'-12%', good:true }]   (2 = 레벨 배수)
+//                                     (lair/modifiers.js 의 것을 그대로 내보냄: 이름표가 소굴 효과 모음과 같게)
 //   effectChips(목록, { empty })       위 목록 → 초록(좋음) · 빨강(나쁨) 칩 HTML
 //   lockText(단계, ranks)              '악명 2단계(마을의 공포)에 열려요'
 //   unlockLines(def)                  연구실처럼 레벨마다 여는 것 → [{ level, html }]
@@ -15,46 +16,18 @@
 //   makeThumbs(thumbOf) → (design) → 그림 주소   괴수 카드 그림 (한 번 그린 것은 기억)
 //   partIcons(design)                  괴수에 붙인 부품 아이콘 HTML
 //
-// 효과 이름 글자는 아래 EFFECT_LABELS 에서 바꿉니다.
+// 효과 이름 글자는 js/villain/lair/modifiers.js 의 MOD_INFO 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
 import { escapeHTML, coin } from './uiKit.js';
-import { art, lairIcon } from './lairArt.js';
+import { artOf, lairIcon } from './lairArt.js';
 import { partIconURL } from '../draw/partIcons.js';
 import { designThumbURL } from '../draw/pixelThumb.js';
+import { describeEffect } from '../lair/modifiers.js';
 import { VILLAIN } from '../villainConfig.js';
 
-export const EFFECT_LABELS = {
-  cost: '출동 값',
-  hp: '괴수 체력',
-  dmg: '괴수 공격',
-  partDmg: '부품 공격',
-  smash: '부수는 힘',
-  pay: '습격 수입',
-  notoriety: '악명 얻기',
-  heroHp: '영웅 체력',
-  heroDelay: '영웅 늦게 오기',
-  raidBonus: '습격 보너스',
-  partSlots: '부품 칸',
-};
-
-const LOWER_IS_GOOD = new Set(['cost', 'heroHp']); // 줄어들수록 좋은 것
-
-const percent = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v * 100))}%`;
-
-export function describeEffect(effect = {}, scale = 1) {
-  const out = [];
-  for (const [key, raw] of Object.entries(effect ?? {})) {
-    if (!(key in EFFECT_LABELS) || typeof raw !== 'number' || !raw) continue;
-    const v = raw * scale;
-    let value;
-    if (key === 'raidBonus') value = `${v > 0 ? '+' : ''}${Math.round(v)}원`;
-    else if (key === 'partSlots') value = `+${Math.round(v)}칸`;
-    else value = percent(v);
-    out.push({ key, label: EFFECT_LABELS[key], value, good: LOWER_IS_GOOD.has(key) ? v < 0 : v > 0 });
-  }
-  return out;
-}
+// 효과 글은 소굴 효과 계산(lair/modifiers.js)과 같은 이름표를 씀 → [{ key, label: '출동 값', value: '-12%', good }]
+export { describeEffect };
 
 export function effectChips(list, { empty = '', className = '' } = {}) {
   if (!list?.length) return empty ? `<span class="fx-chip is-none">${escapeHTML(empty)}</span>` : '';
@@ -83,6 +56,7 @@ export function schemeOf(key, schemes) {
 // 'f:paint' → 물감 창고 하나,  '물' → 태그가 '물' 인 시설 모두
 export function needFacilities(need, facilities) {
   if (!need) return [];
+  if (need === '*') return [{ key: 'any', name: '아무 시설', icon: 'question' }];
   if (String(need).startsWith('f:')) {
     const def = facilityOf(need.slice(2), facilities);
     return def ? [def] : [{ key: need.slice(2), name: need.slice(2), icon: need.slice(2) }];
@@ -92,7 +66,7 @@ export function needFacilities(need, facilities) {
 
 export function facilityChip(def, { hidden = false } = {}) {
   if (!def) return '';
-  return `<span class="fac-chip${hidden ? ' is-hidden' : ''}" title="${hidden ? '' : escapeHTML(def.name)}">${art(def.icon ?? def.key)}${hidden ? '' : `<b>${escapeHTML(def.name)}</b>`}</span>`;
+  return `<span class="fac-chip${hidden ? ' is-hidden' : ''}" title="${hidden ? '' : escapeHTML(def.name)}">${artOf(def)}${hidden ? '' : `<b>${escapeHTML(def.name)}</b>`}</span>`;
 }
 
 export function needChips(need, facilities, { hidden = false, count = 1 } = {}) {

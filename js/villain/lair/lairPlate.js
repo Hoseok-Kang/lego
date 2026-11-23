@@ -19,9 +19,9 @@ import { getBlockAssets } from '../../game/core/blockAssets.js';
 import { TILE, getLairMaterials, mergeGeos, seededRandom, ZERO_MATRIX } from './lairKit.js';
 
 const MAX_SIZE = 16; // 가장 넓은 땅 (칸)
-const GROOVE = 0.36; // 칸 사이 틈 (용암이 비침)
-const SLAB = 0.5; // 칸 판 두께
-const TILE_COLORS = [['#3F3691', 0.62], ['#1B2A34', 1.05]]; // 칸 바둑판 두 색 [색, 밝기] (짙은 보라, 검정)
+const GROOVE = 0.5; // 칸 사이 틈 (용암이 비침)
+const SLAB = 0.32; // 칸 판 두께
+const TILE_COLORS = [['#3F3691', 0.15], ['#1B2A34', 0.95]]; // 칸 바둑판 두 색 [색, 밝기] (아주 짙은 보라, 검정)
 const TILE_SHADE = 0.1; // 칸마다 밝기가 살짝 다른 정도
 const RIM = '#1B2A34'; // 테두리 블록 색
 const RIM_TICK = '#6C6E68'; // 칸 줄과 만나는 테두리 블록 (눈금)
@@ -127,16 +127,6 @@ export function createLairPlate() {
     const n = size * TILE + 2; // 테두리까지 한 줄 블록 수
     const at = (i) => i - half - 0.5; // i 번째 블록 줄의 가운데 좌표
     const pick = (list) => list[Math.floor(rand() * list.length)];
-    // 테두리 (칸보다 살짝 높게)
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) {
-        if (i !== 0 && j !== 0 && i !== n - 1 && j !== n - 1) continue;
-        // 칸 줄과 만나는 자리 (줄 양옆 두 블록)는 눈금 색
-        const along = i === 0 || i === n - 1 ? j : i;
-        const tick = along > 2 && along < n - 3 && (along % TILE === 0 || along % TILE === 1);
-        solid.push({ x: at(i), y: 0, z: at(j), hex: tick ? RIM_TICK : RIM });
-      }
-    }
     // 앞쪽 아래 늘어진 바위: 가운데가 깊은 V 모양 + 들쭉날쭉 + 가끔 고드름
     const depth = new Int16Array(n);
     const keel = Math.round(size * TILE * KEEL);
@@ -146,40 +136,50 @@ export function createLairPlate() {
       if (rand() < 0.12) d += 2 + rand() * 3;
       depth[i] = Math.max(BODY, Math.round(d));
     }
-    const KEEL_ROWS = 3; // 앞쪽 몇 줄까지 바위 옆면을 쌓을지 (뒤쪽은 화면에 안 보임)
-    for (let j = 0; j < n; j++) {
-      const front = j === n - 1;
-      for (let i = 0; i < n; i++) {
-        const side = i === 0 || i === n - 1;
-        const nearFront = j >= n - 1 - KEEL_ROWS;
-        const d = nearFront ? Math.max(BODY, depth[i] - (n - 1 - j) * 2) : BODY;
-        for (let k = 1; k <= d; k++) {
-          const left = i > 0 ? (nearFront ? Math.max(BODY, depth[i - 1] - (n - 1 - j) * 2) : BODY) : 0;
-          const right = i < n - 1 ? (nearFront ? Math.max(BODY, depth[i + 1] - (n - 1 - j) * 2) : BODY) : 0;
-          const exposed = front || side || (nearFront && (left < k || right < k)) || (j === 0 && k <= BODY);
-          if (!exposed) continue;
-          solid.push({ x: at(i), y: -k, z: at(j), hex: pick(ROCK_COLORS) });
-        }
-      }
-    }
-    // 앞면 용암 금 (구불구불 아래로)
+    // 앞면에서 빛나는 블록으로 바꿀 자리: 용암 금(구불구불 아래로) + 초록 끈적이(테두리에서 흘러내림)
+    const front = new Map(); // `${i},${k}` → 색  (k = 0 은 테두리 층)
     const cracks = Math.max(3, Math.round(size * 0.6));
-    const frontZ = at(n - 1) + 0.02;
     for (let c = 0; c < cracks; c++) {
       let i = Math.floor(((c + 0.3 + rand() * 0.4) / cracks) * n);
       for (let k = 1; k <= depth[i] - 1; k++) {
-        if (rand() < 0.35) i = Math.max(0, Math.min(n - 1, i + (rand() < 0.5 ? -1 : 1)));
+        if (k > 2 && rand() < 0.18) i = Math.max(0, Math.min(n - 1, i + (rand() < 0.5 ? -1 : 1)));
         if (k > depth[i] - 1) break;
-        glow.push({ x: at(i), y: -k, z: frontZ + 0.04, hex: pick(LAVA_COLORS) });
+        front.set(`${i},${k}`, pick(LAVA_COLORS));
       }
     }
-    // 초록 끈적이 (앞 테두리에서 흘러내림)
-    const drips = Math.max(4, size);
+    const drips = Math.max(3, Math.round(size * 0.5));
     for (let c = 0; c < drips; c++) {
-      const i = 1 + Math.floor(rand() * (n - 2));
-      const len = 1 + Math.floor(rand() * 3);
-      glow.push({ x: at(i), y: 0, z: frontZ + 0.04, hex: SLIME, slime: true });
-      for (let k = 1; k <= len; k++) glow.push({ x: at(i), y: -k, z: frontZ + 0.06, hex: SLIME, slime: true });
+      const i = 1 + Math.floor(((c + 0.5 + (rand() - 0.5) * 0.6) / drips) * (n - 2));
+      const len = 1 + Math.floor(rand() * 2.5);
+      for (let k = 0; k <= len; k++) front.set(`${i},${k}`, SLIME);
+    }
+    const put = (i, k, j, hex) => {
+      const over = j === n - 1 ? front.get(`${i},${k}`) : undefined;
+      (over ? glow : solid).push({ x: at(i), y: -k, z: at(j), hex: over ?? hex });
+    };
+    // 테두리 (칸보다 살짝 높게). 칸 줄과 만나는 자리 (줄 양옆 두 블록)는 눈금 색
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i !== 0 && j !== 0 && i !== n - 1 && j !== n - 1) continue;
+        const along = i === 0 || i === n - 1 ? j : i;
+        const tick = along > 2 && along < n - 3 && (along % TILE === 0 || along % TILE === 1);
+        put(i, 0, j, tick ? RIM_TICK : RIM);
+      }
+    }
+    const KEEL_ROWS = 3; // 앞쪽 몇 줄까지 바위 옆면을 쌓을지 (뒤쪽은 화면에 안 보임)
+    const depthAt = (i, j, nearFront) => (nearFront ? Math.max(BODY, depth[i] - (n - 1 - j) * 2) : BODY);
+    for (let j = 0; j < n; j++) {
+      const nearFront = j >= n - 1 - KEEL_ROWS;
+      for (let i = 0; i < n; i++) {
+        const side = i === 0 || i === n - 1;
+        const d = depthAt(i, j, nearFront);
+        const left = i > 0 ? depthAt(i - 1, j, nearFront) : 0;
+        const right = i < n - 1 ? depthAt(i + 1, j, nearFront) : 0;
+        for (let k = 1; k <= d; k++) {
+          const exposed = j === n - 1 || side || (nearFront && (left < k || right < k)) || (j === 0 && k <= BODY);
+          if (exposed) put(i, k, j, pick(ROCK_COLORS));
+        }
+      }
     }
     // 네 귀퉁이 횃불
     const corner = half + 0.5;
@@ -190,7 +190,6 @@ export function createLairPlate() {
       glow.push({ x: sx * corner, y: 5, z: sz * corner, hex: '#FFF03A', small: true });
       torches[t].set(sx * corner, 5.6, sz * corner);
     });
-    // 끈적이·용암 블록은 바위 앞에 살짝 튀어나오게 (같은 자리 바위 블록을 덮음)
     rocks = makeBlocks(solid, mats.solid, false);
     rockGlow = makeBlocks(glow, mats.glow, false);
     group.add(rocks, rockGlow);

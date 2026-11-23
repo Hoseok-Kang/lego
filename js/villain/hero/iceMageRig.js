@@ -14,11 +14,13 @@ const STAFF_REST = -0.35; // 평소 지팡이 든 팔 각도
 const CAST_RAISE = -2.7; // 얼음을 모을 때 지팡이를 드는 각도
 const CAST_THRUST = -1.25; // 얼음을 쏠 때 지팡이를 내미는 각도
 const CAST_FIRE_AT = 0.6; // 이 진행에서 지팡이를 앞으로 휙 (iceMage.js 의 발사 순간과 맞춤)
+// 지팡이가 세상에서 기우는 각도 (팔이 어떻게 돌든 이 각도가 되게 맞춤. 0 = 똑바로 위, + = 앞으로)
+const STAFF_TILT = { rest: 0.2, raise: -0.3, thrust: 1.35, crouch: 0.5, cheer: 0 };
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = (t) => t * t * (3 - 2 * t);
 
-export const ICE_CAST_FIRE_AT = CAST_FIRE_AT;
+export const ICE_CAST_FIRE_AT = CAST_FIRE_AT + 0.12; // 얼음이 나가는 순간 = 지팡이를 앞으로 거의 다 내밀었을 때
 
 export function createIceMageRig(fig) {
   const P = fig.parts;
@@ -44,6 +46,7 @@ export function createIceMageRig(fig) {
     P.armR.rotation.z = 0.08;
     P.armL.rotation.x = -0.55 - stride * 0.4 * run + Math.sin(time * 4) * 0.08;
     P.armL.rotation.z = -0.25;
+    let tilt = STAFF_TILT.rest + stride * 0.1 * run;
 
     // 얼음 쏘기: 지팡이를 머리 위로 들어 얼음을 모았다가 → 앞으로 휙 내밈 → 천천히 돌아옴
     if (cast >= 0) {
@@ -54,16 +57,19 @@ export function createIceMageRig(fig) {
         P.armL.rotation.z = lerp(-0.25, -0.5, p);
         P.body.rotation.x = lerp(P.body.rotation.x, -0.18, p);
         P.hat.rotation.x += 0.15 * p;
+        tilt = lerp(STAFF_TILT.rest, STAFF_TILT.raise, p);
       } else if (cast < CAST_FIRE_AT + 0.15) {
         const p = ease((cast - CAST_FIRE_AT) / 0.15);
         P.armR.rotation.x = lerp(CAST_RAISE, CAST_THRUST, p);
         P.armL.rotation.x = lerp(-2.2, -1.4, p);
         P.body.rotation.x = lerp(-0.18, 0.25, p);
+        tilt = lerp(STAFF_TILT.raise, STAFF_TILT.thrust, p);
       } else {
         const p = ease((cast - CAST_FIRE_AT - 0.15) / (1 - CAST_FIRE_AT - 0.15));
         P.armR.rotation.x = lerp(CAST_THRUST, STAFF_REST, p);
         P.armL.rotation.x = lerp(-1.4, -0.55, p);
         P.body.rotation.x = lerp(0.25, 0, p);
+        tilt = lerp(STAFF_TILT.thrust, STAFF_TILT.rest, p);
       }
     }
 
@@ -74,6 +80,7 @@ export function createIceMageRig(fig) {
       P.armL.rotation.z = -0.4;
       P.hat.rotation.x = -0.5 + Math.sin(time * 30) * 0.12;
       P.body.rotation.x = 0.1;
+      tilt = STAFF_TILT.cheer;
     }
 
     // 착지: 웅크렸다가 일어남
@@ -84,6 +91,7 @@ export function createIceMageRig(fig) {
       P.armL.rotation.z = lerp(P.armL.rotation.z, -0.9, crouch);
       P.armR.rotation.x = lerp(P.armR.rotation.x, 0.1, crouch);
       P.armR.rotation.z = lerp(P.armR.rotation.z, 0.7, crouch);
+      tilt = lerp(tilt, STAFF_TILT.crouch, crouch);
     }
 
     // 지팡이 번쩍 들기 (등장한 뒤, 이겼을 때)
@@ -91,7 +99,11 @@ export function createIceMageRig(fig) {
       P.armR.rotation.x = lerp(P.armR.rotation.x, -2.8, cheer);
       P.armL.rotation.x = lerp(P.armL.rotation.x, -2.0, cheer);
       P.head.rotation.x = lerp(P.head.rotation.x, -0.2, cheer);
+      tilt = lerp(tilt, STAFF_TILT.cheer, cheer);
     }
+
+    // 지팡이: 팔이 돌아간 만큼 되돌려서 세상에서 원하는 기울기가 되게 (머리 위로 들면 지팡이도 위로 솟음)
+    if (P.staff) P.staff.rotation.x = tilt - P.armR.rotation.x - P.body.rotation.x;
   }
 
   return { pose };

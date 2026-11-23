@@ -667,6 +667,7 @@
   gap: 10px;
   padding: 16px 12px 10px 14px;
   border-bottom: 2px solid var(--line);
+  touch-action: none; /* 휴대폰: 아래로 쓸어 닫기 */
 }
 
 .lsheet-grab {
@@ -741,6 +742,14 @@
   scrollbar-width: thin;
   scrollbar-color: var(--edge) transparent;
   outline: none;
+}
+
+.lpanel-empty {
+  padding: 26px 12px;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 17px;
+  text-align: center;
 }
 
 .lpanel-sub {
@@ -852,6 +861,19 @@
   display: inline-grid;
   place-items: center;
   line-height: 1;
+}
+
+/* 도트 그림이 없어 이모지로 대신할 때의 크기 */
+.lsheet-icon .lart-emoji,
+.srow-icon .lart-emoji,
+.placebar-icon .lart-emoji {
+  font-size: 26px;
+}
+
+.pchip .lart-emoji,
+.fac-chip .lart-emoji,
+.goal-pop-head .lart-emoji {
+  font-size: 18px;
 }
 
 .lart-fallback {
@@ -1340,10 +1362,23 @@
   color: var(--good-ink);
 }
 
-.unlock-list li > .ico:last-child {
+.unlock-text {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.unlock-text .ico {
   width: 18px;
   height: 18px;
-  margin-left: auto;
+  color: var(--accent);
+}
+
+.unlock-list li > .ico {
+  width: 18px;
+  height: 18px;
 }
 
 .unlock-list em {
@@ -1654,6 +1689,23 @@
   font-weight: 600;
 }
 
+.scard-how {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 3px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.scard-how .ico {
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
 .scard-desc {
   color: var(--muted);
   font-size: 13px;
@@ -1700,6 +1752,7 @@
 
 .bestiary .mcard--new {
   min-height: 150px;
+  border-color: var(--line);
 }
 
 .mcard-cost {
@@ -2471,6 +2524,10 @@
   .goal-claim {
     top: -8px;
     font-size: 13px;
+  }
+
+  .goal.is-claimable .goal-name {
+    padding-right: 52px; /* '받기!' 딱지 밑으로 글자가 숨지 않게 */
   }
 
   .goal-pop {

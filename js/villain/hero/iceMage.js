@@ -104,7 +104,7 @@ export function createIceMage(scene, { stats, hpMul = 1, ...options } = {}) {
       const z = clamp(target.position.z + Math.sin(angle) * stats.blinkDistance, a.minZ + EDGE_MARGIN, a.maxZ - EDGE_MARGIN);
       const away = Math.hypot(x - target.position.x, z - target.position.z);
       const edge = Math.min(x - a.minX, a.maxX - x, z - a.minZ, a.maxZ - z);
-      let blocked = 0;
+      let blocked = body.isWet(x, z) ? 1 : 0; // 물 위에는 안 나타남
       for (const o of body.obstacles ? body.obstacles() : []) {
         if (o && o.alive && Math.hypot(o.position.x - x, o.position.z - z) < (o.radius || 0) + 2) blocked = 1;
       }
@@ -198,8 +198,12 @@ export function createIceMage(scene, { stats, hpMul = 1, ...options } = {}) {
       speed = stats.speed * STRAFE_SPEED;
     }
     const len = Math.hypot(mx, mz) || 1;
-    position.x += (mx / len) * speed * dt;
-    position.z += (mz / len) * speed * dt;
+    const nx = position.x + (mx / len) * speed * dt;
+    const nz = position.z + (mz / len) * speed * dt;
+    // 물로는 안 들어감: 막히면 한쪽 방향으로만 미끄러짐
+    if (!body.isWet(nx, nz)) position.set(nx, 0, nz);
+    else if (!body.isWet(nx, position.z)) position.x = nx;
+    else if (!body.isWet(position.x, nz)) position.z = nz;
     runBlend += ((speed > 0 ? Math.min(1, speed / stats.speed + 0.3) : 0) - runBlend) * Math.min(1, dt * 10);
     runPhase += dt * (4 + speed * 0.9);
   }

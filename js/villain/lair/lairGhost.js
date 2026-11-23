@@ -17,7 +17,7 @@
 import * as THREE from '../../lib/three.js';
 import { facilityArt, facilitySize } from './facilityArt.js';
 import { TILE, footprintCenter } from './lairKit.js';
-import { buildArtMeshes, animatePivots } from './lairBuildings.js';
+import { buildArtMeshes, animatePivots, disposeArtMeshes } from './lairArtMesh.js';
 
 const OK_COLOR = new THREE.Color('#BBE90B');
 const BAD_COLOR = new THREE.Color('#ff3b2f');
@@ -27,6 +27,7 @@ const FLOAT = 0.7; // 유령이 떠 있는 높이
 const BOB = 0.25; // 둥실거리는 폭
 const FOLLOW = 22; // 유령이 새 자리로 미끄러지는 빠르기
 const MAX_TILES = 16;
+const BEAM_HEIGHT = 7; // 자리 빛기둥 높이
 
 export function createLairMarks(parent) {
   const fillTex = makeTileTexture(true);
@@ -57,6 +58,21 @@ export function createLairMarks(parent) {
     foot.push(m);
   }
   const footGroup = { x: 0, z: 0 };
+
+  // 자리 빛기둥 (발자국 위로 은은하게 솟는 빛: 휴대폰에서도 어디에 놓이는지 한눈에)
+  const beamTex = makeBeamTexture();
+  const beamMat = new THREE.MeshBasicMaterial({
+    map: beamTex,
+    color: OK_COLOR.clone(),
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+  });
+  const beam = new THREE.Mesh(makeBeamGeometry(), beamMat);
+  beam.renderOrder = 12;
+  beam.visible = false;
+  parent.add(beam);
 
   // 고른 시설 / 마우스 칸 테두리
   const frame = (color, depthTest) => {
@@ -92,11 +108,10 @@ export function createLairMarks(parent) {
   function hideGhost() {
     if (!ghost) return;
     parent.remove(ghost.group);
-    ghost.parts.body.traverse((o) => {
-      if (o.isInstancedMesh) o.dispose();
-    });
+    disposeArtMeshes(ghost.parts);
     ghost = null;
     for (const m of foot) m.visible = false;
+    beam.visible = false;
   }
 
   function moveGhost(x, y, size, { valid = true, snap = false } = {}) {
@@ -117,6 +132,10 @@ export function createLairMarks(parent) {
     ghostMat.emissive.copy(color);
     ghostGlow.emissive.copy(color);
     footMat.color.copy(color);
+    beamMat.color.copy(color);
+    beam.visible = true;
+    beam.position.set(target.x, 0.2, target.z);
+    beam.scale.set(ghost.w * TILE - 0.4, BEAM_HEIGHT, ghost.h * TILE - 0.4);
     // 발자국 칸: 땅 밖 칸은 언제나 빨강 (재질을 같이 쓰므로 밖 칸은 조금 더 흐리게만)
     let k = 0;
     for (let ty = 0; ty < ghost.h; ty++) {
@@ -158,6 +177,9 @@ export function createLairMarks(parent) {
       animatePivots(ghost.parts.pivots, time);
       const pulse = 0.55 + 0.25 * Math.sin(time * 6);
       footMat.opacity = ghost.valid ? pulse : 0.6 + 0.3 * Math.sin(time * 12);
+      beamMat.opacity = ghost.valid ? 0.55 + 0.2 * Math.sin(time * 3) : 0.45 + 0.35 * Math.sin(time * 12);
+      beam.position.x = g.x;
+      beam.position.z = g.z;
       ghostMat.emissiveIntensity = 0.3 + 0.15 * Math.sin(time * 4);
       for (const m of foot) {
         if (!m.visible) continue;
@@ -197,6 +219,10 @@ export function createLairMarks(parent) {
         if (m.material !== footMat) m.material.dispose();
       }
       footMat.dispose();
+      parent.remove(beam);
+      beam.geometry.dispose();
+      beamMat.dispose();
+      beamTex.dispose();
       tileGeo.dispose();
       fillTex.dispose();
       frameTex.dispose();
@@ -227,15 +253,44 @@ function makeTileTexture(fill) {
   };
   if (fill) {
     rect(8);
-    g.fillStyle = 'rgba(255,255,255,0.32)';
+    g.fillStyle = 'rgba(255,255,255,0.5)';
     g.fill();
   }
   g.shadowColor = 'rgba(255,255,255,0.9)';
   g.shadowBlur = 12;
-  g.lineWidth = fill ? 9 : 8;
+  g.lineWidth = fill ? 13 : 9;
   g.strokeStyle = '#ffffff';
   rect(10);
   g.stroke();
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+// 빛기둥 모양: 옆면 네 장 (위아래 뚫림), 바닥 가운데 기준 높이 1
+function makeBeamGeometry() {
+  const geo = new THREE.BoxGeometry(1, 1, 1);
+  geo.translate(0, 0.5, 0);
+  // 위(2) · 아래(3) 면 지우기 (BoxGeometry 면 순서: +x, -x, +y, -y, +z, -z — 면마다 삼각형 2개 = 번호 6개)
+  const index = geo.index.array;
+  const keep = [];
+  for (let f = 0; f < 6; f++) if (f !== 2 && f !== 3) for (let k = 0; k < 6; k++) keep.push(index[f * 6 + k]);
+  geo.setIndex(keep);
+  return geo;
+}
+
+// 빛기둥 그림: 아래는 진하고 위로 갈수록 사라짐
+function makeBeamTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 4;
+  canvas.height = 64;
+  const g = canvas.getContext('2d');
+  const grad = g.createLinearGradient(0, 64, 0, 0);
+  grad.addColorStop(0, 'rgba(255,255,255,0.75)');
+  grad.addColorStop(0.35, 'rgba(255,255,255,0.25)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 4, 64);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;

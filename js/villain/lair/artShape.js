@@ -12,7 +12,7 @@
 //
 //   C                        색 이름표 (js/bricks/brickColors.js 의 색만)
 //   fire(s, x, y, z)         작은 불꽃 (빨강·주황·노랑 빛 블록)
-//   crown(s, cx, y, cz)      금관 (3×3)
+//   crown(s, cx, y, cz)      금관 (3×3)       smallCrown(s, cx, y, cz)  작은 금관 (가로 3칸, 1×1 시설용)
 //   flag(s, x, y, z, 색)      깃대 + 깃발
 //   pile(s, x0, z0, x1, z1, y, 색들, 씨앗)  울퉁불퉁 쌓인 더미 (동전·돌)
 
@@ -97,6 +97,16 @@ export function createArtShape() {
 export function fire(s, x, y, z, tall = 2) {
   s.glow(x, y, z, C.orange);
   if (tall >= 2) s.glow(x, y + 1, z, C.lightYellow);
+}
+
+// 작은 금관 (앞에서 보면 'ㅛ' 모양: 금 세 칸 + 양 끝 뾰족 + 가운데 빨간 보석) — 1×1 시설용
+export function smallCrown(s, cx, y, cz) {
+  s.set(cx - 1, y, cz, C.yellow);
+  s.glow(cx, y, cz, C.red);
+  s.set(cx + 1, y, cz, C.yellow);
+  s.set(cx - 1, y + 1, cz, C.yellow);
+  s.set(cx + 1, y + 1, cz, C.yellow);
+  s.set(cx, y + 1, cz, C.lightYellow);
 }
 
 // 금관 (가운데 빨간 보석, 네 귀퉁이 뾰족)

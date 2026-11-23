@@ -3,8 +3,9 @@
 // 그림 파일 없이 글자로 적은 도트 그림입니다. 한 글자 = 한 칸, '.' 은 빈칸. 색은 js/bricks/brickColors.js 의 블록 색.
 //
 // 쓰는 법
-//   art(id)                  시설 · 계책 · 목표의 그림 이름(id) → SVG HTML 글자
-//                            모르는 이름이면: 이모지 같은 글자는 그대로, 아니면 블록 그림
+//   art(id, { emoji })       시설 · 계책 · 목표의 그림 이름(id) → SVG HTML 글자
+//                            계책 · 목표 key 도 아래 ALIAS 로 그림을 찾음. 모르는 이름이면 emoji(있으면), 아니면 블록 그림
+//   artOf(def)               정의 하나({ icon, key, emoji }) → 그림 (art 를 대신 불러 줌)
 //   hasArt(id)               그 이름의 도트 그림이 있는지
 //   townArt(townId)          마을 그림 (village · harbor · castle)
 //   heroFace(kind)           영웅 얼굴 (knight · iceMage · guardian)
@@ -168,6 +169,21 @@ const FACILITY = {
     'K..........K',
     '............',
   ],
+  // 악마 대장간: 불꽃 튀는 모루
+  forge: [
+    '.....O..O...',
+    '....OLO.OO..',
+    '.....O..O...',
+    'KKKKKKKKKKK.',
+    'KAAAAAAAAAAK',
+    '.KKaaaaaaKK.',
+    '...KaaaaK...',
+    '...KaaaaK...',
+    '..KaaaaaaK..',
+    '.KaaaaaaaaK.',
+    '.KKKKKKKKKK.',
+    'oOOLLyyLLOOo',
+  ],
   // 용암 웅덩이: 보글보글 끓는 용암
   lava: [
     '....O.......',
@@ -187,32 +203,48 @@ const FACILITY = {
 
 const ALL = { ...FACILITY, ...EXTRA_ART };
 
-// 같은 뜻의 다른 이름 (데이터에서 다른 이름을 써도 그림이 나오게)
+// 같은 뜻의 다른 이름 (데이터의 계책 · 목표 key 를 그대로 그림 이름으로 써도 도트 그림이 나오게)
 const ALIAS = {
-  factoryLine: 'factory', workshop: 'factory', paintShop: 'paint', bucket: 'paint',
+  // 계책 (data/schemes.js)
+  assembly: 'gear', blackMoney: 'money', hotLab: 'lab', hellTraining: 'fire', spyNet: 'eye', ambush: 'traps',
+  terror: 'skull', weaponWorks: 'sword', lootSchool: 'vault', goldenCross: 'star', ironThrone: 'shield', firePit: 'lava',
+  // 목표 (data/goals.js)
+  firstRaid: 'map', drawOwn: 'monster', buildLab: 'lab', labLv2: 'lab', threeSchemes: 'book', tier2Scheme: 'link',
+  tier3Scheme: 'star', bigLair: 'throne', allSchemes: 'book', beatKnight: 'hero:knight', beatIceMage: 'hero:iceMage',
+  beatGuardian: 'hero:guardian', rank1: 'rank:1', rank2: 'rank:2', rank3: 'rank:3', rank4: 'rank:4',
+  // 비슷한 말
+  factoryLine: 'factory', workshop: 'factory', paintShop: 'paint', bucket: 'paint', anvil: 'forge', smithy: 'forge',
   flask: 'lab', potion: 'lab', science: 'lab', dumbbell: 'training', gym: 'training',
   chest: 'vault', gold: 'money', coinBag: 'money', bag: 'money', tower: 'watchtower', spy: 'eye',
   trap: 'traps', spikes: 'traps', bat: 'bats', cave: 'bats', volcano: 'lava', magma: 'lava',
-  king: 'crown', throneRoom: 'throne', draw: 'monster', raid: 'map', hero: 'shield', knight: 'shield',
+  king: 'crown', draw: 'monster', raid: 'map', hero: 'shield', knight: 'hero:knight',
   win: 'trophy', goal: 'trophy', scheme: 'book', chain: 'link', fear: 'skull', bolt: 'fire', frost: 'ice',
 };
 
 const cache = new Map();
 
 export function hasArt(id) {
-  return !!ALL[ALIAS[id] ?? id];
+  const key = ALIAS[id] ?? id;
+  return !!ALL[key] || /^(hero|rank):/.test(String(key));
 }
 
-export function art(id, { className = 'pix lart' } = {}) {
+export function art(id, { className = 'pix lart', emoji = '' } = {}) {
   const key = ALIAS[id] ?? id;
-  const cacheKey = `${key}|${className}`;
+  const cacheKey = `${key}|${className}|${emoji}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
   let html;
   if (ALL[key]) html = pixelArt(ALL[key], C, { className });
-  else if (id && /[^\x00-\x7F]/.test(String(id))) html = `<span class="lart-emoji" aria-hidden="true">${String(id).slice(0, 4)}</span>`;
+  else if (String(key).startsWith('hero:')) html = heroFace(String(key).slice(5));
+  else if (String(key).startsWith('rank:')) html = rankEmblem(Number(String(key).slice(5)));
+  else if (emoji || (id && /[^\x00-\x7F]/.test(String(id)))) html = `<span class="lart-emoji" aria-hidden="true">${String(emoji || id).slice(0, 4)}</span>`;
   else html = icon('block').replace('class="ico"', 'class="ico lart-fallback"');
   cache.set(cacheKey, html);
   return html;
+}
+
+// 시설 · 계책 · 목표 정의 하나 → 그림 (도트 그림이 없으면 정의의 emoji)
+export function artOf(def, options = {}) {
+  return art(def?.icon ?? def?.key, { ...options, emoji: def?.emoji ?? '' });
 }
 
 // ── 마을 그림 (26×12) ──

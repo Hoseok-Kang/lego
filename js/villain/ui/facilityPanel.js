@@ -17,8 +17,8 @@
 
 import { VILLAIN } from '../villainConfig.js';
 import { el, escapeHTML, money, coin, bump, toast, askDialog } from './uiKit.js';
-import { art, lairIcon } from './lairArt.js';
-import { describeEffect, effectChips, unlockLines, schemeOf, facilityChip, needChips, sheetHead, signature } from './lairKit.js';
+import { art, artOf, lairIcon } from './lairArt.js';
+import { describeEffect, effectChips, unlockLines, schemeOf, needChips, sheetHead, signature } from './lairKit.js';
 
 const TEXT = {
   level: (n, max) => `${n} / ${max} 레벨`,
@@ -52,11 +52,14 @@ function defaultRefund(building, def) {
   return Math.floor(spent * (VILLAIN.lair?.sellRefund ?? 0.5));
 }
 
-// 이 시설이 주인공(self)이 될 수 있는 계책인지
-function selfMatches(scheme, def) {
-  const self = scheme?.self ?? '';
-  return self.startsWith('f:') ? self.slice(2) === def.key : (def.tags ?? []).includes(self);
+// 태그('물') 또는 'f:시설키' 에 이 시설이 맞는지
+function fits(need, def) {
+  const n = need ?? '';
+  return n === '*' || (n.startsWith('f:') ? n.slice(2) === def.key : (def.tags ?? []).includes(n));
 }
+
+// 이 시설이 주인공(self)이거나 이웃(adjacent)으로 끼는 계책인지
+const involves = (scheme, def) => fits(scheme?.self, def) || (scheme?.adjacent ?? []).some((a) => fits(a.need, def));
 
 export function createFacilityPanel({ onUpgrade, onMove, onSell, onClose, refundOf } = {}) {
   const box = el(`
@@ -84,7 +87,7 @@ export function createFacilityPanel({ onUpgrade, onMove, onSell, onClose, refund
         const owner = (s.ownerIds ?? []).includes(b.id);
         return `
           <div class="srow is-on">
-            <span class="srow-icon">${art(sdef.icon ?? 'book')}</span>
+            <span class="srow-icon">${artOf(sdef)}</span>
             <span class="srow-text"><b>${escapeHTML(sdef.name)}</b><small>${owner ? TEXT.owner : TEXT.helper}${s.count > 1 ? ` · ${TEXT.times(s.count)}` : ''}</small></span>
             <span class="srow-fx">${effectChips(describeEffect(s.effect ?? sdef.effect, 1))}</span>
           </div>`;
@@ -92,11 +95,12 @@ export function createFacilityPanel({ onUpgrade, onMove, onSell, onClose, refund
       .join('');
   }
 
-  // 아직 안 켜진, 이 시설이 주인공인 계책 힌트 (2개까지)
+  // 아직 안 켜진, 이 시설이 끼는 계책 힌트 (주인공인 것 먼저, 2개까지)
   function hintRows(b, def) {
     const on = new Set((state.evaluation?.schemes ?? []).map((s) => s.key));
     const seen = new Set(state.schemesSeen ?? []);
-    const list = (state.schemes ?? []).filter((s) => !on.has(s.key) && selfMatches(s, def) && !s.shape).slice(0, 2);
+    const open = (state.schemes ?? []).filter((s) => !on.has(s.key) && !s.shape && involves(s, def));
+    const list = [...open.filter((s) => fits(s.self, def)), ...open.filter((s) => !fits(s.self, def))].slice(0, 2);
     if (!list.length) return '';
     return `
       <h3 class="lpanel-sub">${lairIcon('spark')}${TEXT.hints}</h3>
@@ -106,8 +110,8 @@ export function createFacilityPanel({ onUpgrade, onMove, onSell, onClose, refund
           const needs = (s.adjacent ?? []).map((n) => needChips(n.need, state.facilities, { count: n.count ?? 1 })).join('');
           return `
             <div class="srow is-hint${known ? '' : ' is-unknown'}">
-              <span class="srow-icon">${known ? art(s.icon ?? 'book') : art('question')}</span>
-              <span class="srow-text"><b>${known ? escapeHTML(s.name) : TEXT.unknown}</b><span class="srow-need">${facilityChip(def, { hidden: true })}<i>${TEXT.beside}</i>${needs}</span></span>
+              <span class="srow-icon">${known ? artOf(s) : art('question')}</span>
+              <span class="srow-text"><b>${known ? escapeHTML(s.name) : TEXT.unknown}</b><span class="srow-need">${needChips(s.self, state.facilities)}<i>${TEXT.beside}</i>${needs}</span></span>
             </div>`;
         })
         .join('')}`;
@@ -123,7 +127,7 @@ export function createFacilityPanel({ onUpgrade, onMove, onSell, onClose, refund
     lastSig = sig;
     const max = def.levels ?? def.price?.length ?? 3;
     const level = Math.max(1, Math.min(max, b.level ?? 1));
-    head.innerHTML = sheetHead({ icon: art(def.icon ?? def.key), title: def.name });
+    head.innerHTML = sheetHead({ icon: artOf(def), title: def.name });
     head.querySelector('.lsheet-title').insertAdjacentHTML('beforeend', levelStars(level, max));
 
     const nowFx = describeEffect(def.effect, level);
@@ -135,7 +139,7 @@ export function createFacilityPanel({ onUpgrade, onMove, onSell, onClose, refund
         <div class="fxbox"><small>${TEXT.now}</small><span>${effectChips(nowFx, { empty: TEXT.none })}</span></div>
         ${nextFx ? `<div class="fxbox is-next"><small>${lairIcon('up')}${TEXT.next}</small><span>${effectChips(nextFx, { empty: TEXT.none })}</span></div>` : ''}
       </div>
-      ${unlocks.length ? `<h3 class="lpanel-sub">${TEXT.unlocks}</h3><ul class="unlock-list">${unlocks.map((u) => `<li class="${u.level <= level ? 'is-open' : ''}"><em>${u.level}</em>${u.html}${u.level <= level ? lairIcon('check') : ''}</li>`).join('')}</ul>` : ''}
+      ${unlocks.length ? `<h3 class="lpanel-sub">${TEXT.unlocks}</h3><ul class="unlock-list">${unlocks.map((u) => `<li class="${u.level <= level ? 'is-open' : ''}"><em>${u.level}</em><span class="unlock-text">${u.html}</span>${u.level <= level ? lairIcon('check') : ''}</li>`).join('')}</ul>` : ''}
       <h3 class="lpanel-sub">${lairIcon('link')}${TEXT.schemes}</h3>
       ${schemeRows(b, def)}
       ${hintRows(b, def)}`;

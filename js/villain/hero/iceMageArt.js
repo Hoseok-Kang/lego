@@ -42,12 +42,12 @@ const HEAD = [
   [1, ['.....', '.....', '.....', '.....', '.WWW.']],
   [1, ['.....', '.....', '.....', '.....', 'WWWWW']],
   [1, ['WWWWW', 'WSSSW', 'WSSSW', 'WSSSW', 'WWWWW']],
-  [1, ['WWWWW', 'WSSSW', 'SSSSS', 'SSSSS', 'pKSKp']],
-  [1, ['WWWWW', 'SSSSS', 'SSSSS', 'SSSSS', 'SSSSS']],
+  [1, ['WWWWW', 'WSSSW', 'SSSSS', 'SSSSS', 'pKSKp']], // 눈 + 발그레한 볼
+  [1, ['WWWWW', 'SSSSS', 'SSSSS', 'SSSSS', 'WWSWW']], // 하얀 눈썹
 ];
 // 모자: 넓은 챙 → 금색 버클 띠 → 뒤로 살짝 꺾인 뾰족 끝 + 금별
 const HAT = [
-  [1, ['.BBBBB.', 'BBBBBBB', 'BBBBBBB', 'BBBBBBB', 'BBBBBBB', 'BBBBBBB', '.BBBBB.']],
+  [1, ['.BBBBB.', 'BBBBBBB', 'BBBBBBB', 'BBBBBBB', 'BBBBBBB', 'BBBBBBB', '.......']], // 챙 (앞은 짧게 — 위에서 봐도 얼굴이 보이게)
   [1, ['.......', '.NNNNN.', '.NNNNN.', '.NNNNN.', '.NNNNN.', '.NNYNN.', '.......']],
   [1, ['.......', '..BBB..', '.BBBBB.', '.BBBBB.', '.BBBBY.', '..BBB..', '.......']],
   [1, ['.......', '.......', '..BBB..', '..BBB..', '..YBB..', '.......', '.......']],

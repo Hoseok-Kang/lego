@@ -27,7 +27,7 @@ const STOP_SCALE = 0.06; // 멈춤 동안의 시간 배율
 const STOP = { big: 0.07, building: 0.09, pop: 0.16, arrive: 0.12 }; // 멈춤 길이 (초)
 const SHAKE = { hitMin: 0.03, hitPer: 0.006, hitMax: 0.28, building: 0.5, pop: 1, arrive: 0.8, step: 0.035 };
 const BIG_HIT = 28; // 이 피해 이상이면 '센 타격' (잠깐 멈춤)
-const NOTE_GAP = 0.7; // '막았다!' '꽁꽁!' 같은 같은 글자를 다시 띄우기까지 (초)
+const NOTE_GAP = 1.4; // '막았다!' '꽁꽁!' 같은 같은 글자를 다시 띄우기까지 (초)
 const TEXT = { slowed: '꽁꽁!', blink: '휙!', blocked: '막았다!', shieldBroken: '방패 깨짐!', partLost: '부품이 떨어졌어요!', crash: '와르르!', boom: '펑!', alert: '영웅 출동!' };
 
 const STYLE_ID = 'villain-float-style';

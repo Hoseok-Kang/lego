@@ -8,14 +8,14 @@
 //   const book = createSchemeBook({ onClose() })
 //   book.el
 //   book.render({ schemes, schemesSeen, evaluation, facilities, modsSummary })
-//       schemes: [{ key, name, icon, tier, self, adjacent:[{ need, count }], shape?, effect, desc }]
+//       schemes: [{ key, name, icon, emoji, tier, self, adjacent:[{ need, count }], shape?, effect, desc, how? }]
 //       modsSummary: modifiers.describeModifiers(mods) 결과 [{ label, value, good }]
 //
 // 글자는 아래 TEXT, 모양은 css/villain-lair2.css (.schemebook) 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
 import { el, escapeHTML } from './uiKit.js';
-import { art, lairIcon } from './lairArt.js';
+import { art, artOf, lairIcon } from './lairArt.js';
 import { describeEffect, effectChips, needChips, sheetHead, signature } from './lairKit.js';
 
 const TEXT = {
@@ -70,10 +70,11 @@ export function createSchemeBook({ onClose } = {}) {
     }
     return `
       <article class="scard${active ? ' is-on' : ''}" style="--i:${index}">
-        <span class="scard-icon">${art(s.icon ?? 'book')}</span>
+        <span class="scard-icon">${artOf(s)}</span>
         <div class="scard-main">
           <h3 class="scard-name">${escapeHTML(s.name)}<span class="scard-state">${active ? TEXT.on(active.count ?? 1) : TEXT.off}</span></h3>
           <p class="scard-rule">${ruleHTML(s, false)}</p>
+          ${s.how ? `<p class="scard-how">${lairIcon('info')}${escapeHTML(s.how)}</p>` : ''}
           <p class="scard-desc">${escapeHTML(s.desc ?? '')}</p>
           <p class="scard-fx"><small>${TEXT.effect}</small>${effectChips(describeEffect(s.effect, 1))}</p>
         </div>
