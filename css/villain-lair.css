@@ -235,7 +235,7 @@
 /* 인사 한 줄: 꼬마 악당의 말풍선 */
 .lair-hello {
   position: absolute;
-  top: 10px;
+  top: 60px; /* 계책 단추 아래 */
   left: 50%;
   z-index: 2;
   max-width: min(86%, 420px);
@@ -520,15 +520,6 @@
   align-items: center;
   gap: 5px;
   min-height: 26px;
-}
-
-.mcard-go {
-  width: 100%;
-  min-height: 50px;
-}
-
-.mcard-go > span:first-of-type {
-  margin-right: auto;
 }
 
 .mcard-tools {

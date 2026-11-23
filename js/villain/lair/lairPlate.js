@@ -184,11 +184,11 @@ export function createLairPlate() {
     // 네 귀퉁이 횃불
     const corner = half + 0.5;
     [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz], t) => {
-      for (let y = 1; y <= 2; y++) solid.push({ x: sx * corner, y, z: sz * corner, hex: '#1B2A34' });
-      solid.push({ x: sx * corner, y: 3, z: sz * corner, hex: '#6C6E68' });
-      glow.push({ x: sx * corner, y: 4, z: sz * corner, hex: '#FE8A18' });
-      glow.push({ x: sx * corner, y: 5, z: sz * corner, hex: '#FFF03A', small: true });
-      torches[t].set(sx * corner, 5.6, sz * corner);
+      solid.push({ x: sx * corner, y: 1, z: sz * corner, hex: '#1B2A34' });
+      solid.push({ x: sx * corner, y: 2, z: sz * corner, hex: '#6C6E68' });
+      glow.push({ x: sx * corner, y: 3, z: sz * corner, hex: '#FE8A18' });
+      glow.push({ x: sx * corner, y: 3.85, z: sz * corner, hex: '#FFF03A', small: true });
+      torches[t].set(sx * corner, 4.4, sz * corner);
     });
     rocks = makeBlocks(solid, mats.solid, false);
     rockGlow = makeBlocks(glow, mats.glow, false);

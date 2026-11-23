@@ -8,8 +8,8 @@
 //   effectChips(목록, { empty })       위 목록 → 초록(좋음) · 빨강(나쁨) 칩 HTML
 //   lockText(단계, ranks)              '악명 2단계(마을의 공포)에 열려요'
 //   unlockLines(def)                  연구실처럼 레벨마다 여는 것 → [{ level, html }]
-//   facilityChip(key, facilities)      시설 그림 + 이름 칩 HTML
-//   needChips(need, facilities)        계책 조건 'f:paint' 또는 태그 '물' → 그 시설들의 칩 HTML
+//   facilityChip(def, { hidden })      시설 그림 + 이름 칩 HTML (hidden: 이름 없이 그림만)
+//   needChips(need, facilities, { hidden, count })   계책 조건 'f:paint' · 태그 '물' · '*' → 그 시설들의 칩 HTML
 //   schemeOf(key, schemes) / facilityOf(key, facilities)   목록에서 찾기
 //   sheetHead({ icon, title, sub })    판 머리줄 (제목 + 닫기 단추) HTML
 //   signature(값)                       같은 내용이면 다시 안 그리려고 쓰는 짧은 글

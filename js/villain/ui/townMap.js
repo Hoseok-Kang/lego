@@ -9,7 +9,7 @@
 //                               blocksOf(design), hpOf(design)?, thumbOf(design)? })
 //   map.el
 //   map.open({ townId? })        열기 (townId 를 주면 바로 2단계)
-//   map.render({ towns, designs, money, modsSummary, ranks, lastDesignId?, lastTownId? })
+//   map.render({ towns, designs, money, modsSummary, ranks, lastDesignId? })   (lastDesignId: 처음에 골라 둘 괴수)
 //       towns: [{ id, name, blurb, hero, heroName?, heroHint, unlockRank, payMul, notorietyBase?, unlocked, wins }]
 //   map.step                     'towns' | 'monsters'
 //

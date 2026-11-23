@@ -6,6 +6,7 @@
 //   const view = createLairCamera(camera, element)
 //   view.setLand(size, { snap })          땅 크기(칸). snap: true 면 부드럽게 말고 바로
 //   view.setInsets({ top, bottom, left, right })   화면 가장자리를 가리는 크기(px)
+//   view.setTall([{ height, back }])       뒤쪽 시설 높이 → 꼭대기가 안 잘리게 위 여유를 더 둠 (back: 땅 뒤 끝에서 거리)
 //   view.update(dt)                        매 장면 (움직임 + 카메라 놓기)
 //   view.snap()                            바로 목표 자리로
 //   view.shake(세기)                        살짝 흔들기 (0.1 ~ 0.5)
@@ -22,7 +23,8 @@ const DEG = Math.PI / 180;
 const PITCH = 54; // 내려다보는 각도 (클수록 위에서 똑바로)
 const FOV = 30; // 시야각 (작을수록 장난감 디오라마처럼 납작)
 const RIM = 1.2; // 땅 둘레 테두리 + 여유 (블록)
-const HEADROOM = 5; // 뒤쪽 줄 위로 남길 높이 (높은 시설 꼭대기는 위 정보판 뒤로 살짝 가도 됨)
+const MIN_HEADROOM = 4.6; // 뒤쪽 줄 위로 늘 남길 높이 (귀퉁이 횃불). 뒤쪽에 높은 시설이 있으면 setTall 로 더 남김
+const MAX_HEADROOM = 16;
 const FRONT_DROP = 3; // 앞쪽 바위 몸통에서 화면에 꼭 넣을 깊이 (그 아래 늘어진 바위는 단추 뒤로 가도 됨)
 const MARGIN_X = 0.035; // 화면 양옆 여유 (-1 ~ 1 기준)
 const MARGIN_Y = 0.045; // 화면 위아래 여유
@@ -41,6 +43,7 @@ export function createLairCamera(camera, element) {
   const insets = { top: 0, bottom: 0, left: 0, right: 0 };
   let land = 8;
   let key = '';
+  let headroom = MIN_HEADROOM;
   let lastW = 0;
   let lastH = 0;
   const goal = { a: 0, b: 0, d: 120 };
@@ -60,10 +63,10 @@ export function createLairCamera(camera, element) {
     for (const sx of [-1, 1]) {
       points[k++].set(sx * half, 0, -half);
       points[k++].set(sx * half, 0, half);
-      points[k++].set(sx * half, HEADROOM, -half);
+      points[k++].set(sx * half, headroom, -half);
       points[k++].set(sx * half, -FRONT_DROP, half);
     }
-    points[k++].set(0, HEADROOM, -half);
+    points[k++].set(0, headroom, -half);
     points[k++].set(0, -FRONT_DROP - 1, half);
   }
 
@@ -72,7 +75,7 @@ export function createLairCamera(camera, element) {
   function solve() {
     const w = Math.max(1, element.clientWidth || 1);
     const h = Math.max(1, element.clientHeight || 1);
-    const next = [w, h, land, insets.top, insets.bottom, insets.left, insets.right].join('|');
+    const next = [w, h, land, headroom, insets.top, insets.bottom, insets.left, insets.right].join('|');
     if (next === key) return;
     if (lastW < 8 || lastH < 8) needSnap = true; // 숨어 있다가(크기 0) 나타나면 미끄러지지 말고 바로
     lastW = w;
@@ -173,6 +176,13 @@ export function createLairCamera(camera, element) {
     setLand(size, { snap = false } = {}) {
       land = size;
       if (snap) needSnap = true;
+    },
+    // 뒤쪽 시설 높이 [{ height, back }] (back: 땅 뒤 끝에서 그 시설 뒤 끝까지 거리, 블록) → 꼭대기가 화면 밖으로 안 잘리게 위 여유
+    setTall(list) {
+      let need = MIN_HEADROOM;
+      const slope = Math.tan(pitch);
+      for (const t of list) need = Math.max(need, t.height + 1 - t.back * slope);
+      headroom = Math.min(MAX_HEADROOM, Math.round(need * 2) / 2);
     },
     setInsets({ top = 0, bottom = 0, left = 0, right: r = 0 } = {}) {
       insets.top = Math.max(0, Math.round(top));

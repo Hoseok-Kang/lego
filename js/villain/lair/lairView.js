@@ -17,7 +17,8 @@
 //   view.playBuild(id) / playUpgrade(id) / playRemove(id)   짓기 · 강화 · 팔기 움직임 (setLair 앞이든 뒤든 같은 차례에 부르면 됨)
 //   view.showLand(size)                   새 땅 칸이 솟아오르는 움직임 (setLair 로 넓어질 때 저절로도 나옴; 다시 보여 주기)
 //   view.pulseScheme(key)                 계책이 켜진 순간: 시설마다 빛 고리 + 반짝 + 계책 이름 글자
-//   view.setInsets({ top, bottom, left, right })   화면 가장자리를 가리는 정보판 · 단추 크기(px)
+//                                         (낀 시설이 아직 쌓이는 중이면 다 쌓인 뒤에 번쩍 — playBuild 바로 뒤에 불러도 됨)
+//   view.setInsets({ top, bottom, left, right })   3D 상자 위에 떠서 가리는 단추 · 띠 크기(px) → 그 사이에 땅판을 맞춤
 //   view.setTheme('auto' | 'light' | 'dark')       하늘 색 (기본 auto: 페이지 data-theme 또는 기기 설정)
 //   view.screenPoint(id) → { x, y } | null         시설 지붕 위의 화면(페이지) 좌표 (말풍선 자리)
 //   view.tileScreen(x, y) → { x, y }               칸 가운데의 화면(페이지) 좌표
@@ -25,7 +26,7 @@
 //   view.step(dt, { render })            한 장면 움직이기 (+ 그리기). manual 일 때 바깥에서 부름
 //
 // 빛 · 테마는 lairStage, 땅판 lairPlate, 시설 lairBuildings(+ lairMotion · facilityArt*), 유령 lairGhost,
-// 계책 줄 lairLinks, 효과 lairFx, 하늘 lairSky, 카메라 lairCamera, 누르기 lairInput · lairPick 에서 바꿉니다.
+// 계책 줄 lairLinks, 효과 lairFx, 하늘 lairSky, 카메라 lairCamera, 누르기 lairPointer · lairInput · lairPick 에서 바꿉니다.
 
 import * as THREE from '../../lib/three.js';
 import { SCHEMES } from '../data/schemes.js';
@@ -129,6 +130,13 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
       for (let y = b.y; y < b.y + h; y++) for (let x = b.x; x < b.x + w; x++) if (x >= 0 && y >= 0 && x < next.size && y < next.size) owners[y * next.size + x] = b.id;
     }
     links.setSchemes(evaluation);
+    // 뒤쪽 두 줄의 높은 시설은 꼭대기가 화면 위로 잘리지 않게 카메라가 위 여유를 더 둠
+    const tall = [];
+    for (const b of next.buildings) {
+      const rec = buildings.get(b.id);
+      if (rec && b.y < 3) tall.push({ height: rec.art.height, back: b.y * TILE });
+    }
+    cam.setTall(tall);
     if (selectedId !== null && !next.buildings.some((b) => b.id === selectedId)) select(null);
     else if (selectedId !== null) select(selectedId);
     renderer.shadowMap.needsUpdate = true;

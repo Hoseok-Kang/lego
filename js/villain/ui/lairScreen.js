@@ -20,7 +20,8 @@
 //   })
 //   lair.render(state)   state = { money, notoriety, rank, nextRank, ranks?, goals, facilities, lair, evaluation,
 //                                  modsSummary, designs, towns, placing, selectedId, schemes, schemesSeen,
-//                                  lastDesignId?, welcome? }      (일부만 줘도 됨: 앞의 값과 합침)
+//                                  lastDesignId?, welcome?, stats? }   (일부만 줘도 됨: 앞의 값과 합침.
+//                                  towns 가 없으면 꼬마 마을 하나, goals 가 없으면 목표 띠를 숨김)
 //   lair.viewBox         3D 소굴을 붙일 상자 (판이 열리면 가려지지 않게 줄어듦 → onViewResize)
 //   lair.getViewInsets() { top, bottom, left, right } 3D 상자 위에 떠 있는 단추가 가리는 px
 //   lair.openPanel('build' | 'facility' | 'schemes' | 'bestiary' | 'towns') / lair.closePanel() / lair.panel
