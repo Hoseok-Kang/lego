@@ -2,20 +2,25 @@
 // 그림은 늘 카메라를 보고 서 있고(종이 인형처럼), 어느 쪽으로든 뒤뚱뒤뚱 걸어갑니다.
 // 상대를 정해 주면(command) 알아서 다가가 쓸 수 있는 공격을 골라 씁니다: 뿔 돌진 → 불 뿜기 → 집게발 → 박치기.
 //
-//   const monster = createMonster(scene, design, { debris, fx, events, getTargets?, bounds? })
+//   const monster = createMonster(scene, design, { debris, fx, events, getTargets?, bounds?, start?, hpMul?, dmgMul?, partDmgMul?, smashMul? })
 //       getTargets: () => 상대 목록 (건물·영웅). 주면 불·돌진·집게가 주변 것도 같이 때리고, 길을 막는 건물부터 부숨
 //       bounds: { minX, maxX, minZ, maxZ } 걸어 다닐 수 있는 범위 (안 주면 마을 바닥판)
+//       start: [x, z] 나타나는 자리 (안 주면 villainConfig 의 town.monsterStart)
+//       hpMul / dmgMul / partDmgMul / smashMul: 소굴 효과 배율 (체력, 모든 공격, 부품 공격만, 건물 부수는 힘). 안 주면 1
 //   monster.build(초?)            블록이 쏟아져 쌓이며 등장 (끝나면 'monsterBuilt' 소식)
 //   monster.isBuilt / alive / hp / maxHp / speed / position / radius / height / team('villain')
 //   monster.command(target | null)   노릴 상대 정하기 (null 이면 제자리에서 쉼)
 //   monster.setTargets(fn)           getTargets 를 나중에 정하기
-//   monster.takeDamage({ amount, from, kind }) → { dead }
+//   monster.takeDamage({ amount, from, kind, slow? }) → { dead }
+//       slow: { factor, seconds } 얼음에 맞아 그 시간 동안 걷기·공격 준비가 factor 배로 느려짐 (하늘색으로 꽁꽁)
+//   monster.slowed / speedNow       지금 느려졌는지 / 지금 걷는 빠르기
 //   monster.update(dt) ; monster.dispose()
 //   monster.attacks                  지금 쓸 수 있는 공격 이름 목록 (부품이 떨어지면 줄어듦)
 //   monsterStats(design) → { blocks, hp, speed }   화면에 숫자를 보여 줄 때
 //
 // 보내는 소식: monsterBuilt, attack, hit, blocksBroken(source 'monster'), monsterPopped
 //            + monsterStep { position } (발걸음 쿵), buildTick { progress, position } (블록 쌓이는 딸깍), partLost { type, position }
+//            + monsterSlowed { position, seconds } (얼음에 맞아 새로 느려졌을 때)
 // 체력·빠르기·공격 숫자는 villainConfig.js, 맞을 때 떨어지는 블록 비율 등은 아래 상수에서 바꿉니다.
 
 import * as THREE from '../../lib/three.js';
@@ -31,6 +36,9 @@ const CLOSE_GAP = 0.5; // 상대에게 이만큼 가까워지면 더 다가가�
 const FLASH_SECONDS = 0.16; // 맞았을 때 하얗게 번쩍이는 시간
 const PRIORITY = ['horn', 'fireMouth', 'claw']; // 쓸 수 있으면 먼저 쓰는 순서 (마지막은 박치기)
 const TICK_GAP = 0.055; // 쌓이는 딸깍 소식 간격 (초)
+const CHILL_HEX = '#9FC3E9'; // 느려졌을 때 물드는 색 (연하늘)
+const CHILL_TINT = 0.36; // 느려졌을 때 물드는 정도
+const CHILL_COOLDOWN = 0.75; // 느려진 동안 공격 준비가 덜 느려지게 (factor 와 1 사이, 0 = factor 그대로)
 
 export function monsterStats(design) {
   let blocks = 0;
@@ -40,7 +48,14 @@ export function monsterStats(design) {
   return { blocks, hp: Math.max(1, blocks * m.hpPerBlock), speed: Math.max(m.minSpeed, m.baseSpeed / (1 + blocks * m.slowPerBlock)) };
 }
 
-export function createMonster(scene, design, { debris = null, fx = null, events = null, getTargets = null, bounds = null } = {}) {
+export function createMonster(scene, design, options = {}) {
+  const { debris = null, fx = null, events = null, bounds = null, start = null } = options;
+  let getTargets = options.getTargets || null;
+  const mul = (v) => (Number.isFinite(v) && v > 0 ? v : 1);
+  const hpMul = mul(options.hpMul);
+  const dmgMul = mul(options.dmgMul);
+  const partDmgMul = mul(options.partDmgMul);
+  const smashMul = mul(options.smashMul);
   const bus = events || { emit() {} };
   const figure = createMonsterFigure(scene, design, { partHold: POP_SHARE * PART_HOLD });
   const { fig, model, mounts } = figure;
@@ -49,10 +64,11 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
   const town = VILLAIN.town;
   const area = bounds || { minX: -town.width / 2 + 1, maxX: town.width / 2 - 1, minZ: -town.depth / 2 + 1, maxZ: town.depth / 2 - 1 };
   const position = fig.root.position;
-  position.set(town.monsterStart[0], 0, town.monsterStart[1]);
+  const startAt = Array.isArray(start) ? start : town.monsterStart;
+  position.set(startAt[0], 0, startAt[1]);
   fig.setVisible(false); // build() 를 부를 때까지 숨김
 
-  const maxHp = stats.hp;
+  const maxHp = Math.max(1, Math.round(stats.hp * hpMul));
   const popTotal = Math.floor(model.popOrder.length * POP_SHARE);
   const cellLeft = model.cells.map((cell) => cell.count);
   const rz = model.depth / 2 + 0.4; // 앞뒤 반 두께
@@ -67,6 +83,8 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
   let flash = 0;
   let clock = 0;
   let disposed = false;
+  let slowLeft = 0; // 얼음으로 느려진 남은 시간
+  let slowFactor = 1;
 
   // 공격 목록: 부품마다 하나 + 박치기
   const attacks = mounts.map((mount, i) => ({ type: mount.type, mount, cd: 0.25 + i * 0.3, range: VILLAIN.parts.types[mount.type].range }));
@@ -102,11 +120,12 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
     position.z = Math.min(area.maxZ, Math.max(area.minZ, position.z + dz));
     return Math.hypot(position.x - beforeX, position.z - beforeZ);
   }
-  // 건물을 칠 때는 몸집만큼 더 세게 (큰 괴수가 더 많이 부수고 더 많이 벌게)
+  // 건물을 칠 때는 몸집만큼 더 세게 (큰 괴수가 더 많이 부수고 더 많이 벌게) + 소굴 효과 배율
   const smash = VILLAIN.monster.smashPower;
-  const smashScale = smash ? smash.base + stats.blocks * smash.perBlock : 1;
+  const smashScale = (smash ? smash.base + stats.blocks * smash.perBlock : 1) * smashMul;
   function strike(other, hitAmount, kind, point, sparkHex) {
-    const amount = other.totalBlocks ? hitAmount * smashScale : hitAmount; // totalBlocks 가 있으면 건물
+    const base = hitAmount * dmgMul * (kind === 'headbutt' ? 1 : partDmgMul); // 박치기 말고는 부품 공격
+    const amount = other.totalBlocks ? base * smashScale : base; // totalBlocks 가 있으면 건물
     const at = point.clone();
     const result = other.takeDamage?.({ amount, from: position.clone(), kind }) || {};
     fx?.hitSpark?.(at, sparkHex);
@@ -134,8 +153,9 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
   }
 
   // ── 맞기 ──
-  function takeDamage({ amount = 0, from = null, kind = '' } = {}) {
+  function takeDamage({ amount = 0, from = null, kind = '', slow = null } = {}) {
     if (!alive || !built || amount <= 0) return { dead: false };
+    if (slow && slow.seconds > 0) chill(slow);
     hp = Math.max(0, hp - amount);
     flash = 1;
     let dx = 0, dz = 0;
@@ -171,6 +191,14 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
     return { dead: false };
   }
 
+  // 얼음: 정해진 시간 동안 느려짐 (더 센 얼음이 오면 그 값으로)
+  function chill({ factor = 0.6, seconds = 2 }) {
+    const fresh = slowLeft <= 0;
+    slowLeft = Math.max(slowLeft, seconds);
+    slowFactor = fresh ? factor : Math.min(slowFactor, factor);
+    if (fresh) bus.emit('monsterSlowed', { position: position.clone(), seconds, monster: api });
+  }
+
   // '펑!' 남은 블록이 전부 흩어짐
   function pop(from) {
     alive = false;
@@ -200,7 +228,13 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
       if (done) finishBuild();
       else return;
     }
-    for (const attack of attacks) attack.cd -= dt;
+    if (slowLeft > 0) {
+      slowLeft = Math.max(0, slowLeft - dt);
+      if (slowLeft <= 0) slowFactor = 1;
+    }
+    const pace = slowLeft > 0 ? slowFactor : 1; // 걷기 빠르기 배율
+    const ready = slowLeft > 0 ? slowFactor + (1 - slowFactor) * CHILL_COOLDOWN : 1; // 공격 준비 빠르기 배율
+    for (const attack of attacks) attack.cd -= dt * ready;
 
     let move = null;
     if (action) {
@@ -216,9 +250,9 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
           action = startAttack(ready.type, ctx, foe, ready.mount);
         } else if (gap > CLOSE_GAP) {
           const d = dirTo(foe);
-          const stepLength = Math.min(stats.speed * dt, gap - CLOSE_GAP + 0.01);
+          const stepLength = Math.min(stats.speed * pace * dt, gap - CLOSE_GAP + 0.01);
           moveBy(d.x * stepLength, d.z * stepLength);
-          move = { x: d.x, z: d.z, speed: stats.speed };
+          move = { x: d.x, z: d.z, speed: stats.speed * pace };
         }
       }
     }
@@ -231,10 +265,11 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
     }
     animateParts(dt);
     motion.apply(fig.parts.body);
-    if (flash > 0) {
-      flash = Math.max(0, flash - dt / FLASH_SECONDS);
-      fig.setFlash(flash * 0.85);
-    }
+    // 맞으면 하얗게 번쩍, 얼어 있으면 하늘색으로 물듦
+    if (flash > 0) flash = Math.max(0, flash - dt / FLASH_SECONDS);
+    if (flash > 0.05) fig.setFlash(flash * 0.85);
+    else if (slowLeft > 0) fig.setFlash(CHILL_TINT * Math.min(1, slowLeft / 0.4) * (0.85 + 0.15 * Math.sin(clock * 9)), CHILL_HEX);
+    else fig.setFlash(0);
     fig.update();
   }
 
@@ -316,6 +351,12 @@ export function createMonster(scene, design, { debris = null, fx = null, events 
     },
     get attacks() {
       return attacks.map((attack) => attack.type);
+    },
+    get slowed() {
+      return slowLeft > 0;
+    },
+    get speedNow() {
+      return stats.speed * (slowLeft > 0 ? slowFactor : 1);
     },
   };
   ctx.self = api;

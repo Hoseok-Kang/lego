@@ -1,6 +1,8 @@
 // 습격 손맛 (떠오르는 글자, 화면 흔들림, 맞는 순간 살짝 멈춤)
 // 소식(events)을 듣고 저절로 반응합니다: 건물 블록이 부서지면 '+돈', 건물이 무너지면 '와르르!', 영웅이 오면 '영웅 출동!',
 // 누가 터지면 '펑!'. 센 타격일수록 화면이 더 흔들리고 아주 잠깐 시간이 느려집니다.
+// 영웅마다: 얼음에 맞아 느려지면 '꽁꽁!', 마법사가 사라지면 '휙!', 수호자가 방패로 막으면 '막았다!', 방패가 깨지면 '방패 깨짐!'.
+// '+돈' 과 영웅 이름·격파 돈은 raidStarted 소식(이번 판 마을·영웅·수입 배율)을 따릅니다.
 // 실제 시계를 쓰지 않고 update(dt) 로만 움직이므로, 한 장면씩 넘기며 찍어도 똑같이 나옵니다.
 //
 //   const feedback = createRaidFeedback({ events, view, layer })
@@ -25,6 +27,8 @@ const STOP_SCALE = 0.06; // 멈춤 동안의 시간 배율
 const STOP = { big: 0.07, building: 0.09, pop: 0.16, arrive: 0.12 }; // 멈춤 길이 (초)
 const SHAKE = { hitMin: 0.03, hitPer: 0.006, hitMax: 0.28, building: 0.5, pop: 1, arrive: 0.8, step: 0.035 };
 const BIG_HIT = 28; // 이 피해 이상이면 '센 타격' (잠깐 멈춤)
+const NOTE_GAP = 0.7; // '막았다!' '꽁꽁!' 같은 같은 글자를 다시 띄우기까지 (초)
+const TEXT = { slowed: '꽁꽁!', blink: '휙!', blocked: '막았다!', shieldBroken: '방패 깨짐!', partLost: '부품이 떨어졌어요!', crash: '와르르!', boom: '펑!', alert: '영웅 출동!' };
 
 const STYLE_ID = 'villain-float-style';
 const CSS = `
@@ -62,6 +66,16 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
   let money = { amount: 0, timer: 0, position: new THREE.Vector3(), has: false };
   let floatCount = 0;
   const lifted = new THREE.Vector3();
+  let payPerBlock = VILLAIN.town.payPerBlock; // 이번 판 블록당 돈 (raidStarted 로 바뀜)
+  let heroPay = VILLAIN.hero.payForWin;
+  let heroName = VILLAIN.hero.name;
+  const noteAt = new Map(); // 글자 → 다시 띄울 수 있는 시각
+  let clock = 0;
+  function note(key, position, kind, lift) {
+    if ((noteAt.get(key) ?? -1) > clock || !position) return;
+    noteAt.set(key, clock + NOTE_GAP);
+    float(position, TEXT[key], { kind, lift });
+  }
 
   function float(position, text, { kind = '', lift = 3, life = FLOAT_SECONDS } = {}) {
     if (!root || !position) return;
@@ -108,9 +122,14 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
 
   // ── 소식 듣기 ──
   const offs = [
+    bus.on('raidStarted', ({ payPerBlock: pay, heroPay: reward, heroName: name } = {}) => {
+      if (Number.isFinite(pay)) payPerBlock = pay;
+      if (Number.isFinite(reward)) heroPay = reward;
+      if (name) heroName = name;
+    }),
     bus.on('blocksBroken', ({ count = 0, source, position } = {}) => {
       if (source !== 'building' || !position) return;
-      money.amount += count * VILLAIN.town.payPerBlock;
+      money.amount += count * payPerBlock;
       money.position.copy(position);
       money.has = true;
     }),
@@ -122,35 +141,47 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
     bus.on('buildingDestroyed', ({ building } = {}) => {
       view?.shake(SHAKE.building);
       stop(STOP.building);
-      if (building) float(building.position, '와르르!', { kind: 'good', lift: Math.min(12, (building.height || 6) * 0.6) });
+      if (building) float(building.position, TEXT.crash, { kind: 'good', lift: Math.min(12, (building.height || 6) * 0.6) });
     }),
     bus.on('heroAlert', ({ position } = {}) => {
-      if (position && alertText) float(position, '영웅 출동!', { kind: 'alert', lift: 7, life: 1.6 });
+      if (position && alertText) float(position, TEXT.alert, { kind: 'alert', lift: 7, life: 1.6 });
     }),
     bus.on('heroArrived', ({ hero } = {}) => {
       view?.shake(SHAKE.arrive);
       stop(STOP.arrive);
-      if (hero?.position) float(hero.position, `${VILLAIN.hero.name}!`, { kind: 'alert', lift: 11, life: 1.4 });
+      if (hero?.position) float(hero.position, `${hero.name || heroName}!`, { kind: 'alert', lift: Math.max(11, (hero.height || 7) + 3), life: 1.4 });
     }),
     bus.on('monsterPopped', ({ monster } = {}) => {
       view?.shake(SHAKE.pop);
       stop(STOP.pop);
-      if (monster?.position) float(monster.position, '펑!', { kind: 'boom', lift: Math.min(12, (monster.height || 8) * 0.6), life: 1.5 });
+      if (monster?.position) float(monster.position, TEXT.boom, { kind: 'boom', lift: Math.min(12, (monster.height || 8) * 0.6), life: 1.5 });
     }),
     bus.on('heroPopped', ({ hero } = {}) => {
       view?.shake(SHAKE.pop);
       stop(STOP.pop);
       if (hero?.position) {
-        float(hero.position, '펑!', { kind: 'boom', lift: 6, life: 1.5 });
-        float(hero.position, `+${VILLAIN.hero.payForWin}`, { kind: 'money', lift: 11, life: 1.6 });
+        float(hero.position, TEXT.boom, { kind: 'boom', lift: 6, life: 1.5 });
+        float(hero.position, `+${heroPay}`, { kind: 'money', lift: 11, life: 1.6 });
       }
     }),
     bus.on('partLost', ({ position } = {}) => {
-      if (position) float(position, '부품이 떨어졌어요!', { kind: 'bad', lift: 9 });
+      if (position) float(position, TEXT.partLost, { kind: 'bad', lift: 9 });
+    }),
+    bus.on('heroLanded', ({ kind } = {}) => {
+      if (kind === 'slam') view?.shake(SHAKE.arrive); // 수호자의 땅 내려찍기
+    }),
+    bus.on('monsterSlowed', ({ position, monster } = {}) => note('slowed', position, 'bad', Math.min(12, (monster?.height || 8) * 0.7))),
+    bus.on('heroBlink', ({ from } = {}) => note('blink', from, 'bad', 7)),
+    bus.on('heroBlocked', ({ position } = {}) => note('blocked', position, 'bad', 4)),
+    bus.on('heroShieldBroken', ({ position } = {}) => {
+      view?.shake(SHAKE.building);
+      stop(STOP.big);
+      note('shieldBroken', position, 'good', 12);
     }),
   ];
 
   function update(dt) {
+    clock += dt;
     if (stopLeft > 0) stopLeft = Math.max(0, stopLeft - dt);
     // '+돈' 은 잠깐씩 모아서 한 번에
     money.timer -= dt;
@@ -178,6 +209,7 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
     money.amount = 0;
     money.has = false;
     money.timer = 0;
+    noteAt.clear();
   }
 
   return {

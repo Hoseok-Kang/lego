@@ -3,6 +3,7 @@
 //   gapBetween(a, b) → 두 과녁 사이 빈 거리 (칸, 서로의 반지름을 뺀 값)
 //   pickBuilding(town, position, avoid, now) → 가장 가까운 남은 건물 (avoid: 건물 → 이 시각까지는 건너뜀)
 //   pickLandingSpot(town, monsterPosition) → 영웅이 내려올 땅 위 자리 (괴수에게서 조금 떨어진, 건물이 없는 곳)
+//       마을의 큰길(town.road = 큰길 가운데 z)에 가깝고 물 위(town.groundKind(x, z) === 'water')가 아닌 곳을 고름
 //
 // 영웅이 내려오는 거리 등은 아래 상수에서 바꿉니다.
 
@@ -46,7 +47,7 @@ export function pickLandingSpot(town, monsterPosition) {
     minZ: -VILLAIN.town.depth / 2,
     maxZ: VILLAIN.town.depth / 2,
   };
-  const road = VILLAIN.town.monsterStart[1]; // 큰길의 z (괴수가 들어오는 줄)
+  const road = town.road ?? VILLAIN.town.monsterStart[1]; // 큰길의 z (괴수가 들어오는 줄)
   let best = null;
   let bestScore = Infinity;
   for (let i = 0; i < LANDING_ANGLES; i++) {
@@ -58,6 +59,7 @@ export function pickLandingSpot(town, monsterPosition) {
     for (const b of town.buildings) {
       if (b.alive && Math.hypot(b.position.x - x, b.position.z - z) < (b.radius || 0) + LANDING_CLEAR) blocked = true;
     }
+    if (town.groundKind?.(x, z) === 'water') blocked = true; // 영웅은 물 위에 내려오지 않음
     // 마을 가운데 큰길에 가까울수록, 괴수보다 앞쪽(카메라 쪽)일수록 잘 보여서 좋음
     const score = Math.hypot(x, z - road) - (z > monsterPosition.z ? 3 : 0) + (blocked ? 100 : 0);
     if (score < bestScore) {

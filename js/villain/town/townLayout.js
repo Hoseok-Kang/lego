@@ -6,7 +6,10 @@
 //   TOWN_LAYOUT.buildings: [{ kind, x0, z0 }]     kind: buildingArt.js 의 건물 종류, (x0, z0): 왼쪽 뒤 모서리 칸
 //   TOWN_LAYOUT.roads:     [{ x0, z0, x1, z1 }]   모래색 길 (칸 범위, 끝 칸은 포함하지 않음)
 //   TOWN_LAYOUT.decor:     [{ kind, x, z, length? }]   decorArt.js 의 소품 종류와 놓을 칸
-//   TOWN_LAYOUT.villagers: 마을 사람 수
+//   TOWN_LAYOUT.villagers: 마을 사람 수,  villagerStyle: 옷 모음 ('village' | 'harbor' | 'castle'),  street: [z0, z1] 사람들이 서성이는 줄
+//   TOWN_LAYOUT.monsterStart: [x, z] 괴수가 나타나는 자리,  road: 큰길 가운데 z (영웅이 내려올 자리를 고를 때)
+//   TOWN_LAYOUT.ground: [{ kind, x0, z0, x1, z1 }]  바닥 타일 (물·모래 등, townGround.js 의 GROUND 표). roads 는 kind 'road' 와 같음
+//   다른 마을 배치도: harborLayout.js (바닷가 마을), castleLayout.js (왕궁 성곽). 마을 id → 배치도는 layouts.js
 //
 // 건물을 옮기려면 x0, z0 숫자만 바꾸면 됩니다. (서로 겹치지 않게)
 
@@ -71,4 +74,9 @@ export const TOWN_LAYOUT = {
     { kind: 'fenceX', x: 22, z: -19, length: 7 },
   ],
   villagers: 7,
+  villagerStyle: 'village',
+  street: [1, 8],
+  monsterStart: [-27, 4],
+  road: 4.5,
+  ground: [],
 };

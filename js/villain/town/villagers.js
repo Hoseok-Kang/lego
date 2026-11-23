@@ -1,7 +1,9 @@
 // 꼬마 마을 사람들 (작은 블록 사람 — 괴수가 가까이 오면 폴짝폴짝 도망다님)
 // 구경거리일 뿐이라 부딪히지도, 맞지도 않습니다. 전부 한 번에 그려서 가볍습니다.
 //
-//   const villagers = createVillagers(scene, { count, bounds, buildings })
+//   const villagers = createVillagers(scene, { count, bounds, buildings, style?, street?, walkable? })
+//       style: 옷 모음 ('village' 마을 사람 | 'harbor' 뱃사람 | 'castle' 병사·귀족), street: [z0, z1] 평소 서성이는 줄
+//       walkable(x, z) → false 면 그 자리로는 안 감 (예: 바다)
 //   villagers.update(dt, threat)     threat: 괴수 위치(Vector3) 또는 null
 //   villagers.reset() ; villagers.dispose() ; villagers.list ([{ x, z, panic }])
 //
@@ -16,6 +18,25 @@ const RUN_SPEED = 8.5; // 도망치는 빠르기
 const SCARE_DISTANCE = 15; // 괴수가 이만큼 가까우면 도망
 const CALM_SECONDS = 1.2; // 괴수가 멀어진 뒤에도 이만큼은 더 뜀
 const SKIN = '#F6D7B3';
+const STYLES = {
+  // 뱃사람: 줄무늬 셔츠 느낌 (흰·파랑), 노란 비옷
+  harbor: [
+    ['#0A3463', '#F4F4F4', '#0055BF'],
+    ['#582A12', '#F2CD37', '#F2CD37'],
+    ['#0055BF', '#C91A09', '#1B2A34'],
+    ['#6C6E68', '#36AEBF', '#F4F4F4'],
+    ['#0A3463', '#FE8A18', '#582A12'],
+  ],
+  // 병사(은 투구)·귀족(보라·금)
+  castle: [
+    ['#6C6E68', '#C91A09', '#A0A5A9'],
+    ['#6C6E68', '#0055BF', '#A0A5A9'],
+    ['#3F3691', '#AC78BA', '#F2CD37'],
+    ['#1B2A34', '#F2CD37', '#582A12'],
+    ['#6C6E68', '#C91A09', '#A0A5A9'],
+    ['#923978', '#E4ADC8', '#F2CD37'],
+  ],
+};
 const OUTFITS = [
   ['#0055BF', '#C91A09', '#582A12'], // 바지, 윗옷, 머리
   ['#582A12', '#F2CD37', '#1B2A34'],
@@ -27,7 +48,8 @@ const OUTFITS = [
 ];
 const BLOCKS_EACH = 4; // 다리, 몸, 얼굴, 머리카락(모자)
 
-export function createVillagers(scene, { count = 6, bounds, buildings = [] } = {}) {
+export function createVillagers(scene, { count = 6, bounds, buildings = [], style = 'village', street = [1, 8], walkable = null } = {}) {
+  const outfits = STYLES[style] || OUTFITS;
   const mesh = createBlockBatch(Math.max(1, count * BLOCKS_EACH)).bodies;
   mesh.name = 'villagers';
   mesh.count = count * BLOCKS_EACH;
@@ -42,16 +64,16 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [] } = {
   const color = new THREE.Color();
 
   for (let i = 0; i < count; i++) {
-    const outfit = OUTFITS[i % OUTFITS.length];
+    const outfit = outfits[i % outfits.length];
     [outfit[0], outfit[1], SKIN, outfit[2]].forEach((hex, k) => mesh.setColorAt(i * BLOCKS_EACH + k, color.set(hex)));
     list.push({ x: 0, z: 0, dirX: 1, dirZ: 0, yaw: 0, phase: Math.random() * 6, turn: 0, panic: 0, pause: 0 });
   }
 
-  // 평소 서성이는 자리: 큰길 위 (z 1 ~ 8) 에 고르게
+  // 평소 서성이는 자리: 큰길 위 (street 줄) 에 고르게
   function reset() {
     list.forEach((v, i) => {
       v.x = bounds.minX + 8 + ((bounds.maxX - bounds.minX - 16) * (i + 0.5)) / Math.max(1, count);
-      v.z = 2 + ((i * 37) % 50) / 10;
+      v.z = street[0] + 1 + (((i * 37) % 50) / 50) * Math.max(0.5, street[1] - street[0] - 2);
       const a = i * 2.4;
       v.dirX = Math.cos(a);
       v.dirZ = Math.sin(a);
@@ -100,8 +122,17 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [] } = {
       const len = Math.hypot(v.dirX, v.dirZ) || 1;
       v.dirX /= len;
       v.dirZ /= len;
+      const beforeX = v.x;
+      const beforeZ = v.z;
       v.x += v.dirX * speed * dt;
       v.z += v.dirZ * speed * dt;
+      // 못 가는 곳(바다)이면 되돌아서 돌아감
+      if (walkable && !walkable(v.x, v.z)) {
+        v.x = beforeX;
+        v.z = beforeZ;
+        v.dirX = -v.dirX + (Math.random() - 0.5) * 0.4;
+        v.dirZ = -v.dirZ;
+      }
 
       // 건물 밖으로 밀어내기, 바닥판 가장자리에서는 돌아서기
       for (const b of buildings) {

@@ -9,6 +9,7 @@
 //   b.collapse(from?)                 남은 블록을 위에서부터 와르르 무너뜨림
 //   b.update(dt) ; b.reset() ; b.dispose()
 //   b.topAt(x, z) → 그 칸에 남아 있는 블록 중 가장 높은 윗면 (없으면 0)
+//   art.rotor.axis 가 'y' 면 날개가 세로축으로 돎 (등대 불빛), art.bob 이 있으면 물 위 배처럼 둥실둥실 흔들림
 //
 // 보내는 소식: blocksBroken { count, source: 'building', position, building }, buildingDestroyed { building }
 // 느낌 숫자(무너지는 기준, 흔들림 세기 등)는 아래 상수에서 바꿉니다.
@@ -40,6 +41,9 @@ export function createBuilding(scene, art, { x0 = 0, z0 = 0, debris = null, even
   const position = new THREE.Vector3(centerX, 0, centerZ);
   const height = voxels.reduce((top, v) => Math.max(top, v.y + 1), 0);
   const radius = (art.w + art.d) / 4 + 0.3;
+  const bob = art.bob || null; // { height, roll, speed } 물 위 흔들림
+  const bobPhase = (x0 * 0.37 + z0 * 0.61) % (Math.PI * 2); // 배마다 박자가 조금씩 다르게
+  let bobTime = 0;
 
   // 묶음: 흔들 때 바닥 가운데를 축으로 기울임
   const group = new THREE.Group();
@@ -117,6 +121,8 @@ export function createBuilding(scene, art, { x0 = 0, z0 = 0, debris = null, even
     tiltX = tiltZ = tiltVX = tiltVZ = squash = squashV = 0;
     group.rotation.set(0, 0, 0);
     group.scale.set(1, 1, 1);
+    group.position.y = 0;
+    bobTime = 0;
     mesh.visible = true;
     writeAll();
     if (rotor) {
@@ -284,8 +290,17 @@ export function createBuilding(scene, art, { x0 = 0, z0 = 0, debris = null, even
   }
 
   function update(dt) {
-    if (rotor && rotor.attached) rotor.pivot.rotation.z -= rotor.def.speed * dt;
+    if (rotor && rotor.attached) {
+      if (rotor.def.axis === 'y') rotor.pivot.rotation.y += rotor.def.speed * dt;
+      else rotor.pivot.rotation.z -= rotor.def.speed * dt;
+    }
     if (collapsing) stepCollapse(dt);
+    if (bob && isAlive) {
+      bobTime += dt;
+      const t = bobTime * bob.speed + bobPhase;
+      group.position.y = Math.sin(t) * bob.height;
+      if (!wobbling) group.rotation.set(Math.sin(t * 0.8) * bob.roll * 0.5, 0, Math.sin(t) * bob.roll);
+    }
     if (!wobbling) return;
     // 스프링: 기울었다가 되돌아오며 잦아듦
     const step = Math.min(dt, 1 / 30);

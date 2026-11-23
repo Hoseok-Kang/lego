@@ -4,6 +4,73 @@
 // 길이 단위는 '블록 한 칸' 입니다. 방향: 화면 위쪽 = -z, 아래쪽(카메라 쪽) = +z, 오른쪽 = +x
 // ─────────────────────────────────────────────────────────────
 
+// ── 영웅 세 명 (마을마다 지키는 영웅이 다름) ──
+// 번개 기사 = 1단계 영웅 그대로. VILLAIN.hero 는 번개 기사와 같은 것 (옛 코드가 그대로 돌게)
+const KNIGHT = {
+  name: '번개 기사',
+  hint: '칼이 빨라요. 멀리서 불을 뿜으면 유리해요',
+  appearAtDestroyed: 0.55, // 마을이 이만큼(비율) 부서지면 출동
+  appearLatestSeconds: 30, // 마을이 덜 부서졌어도 부수기 시작한 지 이 시간(초)이 지나면 출동 (판이 늘어지지 않게)
+  alertSeconds: 2, // '영웅 출동!' 경보 뒤 나타날 때까지
+  maxHp: 420,
+  speed: 11,
+  damage: 14, // 칼 한 번
+  interval: 0.7,
+  range: 3.2,
+  leapEvery: 5, // 이 시간(초)마다 한 번 높이 뛰어올라 내려찍기
+  leapDamage: 30,
+  payForWin: 100, // 영웅을 이기면 받는 돈
+};
+
+// 얼음 마법사 (바닷가 마을): 멀찍이 서서 얼음을 던져 괴수를 느리게 하고, 가까이 오면 휙 사라져요
+const ICE_MAGE = {
+  name: '얼음 마법사',
+  hint: '멀리서 얼음을 던져 느리게 해요. 돌진 뿔로 확 들이받으면 좋아요',
+  appearAtDestroyed: 0.5,
+  appearLatestSeconds: 28,
+  alertSeconds: 2,
+  maxHp: 380,
+  speed: 9,
+  damage: 12, // 얼음 화살 한 번
+  interval: 1.3,
+  range: 16, // 이만큼 떨어져서도 던짐
+  keepDistance: 9, // 괴수와 이 거리를 지키려고 함
+  slowMul: 0.6, // 얼음에 맞으면 괴수 빠르기가 이만큼으로
+  slowSeconds: 1.6,
+  blinkEvery: 4, // 괴수가 가까이 오면 이 시간(초)마다 한 번 순간 이동
+  blinkDistance: 12,
+  payForWin: 180,
+  // (D) 마법사 움직임 숫자
+  blinkGap: 3.8, // 괴수가 이만큼(칸)보다 가까이 오면 순간 이동
+  tooFar: 14, // 괴수가 이보다 멀면 다가감
+  boltSpeed: 24, // 얼음 화살 빠르기 (초당 칸)
+  engage: 16, // 괴수가 이만큼 가까우면 건물 대신 마법사를 쫓아감
+};
+
+// 황금 수호자 (왕궁 성곽): 크고 느림. 방패를 들면 앞에서 오는 공격을 반 막고, 땅을 쾅 내려찍음 (미리 표시)
+const GUARDIAN = {
+  name: '황금 수호자',
+  hint: '방패로 앞을 막아요. 멀리서 불을 뿜거나 크게 부수면 이겨요',
+  appearAtDestroyed: 0.5,
+  appearLatestSeconds: 32,
+  alertSeconds: 2.5,
+  maxHp: 900,
+  speed: 6,
+  damage: 26, // 철퇴 한 번
+  interval: 1.4,
+  range: 4,
+  shieldEvery: 6, // 이 시간(초)마다 방패 들기
+  shieldSeconds: 2.5,
+  shieldBlock: 0.5, // 방패를 든 동안 앞에서 오는 피해를 이만큼 막음
+  slamEvery: 7, // 땅 내려찍기 간격
+  slamTelegraph: 1.0, // 내려찍기 전 바닥에 표시되는 시간
+  slamDamage: 45,
+  slamRadius: 7,
+  payForWin: 300,
+  // (D) 방패 깨기
+  shieldBreak: 45, // 방패를 든 동안 한 방에 이만큼 넘게 맞으면 방패가 깨져 비틀거림 (돌진 뿔 60)
+};
+
 export const VILLAIN = {
   // 괴수 그리기 종이
   draw: {
@@ -64,22 +131,9 @@ export const VILLAIN = {
     monsterStart: [-27, 4], // 괴수가 나타나는 자리 [x, z]
   },
 
-  // 영웅 (마을이 어느 정도 부서지면 나타남)
-  hero: {
-    name: '번개 기사',
-    hint: '칼이 빨라요. 멀리서 불을 뿜으면 유리해요',
-    appearAtDestroyed: 0.55, // 마을이 이만큼(비율) 부서지면 출동
-    appearLatestSeconds: 30, // 마을이 덜 부서졌어도 부수기 시작한 지 이 시간(초)이 지나면 출동 (판이 늘어지지 않게)
-    alertSeconds: 2, // '영웅 출동!' 경보 뒤 나타날 때까지
-    maxHp: 420,
-    speed: 11,
-    damage: 14, // 칼 한 번
-    interval: 0.7,
-    range: 3.2,
-    leapEvery: 5, // 이 시간(초)마다 한 번 높이 뛰어올라 내려찍기
-    leapDamage: 30,
-    payForWin: 100, // 영웅을 이기면 받는 돈
-  },
+  // 영웅 셋 (위쪽 KNIGHT · ICE_MAGE · GUARDIAN 에서 숫자를 바꿉니다)
+  heroes: { knight: KNIGHT, iceMage: ICE_MAGE, guardian: GUARDIAN },
+  hero: KNIGHT, // 옛 이름 (= heroes.knight). 1단계 코드가 이걸 씀
 
   // 습격 한 판의 박자
   raid: {
@@ -90,6 +144,45 @@ export const VILLAIN = {
   economy: {
     startMoney: 150,
     minPay: 20, // 아무리 못 부숴도 받는 수고비 (돈이 0 이 되어 막히지 않게)
+  },
+
+  // 악당 소굴 (칸에 시설을 놓는 땅). 시설 표 = data/facilities.js, 계책 표 = data/schemes.js, 땅 크기 = data/ranks.js
+  lair: {
+    // 새로 시작할 때 소굴: 가운데 왕좌 + 바로 옆 괴수 공장 (x, y = 왼쪽 위 칸, y 가 클수록 카메라 쪽)
+    startLayout: [
+      { type: 'throne', x: 3, y: 3 },
+      { type: 'factory', x: 1, y: 3 },
+    ],
+    sellRefund: 0.5, // 팔면 지금까지 쓴 돈(짓기 + 강화)의 이만큼을 돌려받음
+    schemeLevelBonus: 0.25, // 계책을 받는 시설이 한 단계 오를 때마다 그 계책 효과 +25%
+    schemeMaxInstances: 3, // 같은 계책은 시설 세 곳까지만 겹쳐 받음
+    baseParts: ['claw'], // 연구실이 없어도 살 수 있는 부품
+    heroDelayMax: 0.2, // 영웅 늦추기 효과의 끝 (마을 부서진 비율에 더하는 값)
+    // 효과를 모두 더한 뒤 '1 + 합' 을 이 범위로 자름 [가장 작게, 가장 크게]
+    clamp: {
+      cost: [0.5, 1.5], // 출동 값
+      hp: [0.5, 1.8], // 괴수 체력
+      dmg: [0.5, 1.6], // 괴수 모든 공격
+      partDmg: [0.5, 1.8], // 부품 공격
+      smash: [0.5, 1.8], // 건물 부수는 힘
+      pay: [0.5, 2], // 습격 수입
+      notoriety: [0.5, 2.5], // 악명 얻는 양
+      heroHp: [0.6, 1.5], // 영웅 체력 (작을수록 좋음)
+    },
+  },
+
+  // 악명: 습격할 때마다 쌓이고, 쌓이면 악명 단계가 오름 (단계 표 = data/ranks.js)
+  // 한 판에 얻는 악명 = 마을 기본 악명 × (이기면 win, 지면 lose + destroy × 부순 비율) × 악명 배수
+  notoriety: {
+    win: 1,
+    lose: 0.4,
+    destroy: 0.6,
+    abortMul: 0.5, // 지는 중에 그만두면 이만큼만
+    min: 1, // 아무리 못해도 이만큼은 얻음
+    // 1단계 때부터 놀던 저장을 처음 열면 그동안의 습격만큼 악명을 선물 (단, capRank 단계 바로 앞까지만)
+    veteranPerRaid: 8,
+    veteranPerWin: 12,
+    veteranCapRank: 2,
   },
 
   camera: { fov: 32, pitchDeg: 48 },

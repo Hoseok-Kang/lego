@@ -1,44 +1,23 @@
-// 꼬마 마을 건물 그림 (장난감 블록 집)
+// 마을 건물 그림 (장난감 블록 집) — 꼬마 마을 건물 + 모든 마을 건물 목록
 // 건물은 전부 '속이 빈 블록 집' 입니다: 벽 한 겹 + 지붕. 그래서 맞으면 벽에 구멍이 뚫리고 안이 들여다보입니다.
 // 칸 좌표는 정수: x 0 ~ w-1 (오른쪽), z 0 ~ d-1 (앞 = 카메라 쪽), y 0 = 바닥 층. 처마는 -1 이나 w 까지 나와도 됩니다.
 // 모든 블록은 옆·위·아래로 이어져 있어야 합니다 (이어지지 않은 블록은 게임에서 바로 떨어짐).
 //
 //   BUILDING_KINDS                     건물 종류 이름 목록
-//   makeBuilding(kind) → { kind, name, w, d, voxels: [{ x, y, z, hex }], rotor? }
-//       rotor: 돌아가는 날개 (풍차) { voxels, pivot: [x, y, z], anchor: [x, y, z], speed }
+//   makeBuilding(kind) → { kind, name, w, d, voxels: [{ x, y, z, hex }], rotor?, bob? }
+//       rotor: 돌아가는 날개 (풍차, 등대 불빛) { voxels, pivot: [x, y, z], anchor: [x, y, z], speed, axis?: 'z' | 'y' }
 //              anchor 칸의 블록이 부서지면 날개가 통째로 떨어짐
+//       bob: 물 위 배처럼 둥실둥실 { height, roll, speed }
 //
-// 건물 종류: houseRed(빨간 지붕 집), houseBlue(파란 지붕 집), houseOrange(주황 지붕 집), houseTeal(청록 지붕 집),
+// 꼬마 마을 건물: houseRed(빨간 지붕 집), houseBlue(파란 지붕 집), houseOrange(주황 지붕 집), houseTeal(청록 지붕 집),
 //           tower(높은 탑), shop(가게), hall(마을 회관), windmill(풍차), well(우물)
+// 바닷가 마을 건물은 harborArt.js, 왕궁 성곽 건물은 castleArt.js 에 있고 여기서 한 목록으로 모읍니다.
 // 색은 js/bricks/brickColors.js 의 색만 씁니다. 집 크기·색을 바꾸려면 아래 HOUSES 표를 고치세요.
 
 import { createShape } from './voxelShape.js';
-
-const C = {
-  white: '#F4F4F4',
-  gray: '#A0A5A9',
-  darkGray: '#6C6E68',
-  black: '#1B2A34',
-  red: '#C91A09',
-  darkRed: '#720E0F',
-  orange: '#FE8A18',
-  yellow: '#F2CD37',
-  sand: '#E4CD9E',
-  darkSand: '#958A73',
-  brown: '#582A12',
-  caramel: '#AA7D55',
-  cream: '#F6D7B3',
-  lime: '#BBE90B',
-  green: '#4B9F4A',
-  teal: '#36AEBF',
-  sky: '#9FC3E9',
-  midBlue: '#5A93DB',
-  blue: '#0055BF',
-  navy: '#0A3463',
-  pink: '#E4ADC8',
-  coral: '#FF698F',
-  lavender: '#AC78BA',
-};
+import { C, gableRoof, roofHeightAt } from './artKit.js';
+import { HARBOR_MAKERS } from './harborArt.js';
+import { CASTLE_MAKERS } from './castleArt.js';
 
 // 집 네 가지 (가로 w, 세로 d, 벽 높이 wallH, 벽·지붕·기둥·문 색, 굴뚝 자리)
 const HOUSES = {
@@ -56,6 +35,7 @@ const MAKERS = {
   well: makeWell,
 };
 for (const kind of Object.keys(HOUSES)) MAKERS[kind] = () => makeHouse(HOUSES[kind]);
+Object.assign(MAKERS, HARBOR_MAKERS, CASTLE_MAKERS); // 바닷가 마을·왕궁 성곽 건물
 
 export const BUILDING_KINDS = Object.keys(MAKERS);
 
@@ -90,30 +70,6 @@ function makeHouse({ name, w, d, wallH, wall, roof, trim, door, ridge, chimney }
   s.box(chimney, wallH + 1 + top, 1, chimney, wallH + 3 + top, 1, C.darkRed);
   s.set(chimney, wallH + 4 + top, 1, C.darkGray);
   return { name, w, d, voxels: s.voxels() };
-}
-
-// 계단 모양 세모 지붕 (용마루가 x 방향). 한 층마다 두 줄씩 놓아서 아래층 위에 걸쳐 앉음
-function gableRoof(s, { x0, x1, z0, z1, y, roof, ridge, gable, gableX }) {
-  for (let k = 0; ; k++) {
-    const a = z0 - 1 + k; // 앞뒤 바깥 줄
-    const b = z1 + 1 - k;
-    if (a + 1 >= b - 1) {
-      s.box(x0, y + k, a, x1, y + k, b, ridge); // 맨 위 용마루
-      break;
-    }
-    s.box(x0, y + k, a, x1, y + k, a + 1, roof);
-    s.box(x0, y + k, b - 1, x1, y + k, b, roof);
-    for (const x of gableX) s.box(x, y + k, a + 2, x, y + k, b - 2, gable); // 세모 벽
-  }
-}
-
-// 위 지붕에서 z 줄의 높이 (굴뚝을 지붕 위에 딱 올리려고)
-function roofHeightAt(z, d) {
-  for (let k = 0; ; k++) {
-    const a = -1 + k;
-    const b = d - k;
-    if (a + 1 >= b - 1 || z <= a + 1 || z >= b - 1) return k + 1;
-  }
 }
 
 // ── 높은 탑: 돌탑 + 넓은 망루 + 뾰족 지붕 + 깃발 ──
