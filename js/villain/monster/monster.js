@@ -16,7 +16,9 @@
 //       slow: { factor, seconds } 얼음에 맞아 그 시간 동안 걷기·공격 준비가 factor 배로 느려짐 (하늘색으로 꽁꽁)
 //   monster.slowed / speedNow       지금 느려졌는지 / 지금 걷는 빠르기
 //   monster.update(dt) ; monster.dispose()
-//   monster.attacks                  지금 쓸 수 있는 공격 이름 목록 (부품이 떨어지면 줄어듦)
+//   monster.attacks                  지금 쓸 수 있는 공격 이름 목록 (부품이 떨어지면 줄어듦) ; monster.partTypes 처음 붙은 부품 이름 (자동 순서)
+//   (C) 직접 조종 (monsterManual.js · raid/monsterControl.js): setManual(참/거짓) 켜면 자동 판단이 쉼, steer({ x, z } | null) 걷기,
+//       aimAt(상대) 노릴 것, useAttack(type, mustHit?) → false 면 식는 중 · 부품 없음 · 다른 공격 중, cooldownOf(type) → 0~1, manual, aim
 //   monsterStats(design) → { blocks, hp, speed }   화면에 숫자를 보여 줄 때
 //
 // 보내는 소식: monsterBuilt, attack, hit, blocksBroken(source 'monster'), monsterPopped
@@ -31,6 +33,7 @@ import { createMonsterMotion } from './monsterMotion.js';
 import { createBuildRain } from './monsterBuild.js';
 import { designStats } from './monsterPower.js';
 import { startAttack, attackCooldown, attackFits, idlePart } from './monsterAttacks.js';
+import { createManualDrive } from './monsterManual.js';
 
 const POP_SHARE = 0.6; // 체력이 0 이 될 때까지 떨어져 나가는 블록 비율 (나머지는 '펑' 할 때 한꺼번에)
 const PART_HOLD = 0.85; // 부품이 붙은 칸은 맨 나중에 떨어짐: 떨어질 블록의 이만큼이 사라질 때까지 버팀 (체력이 약 15% 남을 때 부품이 떨어짐)
@@ -133,6 +136,8 @@ export function createMonster(scene, design, options = {}) {
     return result;
   }
   const ctx = { self: null, position, motion, figure, model, debris, fx, events: bus, dirTo, gapTo, extent, others, moveBy, strike };
+  const drive = createManualDrive(ctx, attacks, stats.speed); // (C) 직접 조종
+  const partTypes = [...new Set(attacks.filter((attack) => attack.mount).map((attack) => attack.type))];
 
   // ── 등장: 블록이 쏟아져 쌓임 ──
   function build(seconds = VILLAIN.monster.buildSeconds) {
@@ -240,6 +245,9 @@ export function createMonster(scene, design, options = {}) {
     let move = null;
     if (action) {
       if (action.update(dt)) action = null;
+    } else if (drive.on) {
+      motion.relax(dt);
+      move = drive.walk(dt, pace); // (C) 직접 조종: 걷기만 (공격은 단추를 누를 때 useAttack)
     } else {
       motion.relax(dt);
       const foe = pickFoe();
@@ -254,6 +262,7 @@ export function createMonster(scene, design, options = {}) {
           const stepLength = Math.min(stats.speed * pace * dt, gap - CLOSE_GAP + 0.01);
           moveBy(d.x * stepLength, d.z * stepLength);
           move = { x: d.x, z: d.z, speed: stats.speed * pace };
+          drive.face(d.x, d.z);
         }
       }
     }
@@ -329,6 +338,16 @@ export function createMonster(scene, design, options = {}) {
     setTargets(fn) {
       getTargets = typeof fn === 'function' ? fn : Array.isArray(fn) ? () => fn : null;
     },
+    // (C) 직접 조종 (위 설명 참고). 공격 숫자 · 식는 시간은 자동과 같음
+    setManual: (on) => drive.setOn(on),
+    steer: (vector) => drive.steer(vector),
+    aimAt: (other) => drive.aimAt(other),
+    cooldownOf: (type) => drive.cooldownOf(type),
+    useAttack(type, mustHit = false) {
+      if (!alive || !built || action) return false;
+      action = drive.start(type, mustHit); // mustHit: 닿는 상대가 있을 때만
+      return !!action;
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -360,6 +379,15 @@ export function createMonster(scene, design, options = {}) {
     },
     get speedNow() {
       return stats.speed * (slowLeft > 0 ? slowFactor : 1);
+    },
+    get partTypes() {
+      return partTypes;
+    },
+    get manual() {
+      return drive.on;
+    },
+    get aim() {
+      return drive.aim;
     },
   };
   ctx.self = api;

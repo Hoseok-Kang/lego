@@ -242,6 +242,22 @@ export const VILLAIN = {
     },
   },
 
+  // (C) 직접 조종: 습격은 처음엔 자동, 막대 · 단추 · 키를 쓰는 순간 직접 조종, 가만두면 다시 자동
+  //     공격 피해 · 식는 시간은 위 parts · monster.headbutt 와 똑같아요 (직접 조종이라고 더 세지 않고, 노리는 것만 똑똑하게)
+  //     화면 글자는 js/villain/ui/controlPad.js 의 TEXT, 단추 크기 · 자리는 css/villain-control.css
+  control: {
+    idleSeconds: 4, // 이 시간(초) 동안 아무 조작이 없으면 다시 자동으로 싸움
+    heroFirst: 12, // 공격 단추를 누르면: 영웅이 이만큼(칸) 안에 있고 공격이 닿으면 영웅부터 노림
+    frontWeight: 6, // 그다음은 걷는 방향 앞쪽 건물부터 (바로 뒤에 있는 건물은 이만큼의 두 배(칸) 더 먼 것처럼 셈)
+    pressBuffer: 0.35, // 다른 공격을 하는 중에 누른 단추는 이 시간(초) 동안 기억했다가 바로 씀
+    stickRadius: 50, // 움직이기 막대 손잡이가 움직이는 거리 (화면 글자 크기 기준 px)
+    stickDeadzone: 0.18, // 막대를 이 비율보다 조금 밀면 가만히 (0~1)
+    stickZone: 0.5, // 화면 왼쪽 이 비율까지 손가락을 대면 그 자리에 움직이기 막대
+    tapPixels: 12, // 이만큼(px) 안 움직이고 짧게 뗀 누름 = 톡 (건물 · 영웅을 노리기)
+    tapSeconds: 0.35,
+    hintSeconds: 7, // 첫 습격 때 뜨는 조종 안내 글이 떠 있는 시간 (조종을 하면 바로 사라짐)
+  },
+
   camera: { fov: 32, pitchDeg: 48 },
   debris: { capacity: 3000, rubbleCapacity: 2600, gravity: 52, lifeSeconds: 5, stack: true },
   speedOptions: [1, 2],

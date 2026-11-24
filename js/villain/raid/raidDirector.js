@@ -329,7 +329,8 @@ export function createRaid({ stage = null, town: townOption, events, makeMonster
   }
 
   function camera() {
-    aimCamera({ phase: state.phase, monster, hero, target, landing, pending, collapsing });
+    // (C) 직접 조종 중에는 괴수(와 놀이하는 사람이 고른 것)를 봄
+    aimCamera({ phase: state.phase, monster, hero, target: monster?.manual ? monster.aim : target, landing, pending, collapsing });
   }
 
   // ── 치우기 ──

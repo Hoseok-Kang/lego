@@ -10,7 +10,7 @@
 //   game.update(dt)   한 장면 움직이기 (습격·결과 화면이면 3D 마을, 녹화 모드의 소굴 화면이면 3D 소굴)
 //   game.render()     한 장면 그리기
 //   game.debug        시험·디버그용 → main.js 가 window.villain 으로 내놓음
-//       { state, saveStore, bestiary, raid, town (늘 지금 마을), world, screens, events, stage, hud, editor, sculpt, sounds,
+//       { state, saveStore, bestiary, raid, town (늘 지금 마을), world, screens, events, stage, hud, control (직접 조종), editor, sculpt, sounds,
 //         lair: { place(type, x, y), upgrade(id), move(id, x, y), sell(id), claim(key), spot(type), evaluate(), view, screen },
 //         mods(), setNotoriety(n), setMoney(n), startRaid(designId, townId), openEditor(designId?), showLair() }
 //       state: { screen, speed, paused, designId, townId }
@@ -35,6 +35,7 @@ import { createScreens } from './ui/screens.js';
 import { createShopScreen } from './ui/shopScreen.js';
 import { createRaidHud } from './ui/raidHud.js';
 import { createRaidZoom } from './raid/raidZoom.js';
+import { createMonsterControl } from './raid/monsterControl.js';
 import { createResultScreen } from './ui/resultScreen.js';
 import { bindSoundButtons } from './ui/soundToggle.js';
 import { lockText } from './ui/lairKit.js';
@@ -193,6 +194,7 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
   const { raid, stage } = world;
   const raidZoom = createRaidZoom(stage.renderer.domElement, stage.view, { onChange: (level) => hud.setZoomLevel(level) });
   hud.setZoomLevel(raidZoom.level);
+  const control = createMonsterControl({ world, hud, state, capture }); // (C) 직접 조종: 막대 · 공격 단추 · 키 (가만두면 자동)
 
   screens
     .add('lair', lair.screen)
@@ -387,6 +389,7 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
 
   function update(dt) {
     if (state.screen === 'lair') lair.update(dt); // 녹화(수동) 모드일 때만 실제로 움직임
+    control.update(dt); // (C) 손가락 · 키 → 괴수 (습격 화면이 아니면 단추판을 숨김)
     if (!in3d()) return;
     world.update(dt, state.paused ? 0 : state.speed);
     hud.sync(raid); // 결과 화면 뒤에서도 번 돈 숫자가 끝까지 따라 올라가게
@@ -424,6 +427,7 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
       stage,
       world,
       hud,
+      control, // (C) 직접 조종 (raid/monsterControl.js)
       editor,
       sculpt, // (S) 3D 블록 작업대
       sounds,
