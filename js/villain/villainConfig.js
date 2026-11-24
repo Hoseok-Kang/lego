@@ -244,7 +244,7 @@ export const VILLAIN = {
 
   // (C) 직접 조종: 습격은 처음엔 자동, 막대 · 단추 · 키를 쓰는 순간 직접 조종, 가만두면 다시 자동
   //     공격 피해 · 식는 시간은 위 parts · monster.headbutt 와 똑같아요 (직접 조종이라고 더 세지 않고, 노리는 것만 똑똑하게)
-  //     화면 글자는 js/villain/ui/controlPad.js 의 TEXT, 단추 크기 · 자리는 css/villain-control.css
+  //     화면 글자는 js/villain/ui/controlPad.js 의 TEXT, 단추 크기 · 자리는 css/villain-control.css · villain-control2.css
   control: {
     idleSeconds: 4, // 이 시간(초) 동안 아무 조작이 없으면 다시 자동으로 싸움
     heroFirst: 12, // 공격 단추를 누르면: 영웅이 이만큼(칸) 안에 있고 공격이 닿으면 영웅부터 노림

@@ -25,7 +25,7 @@
 //   pad.el
 //
 // 두 손가락: 3D 마을에 손가락이 둘 닿으면 막대를 놓고 확대(raid/raidZoom.js)에 맡깁니다.
-// 글자는 아래 TEXT, 막대 크기 · 끄는 거리 · 톡 길이는 villainConfig.js 의 control, 모양 · 자리는 css/villain-control.css
+// 글자는 아래 TEXT, 막대 크기 · 끄는 거리 · 톡 길이는 villainConfig.js 의 control, 모양 · 자리는 css/villain-control.css (+ control2.css: 칩 · 화살표 · 안내 글 · 휴대폰 크기)
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from '../villainConfig.js';
@@ -43,7 +43,7 @@ const TEXT = {
   lost: '떨어져 나갔어요',
   space: 'Space',
   hintTouch: '왼쪽을 끌면 움직이고, 오른쪽 단추로 공격해요 · 가만두면 알아서 싸워요',
-  hintKeys: 'W A S D 로 움직이고, 1~5 · 스페이스로 공격해요 · 가만두면 알아서 싸워요',
+  hintKeys: 'W A S D 로 움직이고, 숫자 키 · 스페이스로 공격해요 · 가만두면 알아서 싸워요',
 };
 
 const BUZZ_MS = 8; // 단추를 누를 때 휴대폰 진동 (안드로이드만, 0 이면 끔)
@@ -160,7 +160,7 @@ export function createControlPad(host, { surface, onPress, onRelease, onTap, onC
     releaseButtons();
     buttons.clear();
     attackBox.textContent = '';
-    const parts = types.slice(0, 5);
+    const parts = types.slice(0, 4); // 부품 칸은 많아야 4개 (villainConfig 의 parts.maxSlots)
     attackBox.dataset.count = String(parts.length);
     attackBox.append(makeButton('headbutt', 0, parts.length));
     parts.forEach((type, i) => attackBox.append(makeButton(type, i, parts.length)));
