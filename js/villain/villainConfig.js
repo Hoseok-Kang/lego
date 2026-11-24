@@ -29,10 +29,10 @@ const ICE_MAGE = {
   appearAtDestroyed: 0.5,
   appearLatestSeconds: 28,
   alertSeconds: 2,
-  maxHp: 320, // (D 조정: 380 → 320)
+  maxHp: 650, // (D 조정: 380 → 320, E 조정: → 650 — 소굴 효과를 받은 괴수와 맞추려고)
   speed: 6.5, // (D 조정: 9 → 6.5, 빠른 괴수가 따라잡을 수 있게)
-  damage: 14, // 얼음 화살 한 번 (D 조정: 12 → 14)
-  interval: 1.4, // (D 조정: 1.3 → 1.4)
+  damage: 22, // 얼음 화살 한 번 (D 조정: 12 → 14, E 조정: → 22)
+  interval: 1.2, // (D 조정: 1.3 → 1.4, E 조정: → 1.2)
   range: 16, // 이만큼 떨어져서도 던짐
   keepDistance: 9, // 괴수와 이 거리를 지키려고 함
   slowMul: 0.6, // 얼음에 맞으면 괴수 빠르기가 이만큼으로
@@ -54,9 +54,9 @@ const GUARDIAN = {
   appearAtDestroyed: 0.5,
   appearLatestSeconds: 32,
   alertSeconds: 2.5,
-  maxHp: 900,
+  maxHp: 1700, // (E 조정: 900 → 1700 — 소굴을 잘 지어야 이길 수 있게)
   speed: 6,
-  damage: 26, // 철퇴 한 번
+  damage: 32, // 철퇴 한 번 (E 조정: 26 → 32)
   interval: 1.4,
   range: 4,
   shieldEvery: 6, // 이 시간(초)마다 방패 들기
@@ -64,7 +64,7 @@ const GUARDIAN = {
   shieldBlock: 0.5, // 방패를 든 동안 앞에서 오는 피해를 이만큼 막음
   slamEvery: 7, // 땅 내려찍기 간격
   slamTelegraph: 1.0, // 내려찍기 전 바닥에 표시되는 시간
-  slamDamage: 45,
+  slamDamage: 55, // (E 조정: 45 → 55)
   slamRadius: 7,
   payForWin: 300,
   // (D) 방패 깨기
@@ -111,7 +111,8 @@ export const VILLAIN = {
 
   // 공격 부품 (상점에서 사서 괴수 그림에 붙임)
   parts: {
-    slots: 2, // 괴수 한 마리에 붙일 수 있는 개수
+    slots: 2, // 괴수 한 마리에 붙일 수 있는 개수 (기본. 연구실 3단계 · 악명 단계 덤으로 늘어남 → lair/modifiers.js 의 partSlots)
+    maxSlots: 4, // 아무리 늘어도 이만큼까지 (그림에 저장되는 부품 수의 끝)
     types: {
       claw: { name: '집게발', price: 0, cost: 15, damage: 16, interval: 0.9, range: 4, desc: '가까운 것을 세게 휘둘러 쳐요' },
       fireMouth: { name: '불 뿜는 입', price: 120, cost: 25, damage: 10, interval: 0.25, range: 14, burstSeconds: 1.6, restSeconds: 1.4, desc: '멀리까지 불을 뿜어요' },
@@ -180,7 +181,7 @@ export const VILLAIN = {
     abortMul: 0.5, // 지는 중에 그만두면 이만큼만
     min: 1, // 아무리 못해도 이만큼은 얻음
     // 1단계 때부터 놀던 저장을 처음 열면 그동안의 습격만큼 악명을 선물 (단, capRank 단계 바로 앞까지만)
-    veteranPerRaid: 8,
+    veteranPerRaid: 10, // (E 조정: 8 → 10, 1단계 단계 문턱이 200 으로 올라서)
     veteranPerWin: 12,
     veteranCapRank: 2,
   },

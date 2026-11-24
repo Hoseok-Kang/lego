@@ -9,8 +9,11 @@
 //     onLair(),           소굴로
 //     sound(이름),         (없어도 됨) 숫자가 올라갈 때 'coin' · 'cash' 소리를 내 달라고 부름
 //   })
-//   result.show(raidResult, { money, name, thumb, againCost })
-//       raidResult: raidDirector 의 result { win, earned, destroyedPercent, time, bonuses:[{ id, label, amount }], cost, aborted, heroLeft }
+//   result.show(raidResult, { money, name, thumb, againCost, fame, rankUp })
+//       raidResult: raidDirector 의 result { win, earned, destroyedPercent, time, bonuses:[{ id, label, amount }], cost, aborted, heroLeft,
+//                   townName, heroName, notoriety }   (마을 · 영웅 이름이 없으면 꼬마 마을 · 번개 기사)
+//       fame: { gained, nextName, left }  이번에 얻은 악명 · 다음 단계 이름(최고 단계면 null) · 남은 악명 (없으면 result.notoriety 만)
+//       rankUp: { name, emoji, lines: ['바닷가 마을', …] }  악명 단계가 올랐으면 큰 띠로 축하 (없으면 안 보임)
 //       졌을 때는 영웅에게 남은 체력(heroLeft)에 따라 도움말 한 줄을 보여 줌 (아래 CLOSE_CALL)
 //       money: 지금 가진 돈 (번 돈이 이미 더해진 값),  againCost: 같은 괴수를 다시 보낼 때 값 (안 주면 raidResult.cost)
 //   result.hide() / result.el
@@ -21,12 +24,18 @@
 import { VILLAIN } from '../villainConfig.js';
 import { el, escapeHTML, money, coin, countTo, bump, toast, isCalm } from './uiKit.js';
 import { icon } from './uiIcons.js';
+import { lairIcon } from './lairArt.js';
 
 const TEXT = {
   win: '마을 정복!',
-  winSub: (hero) => `${hero}를 물리쳤어요. 음하하!`,
+  winSub: (hero, town) => `${town ? `${town}의 ` : ''}${hero}를 물리쳤어요. 음하하!`,
   lose: '괴수가 펑!',
   loseSub: (hero) => `${hero}에게 졌어요. 그래도 번 돈은 챙겼어요`,
+  fame: (n) => `악명 +${money(n)}`,
+  fameLeft: (name, left) => `${name}까지 ${money(left)}`,
+  fameMax: '가장 높은 단계예요',
+  rankUp: '악명 단계 UP!',
+  opened: (list) => `새로 열림: ${list.join(' · ')}`,
   quit: '돌아왔어요',
   quitSub: '습격을 그만뒀어요. 번 돈은 챙겼어요',
   smashed: '마을 부서짐',
@@ -64,7 +73,9 @@ export function createResultScreen(root, { onAgain, onLair, sound } = {}) {
 
   function show(result = {}, info = {}) {
     clearTimers();
-    const hero = VILLAIN.hero.name;
+    const hero = result.heroName || VILLAIN.hero.name;
+    const fame = info.fame ?? { gained: result.notoriety ?? 0 };
+    const rankUp = info.rankUp ?? null;
     const kind = result.aborted ? 'quit' : result.win ? 'win' : 'lose';
     const bonuses = result.bonuses ?? [];
     const cost = result.cost ?? 0;
@@ -73,12 +84,18 @@ export function createResultScreen(root, { onAgain, onLair, sound } = {}) {
     const percent = Math.round(result.destroyedPercent ?? 0);
     context = { againCost, wallet };
     const title = kind === 'win' ? TEXT.win : kind === 'lose' ? TEXT.lose : TEXT.quit;
-    const sub = kind === 'win' ? TEXT.winSub(hero) : kind === 'lose' ? TEXT.loseSub(hero) : TEXT.quitSub;
+    const sub = kind === 'win' ? TEXT.winSub(hero, result.townName) : kind === 'lose' ? TEXT.loseSub(hero) : TEXT.quitSub;
+    const fameNext = fame.nextName ? `<span>${escapeHTML(TEXT.fameLeft(fame.nextName, fame.left))}</span>` : fame.nextName === null ? `<span>${TEXT.fameMax}</span>` : '';
+    const fameHTML = fame.gained > 0 ? `<p class="result-fame">${lairIcon('skull')}<b>${TEXT.fame(fame.gained)}</b>${fameNext}</p>` : '';
+    const rankHTML = rankUp
+      ? `<div class="result-rankup" role="status"><strong>${TEXT.rankUp}</strong><b>${escapeHTML(`${rankUp.emoji ?? ''} ${rankUp.name}`.trim())}</b>${rankUp.lines?.length ? `<small>${escapeHTML(TEXT.opened(rankUp.lines))}</small>` : ''}</div>`
+      : '';
     const tip = kind === 'lose' ? ((result.heroLeft ?? 1) < CLOSE_CALL ? TEXT.tipClose : TEXT.tipFar) : '';
     const rows = bonuses
       .map((b, i) => `<li class="result-row" data-id="${escapeHTML(b.id ?? '')}" style="--i:${i}"><span>${escapeHTML(b.label)}</span>${coin(b.amount, { sign: true })}</li>`)
       .join('');
     screen.dataset.kind = kind;
+    screen.classList.toggle('has-rankup', !!rankUp);
     screen.innerHTML = `
       <div class="result-card" style="--rows:${bonuses.length}">
         <div class="result-burst" aria-hidden="true"></div>
@@ -87,6 +104,8 @@ export function createResultScreen(root, { onAgain, onLair, sound } = {}) {
           <h1 class="result-title">${[...title].map((ch, i) => `<span style="--i:${i}">${ch === ' ' ? '&nbsp;' : escapeHTML(ch)}</span>`).join('')}</h1>
           <p class="result-sub">${escapeHTML(sub)}</p>
           ${tip ? `<p class="result-tip">${icon('pencil')}<span>${escapeHTML(tip)}</span></p>` : ''}
+          ${fameHTML}
+          ${rankHTML}
         </header>
         <div class="result-meters">
           <div class="result-meter"><span>${icon('house')}${TEXT.smashed}</span><b><i data-percent>0</i>%</b><div class="result-meter-bar" style="--to:${Math.min(100, percent)}%"><i></i></div></div>
@@ -126,6 +145,7 @@ export function createResultScreen(root, { onAgain, onLair, sound } = {}) {
       }, totalAt * 1000),
     );
     timers.push(setTimeout(() => screen.classList.add('is-done'), (totalAt + 0.8) * 1000));
+    if (rankUp) timers.push(setTimeout(() => sound?.('rankUp'), (totalAt + 0.9) * 1000));
   }
 
   screen.addEventListener('click', (event) => {

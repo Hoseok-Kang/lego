@@ -37,7 +37,7 @@ const LIST = [
     layout: 'harbor',
     hero: 'iceMage',
     unlockRank: 1,
-    payMul: 1.4,
+    payMul: 1.2, // (E 조정: 1.4 → 1.2)
     notorietyBase: 40,
     hpPerBlock: 1,
     blurb: '등대와 생선 가게가 있는 항구예요. 배를 와장창 부숴요.',
@@ -49,7 +49,7 @@ const LIST = [
     layout: 'castle',
     hero: 'guardian',
     unlockRank: 3,
-    payMul: 2,
+    payMul: 1.35, // (E 조정: 2 → 1.35 — 성곽은 블록이 많아 이미 많이 벌어요)
     notorietyBase: 70,
     hpPerBlock: 1.4,
     blurb: '튼튼한 성벽 안에 임금님 궁전이 있어요. 부수면 대박이에요.',

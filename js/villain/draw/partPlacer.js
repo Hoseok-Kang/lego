@@ -3,13 +3,14 @@
 // 그린 괴수 그림 위에 공격 부품(집게발, 불 뿜는 입, 돌진 뿔)을 붙입니다.
 //   · 부품 단추를 누르고 → 칠한 칸을 누르면 붙어요. 부품 단추를 그림 위로 끌어다 놓아도 돼요.
 //   · 붙인 부품을 누르면 떼어져요. 끌면 다른 칸으로 옮겨져요. (그림 밖에 놓으면 떼어짐)
-//   · 한 마리에 붙일 수 있는 개수는 villainConfig.js 의 parts.slots
+//   · 한 마리에 붙일 수 있는 개수는 villainConfig.js 의 parts.slots (소굴 효과로 늘면 setSlots(n))
 //
 // 쓰는 법
 //   const placer = createPartPlacer(rootEl, { design, ownedParts })
 //   placer.getParts()            [{ type, col, row }, ...]
 //   placer.onChange(fn)          부품이 바뀔 때마다 fn(parts) → 그만 듣기 함수
 //   placer.setDesign(design) / placer.setOwnedParts(list)    그림 · 가진 부품 바꿔 넣기
+//   placer.setSlots(n)           붙일 수 있는 개수 바꾸기 (setDesign 전에 부르면 그 수까지 남김)
 //   placer.extra                 옆 빈 자리 (미리보기 · 단추를 끼워 넣는 곳)
 //   placer.refresh() / placer.destroy()
 // ─────────────────────────────────────────────────────────────
@@ -25,7 +26,7 @@ const HINT_DEFAULT = '부품을 고르고 칠한 칸을 눌러요. 붙인 부품
 
 export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
   const types = VILLAIN.parts.types;
-  const slots = VILLAIN.parts.slots;
+  let slots = VILLAIN.parts.slots;
   const hexByCh = new Map(VILLAIN.draw.palette.map((c) => [c.ch, c.hex]));
   const listeners = new Set();
   let cols = VILLAIN.draw.cols;
@@ -323,6 +324,13 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
     getParts,
     setDesign,
     setOwnedParts,
+    setSlots(n) {
+      const next = Math.max(1, Math.round(Number(n) || VILLAIN.parts.slots));
+      if (next === slots) return;
+      slots = next;
+      if (parts.length > slots) parts = parts.slice(0, slots);
+      renderAll();
+    },
     onChange(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);

@@ -11,7 +11,9 @@
 //     onPause(true|false),  (없어도 됨) "정말요?" 창이 떠 있는 동안 true → 그동안 게임을 멈추고 싶을 때
 //     speeds,               고를 수 있는 빠르기 목록 (기본: villainConfig 의 speedOptions)
 //   })
-//   hud.show({ name, thumb })       습격 시작: 괴수 이름과 작은 그림 주소. 숫자를 처음으로 되돌림
+//   hud.show({ name, thumb, heroName, heroKind, heroAt })   습격 시작: 괴수 이름 · 작은 그림 주소, 이번 마을 영웅
+//                                   (이름 · 얼굴 종류 'knight'|'iceMage'|'guardian' · 마을이 몇(0~1) 부서지면 오는지). 숫자를 처음으로 되돌림
+//   hud.setHero({ heroName, heroKind, heroAt })   습격 중에 영웅 정보만 바꾸기 (raid.start 뒤 raid.state 값으로)
 //   hud.update({ earned, destroyedRatio, monsterHp, monsterMaxHp, heroHp, heroMaxHp, heroVisible, phase, cleanupLeft })
 //   hud.sync(raid)                  raidDirector 의 raid 를 그대로 넘기면 위 값을 알아서 읽음
 //   hud.setSpeed(배율) / hud.speed
@@ -24,7 +26,8 @@
 
 import { VILLAIN } from '../villainConfig.js';
 import { el, escapeHTML, money, bump, askDialog } from './uiKit.js';
-import { icon, HERO_FACE } from './uiIcons.js';
+import { icon } from './uiIcons.js';
+import { heroFace } from './lairArt.js';
 
 const TEXT = {
   town: '마을 부서짐',
@@ -48,8 +51,9 @@ const LOW_HP = 0.3; // 체력이 이 비율 아래면 막대가 빨갛게 깜빡
 const MONEY_TICK = 9; // 번 돈 숫자가 따라가는 빠르기 (클수록 빨리)
 
 export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN.speedOptions } = {}) {
-  const hero = VILLAIN.hero;
-  const heroAt = Math.round(hero.appearAtDestroyed * 100);
+  // 이번 마을 영웅 (마을마다 다름 → show / setHero 로 바꿈)
+  const hero = { name: VILLAIN.hero.name, kind: 'knight' };
+  let heroAt = Math.round(VILLAIN.hero.appearAtDestroyed * 100);
   const hud = el(`
     <section class="hud" hidden aria-label="습격 정보">
       <div class="hud-floats" data-floats></div>
@@ -68,22 +72,22 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN
             <span class="hud-town-label">${icon('house')}${TEXT.town}</span>
             <div class="hud-town-bar" title="${TEXT.heroAt(heroAt)}">
               <i class="hud-town-fill"></i>
-              <span class="hud-town-mark" style="left:${heroAt}%">${HERO_FACE}</span>
+              <span class="hud-town-mark" style="left:${heroAt}%" data-heromark>${heroFace(hero.kind)}</span>
             </div>
             <b class="hud-town-num" data-percent>0%</b>
           </div>
         </div>
         <div class="hud-fighter hud-fighter--hero" data-hero hidden>
           <div class="hud-fighter-body">
-            <span class="hud-name">${escapeHTML(hero.name)}</span>
+            <span class="hud-name" data-heroname>${escapeHTML(hero.name)}</span>
             <div class="hud-bar" role="img" aria-label="영웅 체력"><i class="hud-bar-ghost"></i><i class="hud-bar-fill"></i></div>
           </div>
-          <span class="hud-face">${HERO_FACE}</span>
+          <span class="hud-face" data-heroface>${heroFace(hero.kind)}</span>
         </div>
       </div>
       <div class="hud-alert" data-alert hidden role="alert">
         <i class="hud-siren"></i>
-        <div class="hud-alert-text"><strong>${TEXT.alert}</strong><span>${escapeHTML(TEXT.alertSub(hero.name))}</span></div>
+        <div class="hud-alert-text"><strong>${TEXT.alert}</strong><span data-alertsub>${escapeHTML(TEXT.alertSub(hero.name))}</span></div>
         <i class="hud-siren"></i>
       </div>
       <p class="hud-caption" data-caption hidden></p>
@@ -235,6 +239,21 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN
     });
   }
 
+  // 이번 마을 영웅의 이름 · 얼굴 · 나오는 지점
+  function setHero({ heroName = null, heroKind = null, heroAt: at = null } = {}) {
+    if (heroName) hero.name = heroName;
+    if (heroKind) hero.kind = heroKind;
+    if (Number.isFinite(at)) heroAt = Math.round(Math.max(0, Math.min(1, at)) * 100);
+    q('[data-heroname]').textContent = hero.name;
+    q('[data-heroface]').innerHTML = heroFace(hero.kind);
+    q('[data-alertsub]').textContent = TEXT.alertSub(hero.name);
+    const mark = q('[data-heromark]');
+    mark.innerHTML = heroFace(hero.kind);
+    mark.style.left = `${heroAt}%`;
+    townBar.title = TEXT.heroAt(heroAt);
+    if (shown) shown.passed = null; // 다음 update 에서 '지나감' 표시를 다시 셈
+  }
+
   function setSpeed(next) {
     speed = next;
     speedEl.textContent = `${next}×`;
@@ -266,11 +285,13 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN
     update,
     sync,
     setSpeed,
+    setHero,
     get speed() {
       return speed;
     },
-    show({ name = '괴수', thumb = '' } = {}) {
+    show({ name = '괴수', thumb = '', heroName = null, heroKind = null, heroAt = null } = {}) {
       reset();
+      setHero({ heroName, heroKind, heroAt });
       q('[data-name]').textContent = name;
       const img = q('[data-thumb]');
       if (thumb) img.src = thumb;

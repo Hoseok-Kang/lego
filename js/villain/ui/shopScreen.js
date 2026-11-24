@@ -8,7 +8,9 @@
 //     onBuy(type) → true | false | { ok, message }   사기를 눌렀을 때 (돈이 충분할 때만 불림). 성공하면 '샀어요!' 효과
 //     onBack(),                                       소굴로
 //   })
-//   shop.render({ money, ownedParts })   내용 새로 그리기
+//   shop.render({ money, ownedParts, available?, locks?, slots? })   내용 새로 그리기
+//       available: 지금 살 수 있는 부품 목록 (없으면 모두). 못 사는 부품은 잠긴 카드 + locks[부품] 글자 ('연구실 1단계에 열려요')
+//       slots: 괴수 한 마리에 붙일 수 있는 부품 수 (소굴 효과 반영, 없으면 villainConfig 의 parts.slots)
 //   shop.show(state?) / shop.hide() / shop.el
 //
 // 부품 이름 · 값 · 설명 · 세기는 js/villain/villainConfig.js 의 parts.types 에서 바꿉니다.
@@ -33,6 +35,8 @@ const TEXT = {
   slots: (n) => `괴수 한 마리에 부품을 ${n}개까지 붙일 수 있어요`,
   soon: '새 부품 준비 중',
   soonHint: '악당 연구소가 열심히 만들고 있어요',
+  locked: '아직 못 사요',
+  lockedHint: '연구실을 지으면 열려요',
   power: '힘',
   speed: '빠르기',
   reach: '거리',
@@ -60,26 +64,30 @@ export function createShopScreen(root, { onBuy, onBack } = {}) {
         <div class="vt-money" title="가진 돈">${icon('coin')}<b data-money>0</b></div>
       </header>
       <div class="shop-list" data-list tabindex="-1"></div>
-      <p class="shop-foot">${TEXT.slots(VILLAIN.parts.slots)}</p>
+      <p class="shop-foot" data-foot>${TEXT.slots(VILLAIN.parts.slots)}</p>
     </section>`);
   root.append(screen);
 
   const moneyEl = screen.querySelector('[data-money]');
   const list = screen.querySelector('[data-list]');
-  let state = { money: 0, ownedParts: [] };
+  let state = { money: 0, ownedParts: [], available: null, locks: {}, slots: VILLAIN.parts.slots };
+  const isLocked = (type) => !state.ownedParts.includes(type) && Array.isArray(state.available) && !state.available.includes(type);
   let firstRender = true;
 
   function cardHTML([type, part], index, all) {
     const owned = state.ownedParts.includes(type);
-    const poor = !owned && part.price > state.money;
+    const locked = isLocked(type);
+    const poor = !owned && !locked && part.price > state.money;
     const maxPower = Math.max(...all.map(([, p]) => powerOf(p)));
     const maxSpeed = Math.max(...all.map(([, p]) => 1 / p.interval));
     const maxRange = Math.max(...all.map(([, p]) => p.range));
     const action = owned
       ? `<div class="shop-owned">${icon('check')}<span>${part.price > 0 ? TEXT.owned : TEXT.free}</span></div>`
+      : locked
+      ? `<button type="button" class="vt-btn shop-locked" data-act="locked">${icon('lock')}<span>${escapeHTML(state.locks?.[type] ?? TEXT.lockedHint)}</span></button>`
       : `<button type="button" class="vt-btn vt-btn--go shop-buy" data-act="buy" ${poor ? 'aria-disabled="true"' : ''}><span>${TEXT.buy}</span>${coin(part.price)}</button>`;
     return `
-      <article class="pcard${owned ? ' is-owned' : ''}${poor ? ' is-poor' : ''}" data-type="${type}" style="--i:${index}">
+      <article class="pcard${owned ? ' is-owned' : ''}${poor ? ' is-poor' : ''}${locked ? ' is-locked' : ''}" data-type="${type}" style="--i:${index}">
         <div class="pcard-pic"><img src="${partIconURL(type, 144)}" alt="" draggable="false"></div>
         <div class="pcard-body">
           <h2 class="pcard-name">${escapeHTML(part.name)}</h2>
@@ -98,6 +106,7 @@ export function createShopScreen(root, { onBuy, onBack } = {}) {
   function render(next = {}) {
     state = { ...state, ...next };
     state.ownedParts = state.ownedParts ?? [];
+    screen.querySelector('[data-foot]').textContent = TEXT.slots(state.slots ?? VILLAIN.parts.slots);
     countTo(moneyEl, state.money, { from: firstRender ? state.money : null });
     const entries = Object.entries(VILLAIN.parts.types);
     const scroll = list.scrollTop;
@@ -112,9 +121,14 @@ export function createShopScreen(root, { onBuy, onBack } = {}) {
     const button = event.target.closest('[data-act]');
     if (!button) return;
     if (button.dataset.act === 'back') return onBack?.();
-    if (button.dataset.act !== 'buy') return;
     const card = button.closest('.pcard');
-    const type = card.dataset.type;
+    const type = card?.dataset.type;
+    if (button.dataset.act === 'locked') {
+      bump(card, 'is-shake');
+      toast(`${VILLAIN.parts.types[type]?.name ?? ''}: ${state.locks?.[type] ?? TEXT.lockedHint}`, { kind: 'bad' });
+      return;
+    }
+    if (button.dataset.act !== 'buy') return;
     const part = VILLAIN.parts.types[type];
     const lack = part.price - state.money;
     if (lack > 0) {

@@ -1304,3 +1304,28 @@
     min-height: 46px;
   }
 }
+
+/* 잠긴 부품 (연구실을 지어야 살 수 있음) */
+.pcard.is-locked .pcard-pic img {
+  filter: grayscale(1) brightness(0.55) drop-shadow(0 4px 0 rgb(0 0 0 / 0.3));
+  animation: none;
+}
+
+.pcard.is-locked .pcard-name,
+.pcard.is-locked .pcard-desc {
+  opacity: 0.7;
+}
+
+.shop-locked {
+  width: 100%;
+  min-height: 52px;
+  border-style: dashed;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.shop-locked .ico {
+  width: 20px;
+  height: 20px;
+}

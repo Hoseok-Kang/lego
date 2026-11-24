@@ -20,9 +20,9 @@ import { TOWN_LIST } from './towns.js';
 
 export const RANKS = [
   { rank: 0, name: '동네 말썽꾼', emoji: '😼', at: 0, lairSize: 8 },
-  { rank: 1, name: '골목 악당', emoji: '😈', at: 160, lairSize: 9 },
+  { rank: 1, name: '골목 악당', emoji: '😈', at: 200, lairSize: 9 }, // (E 조정: 160 → 200)
   { rank: 2, name: '마을의 공포', emoji: '👹', at: 500, lairSize: 10, perks: { partSlots: 1 } },
-  { rank: 3, name: '왕국의 골칫거리', emoji: '👺', at: 1100, lairSize: 11 },
+  { rank: 3, name: '왕국의 골칫거리', emoji: '👺', at: 1200, lairSize: 11 }, // (E 조정: 1100 → 1200)
   { rank: 4, name: '전설의 대마왕', emoji: '🐲', at: 2500, lairSize: 12, perks: { pay: 0.1, notoriety: 0.1 } },
 ];
 

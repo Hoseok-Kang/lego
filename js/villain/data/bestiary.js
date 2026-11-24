@@ -47,7 +47,7 @@ function cleanParts(parts, cells) {
   const out = [];
   const taken = new Set();
   for (const part of Array.isArray(parts) ? parts : []) {
-    if (out.length >= VILLAIN.parts.slots) break;
+    if (out.length >= (VILLAIN.parts.maxSlots ?? VILLAIN.parts.slots)) break; // 칸 수는 소굴 효과로 늘어날 수 있어 최대치까지 저장
     if (!part || !VILLAIN.parts.types[part.type]) continue;
     const col = Math.round(part.col);
     const row = Math.round(part.row);

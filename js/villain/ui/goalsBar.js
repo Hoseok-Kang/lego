@@ -12,6 +12,7 @@
 //                              reward: { money, notoriety }, doneText(끝냈을 때 한마디) }]
 //                        (목록을 안 주면 띠를 숨김, 빈 목록이면 '모든 목표를 이뤘어요')
 //   goals.celebrate(goal)   축하 카드만 띄우기 (게임이 목표를 저절로 받을 때 부름. goal.doneText 한마디를 보여 줌)
+//                           goal.stamp 가 있으면 '목표 달성!' 대신 그 글자 (악명 단계 오름 축하에 씀), goal.ms = 떠 있는 시간
 //
 // 글자는 아래 TEXT, 모양은 css/villain-lair2.css (.goals, .goal, .goal-party) 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
@@ -150,7 +151,7 @@ export function createGoalsBar({ host = null, onClaim = null, coinTarget = null 
       <div class="goal-party" role="status" aria-live="polite">
         <div class="goal-party-card">
           <span class="goal-party-burst" aria-hidden="true">${confetti}</span>
-          <span class="goal-party-stamp">${TEXT.party}</span>
+          <span class="goal-party-stamp">${escapeHTML(goal.stamp ?? TEXT.party)}</span>
           <span class="goal-party-icon">${artOf(goal)}</span>
           <b class="goal-party-name">${escapeHTML(goal.name ?? '')}</b>
           ${quipOf(goal) ? `<p class="goal-party-quip">${escapeHTML(quipOf(goal))}</p>` : ''}
@@ -160,7 +161,7 @@ export function createGoalsBar({ host = null, onClaim = null, coinTarget = null 
     party.addEventListener('click', () => party.remove());
     host.append(party);
     clearTimeout(partyTimer);
-    partyTimer = setTimeout(() => party.remove(), isCalm() ? 1600 : PARTY_MS);
+    partyTimer = setTimeout(() => party.remove(), isCalm() ? 1600 : (goal.ms ?? PARTY_MS));
   }
 
   function claim(key, chip) {

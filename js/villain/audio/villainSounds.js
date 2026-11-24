@@ -34,7 +34,11 @@ export const SOUND_NAMES = Object.keys(VILLAIN_SOUNDS);
 
 // ── 어떤 소식에 어떤 소리를 낼지 ──
 // '소리 이름' | ['이름', ['이름', 몇 초 뒤]] | (소식 내용) => 위의 것 (null 이면 소리 없음)
-const ATTACK_SOUNDS = { headbutt: 'headbutt', claw: 'claw', fire: 'fire', horn: 'charge', hornDash: 'dash', sword: 'sword', leap: 'leap' };
+const ATTACK_SOUNDS = {
+  headbutt: 'headbutt', claw: 'claw', fire: 'fire', horn: 'charge', hornDash: 'dash', sword: 'sword', leap: 'leap',
+  ice: 'ice', hammer: 'hammer', slam: 'slamWind', // 얼음 마법사 · 황금 수호자
+};
+const LAND_SOUNDS = { leap: 'headbutt', slam: 'slam' }; // 영웅 착지 종류 → 소리 (그 밖: 하늘에서 등장 'heroLand')
 const EVENT_SOUNDS = {
   raidStarted: 'launch',
   buildTick: 'stack', // 괴수가 조립되는 동안 계속 옴 (간격은 소리의 gap 이 걸러 줌)
@@ -46,7 +50,12 @@ const EVENT_SOUNDS = {
   buildingDestroyed: 'collapse',
   partLost: 'partLost',
   heroAlert: 'siren',
-  heroLanded: ({ kind }) => (kind === 'leap' ? 'headbutt' : 'heroLand'), // kind: 'enter' 하늘에서 등장 | 'leap' 뛰어올라 내려찍기
+  heroLanded: ({ kind }) => LAND_SOUNDS[kind] ?? 'heroLand', // kind: 'enter' 하늘에서 등장 | 'leap' 뛰어올라 내려찍기 | 'slam' 땅 내려찍기
+  monsterSlowed: 'freeze', // 얼음에 맞아 느려짐
+  heroBlink: 'blink', // 얼음 마법사 순간 이동
+  heroShield: ({ on }) => (on ? 'shield' : null), // 황금 수호자 방패 듦
+  heroBlocked: 'clang', // 방패에 막힘
+  heroShieldBroken: 'shieldBreak',
   monsterPopped: 'pop',
   heroPopped: 'pop',
   raidEnded: ({ result }) => (result?.aborted ? null : result?.win ? [['win', 0.3]] : [['lose', 0.5]]),

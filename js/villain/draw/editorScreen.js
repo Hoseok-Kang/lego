@@ -4,10 +4,11 @@
 // 차례: ① 그리기 → ② 부품 붙이기 → ③ 저장
 //
 // 쓰는 법
-//   const editor = createEditorScreen({ bestiary, saveStore, onDone, preview3d, root })
+//   const editor = createEditorScreen({ bestiary, saveStore, onDone, preview3d, root, partSlots })
 //     onDone(design | null)   저장하면 저장된 괴수, 그냥 나가면 null
 //     preview3d(el)           (없어도 됨) 블록 괴수 미리보기를 el 안에 만들고 { show(design) } 를 돌려주는 함수
 //     root                    (없어도 됨) 화면을 붙일 곳. 기본은 document.body
+//     partSlots()             (없어도 됨) 지금 붙일 수 있는 부품 칸 수 (소굴 효과). 없으면 villainConfig 의 parts.slots
 //   editor.open(design | null)   괴수를 고치거나(null 이면 새로 그리기) 화면을 엶
 //   editor.close()               화면을 닫음 (onDone 은 부르지 않음)
 //   editor.el / editor.isOpen / editor.board / editor.placer
@@ -38,7 +39,7 @@ function isMirrored(before, after) {
   return changed;
 }
 
-export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, root } = {}) {
+export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, root, partSlots = null } = {}) {
   const el = document.createElement('section');
   el.className = 'vd-editor';
   el.id = 'villainEditor';
@@ -213,6 +214,7 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
     else if (next === 'parts') {
       const before = parts.length;
       placer.setOwnedParts(saveStore.getSave().ownedParts);
+      if (partSlots) placer.setSlots(partSlots());
       placer.setDesign(currentDesign());
       parts = placer.getParts();
       // 그림을 지우거나 옮겨서 부품 밑의 칸이 사라졌으면 알려 줌

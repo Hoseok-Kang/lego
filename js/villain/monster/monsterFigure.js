@@ -24,7 +24,7 @@ export function createMonsterFigure(scene, design, { castShadow = true, partHold
 
   // 붙일 부품 목록 (빈 칸에 놓였거나 모르는 부품은 건너뜀)
   const mounts = [];
-  for (const part of (design?.parts || []).slice(0, VILLAIN.parts.slots)) {
+  for (const part of (design?.parts || []).slice(0, VILLAIN.parts.maxSlots ?? VILLAIN.parts.slots)) {
     const at = model.cellToWorld(part.col, part.row);
     if (!at || !VILLAIN.parts.types[part.type]) continue;
     const side = at.x < 0 ? -1 : 1;
