@@ -22,8 +22,8 @@ const TRACK = 1.1; // 빛줄기가 움직이는 상대를 따라가는 빠르기
 const AIM_LOW = 1.4; // 빛줄기가 상대를 지나가는 높이 범위 [낮게, 높게] (칸)
 const AIM_HIGH = 3.6;
 const END_DROP = 0.55; // 빛줄기 끝은 지나가는 높이의 이만큼으로 (멀리 갈수록 땅으로 살짝 내려감)
-const EYE_GROW = 0.65; // 힘을 다 모았을 때 눈이 커지는 정도
-const SCORCH_PER_TICK = 1; // 한 번 칠 때마다 땅에 떨어지는 그을린 블록 수
+const EYE_GROW = 0.45; // 힘을 다 모았을 때 눈이 커지는 정도
+const SCORCH_PER_TICK = 2; // 한 번 칠 때마다 땅에 떨어지는 그을린 블록 수 (하나는 노린 상대 발치, 나머지는 빛줄기 아래 아무 데나)
 const SCORCH_HEX = ['#1B2A34', '#1B2A34', '#6C6E68', '#582A12'];
 const EMBER_HEX = ['#FFF03A', '#FE8A18', '#C91A09'];
 const SPARK_HEX = '#FF4A2A';
@@ -109,7 +109,7 @@ export function laserEye(ctx, target, mount) {
     if (!ctx.debris) return;
     const p = ctx.position;
     for (let i = 0; i < SCORCH_PER_TICK; i++) {
-      const at = line.along * 0.6 + Math.random() * (line.reach - line.along * 0.6);
+      const at = i === 0 ? line.along + (Math.random() - 0.5) * 3 : line.along * 0.5 + Math.random() * (line.reach - line.along * 0.5);
       tmp.set(p.x + dir.x * at + (Math.random() - 0.5), 0.6, p.z + dir.z * at + (Math.random() - 0.5));
       velocity.set((Math.random() - 0.5) * 3, 5 + Math.random() * 4, (Math.random() - 0.5) * 3);
       ctx.debris.spawn(tmp, SCORCH_COLORS[(Math.random() * SCORCH_COLORS.length) | 0], velocity, { lifetime: 4, settle: true, scale: 0.55 + Math.random() * 0.35 });
