@@ -689,6 +689,10 @@ dd {
   background: var(--soft);
 }
 
+.vt-seg--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 말 고르기: 한국어 / English */
+}
+
 .vt-seg-btn {
   min-height: 46px;
   border: 0;

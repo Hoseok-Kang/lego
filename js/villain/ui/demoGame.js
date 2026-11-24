@@ -20,6 +20,25 @@ import { createRaidHud } from './raidHud.js';
 import { createResultScreen } from './resultScreen.js';
 import { bindSoundButtons } from './soundToggle.js';
 import { toast } from './uiKit.js';
+import { L } from '../lang/lang.js';
+
+// 화면에 보이는 글자 (화면 미리보기에서만 씀)
+const TEXT = L({
+  ko: {
+    copied: (name) => `'${name}' 괴수를 복사했어요`,
+    blocks: (n) => `부순 블록 ${n}개`,
+    hero: (name) => `${name} 격파`,
+    clear: '마을 싹쓸이',
+    minPay: '수고비',
+  },
+  en: {
+    copied: (name) => `Copied the monster "${name}"`,
+    blocks: (n) => (n === 1 ? '1 block smashed' : `${n} blocks smashed`),
+    hero: (name) => `Beat ${name}`,
+    clear: 'Town wiped out',
+    minPay: 'Effort pay',
+  },
+});
 
 export async function startDemo({ root = document.getElementById('ui') } = {}) {
   const events = createEvents();
@@ -65,7 +84,7 @@ export async function startDemo({ root = document.getElementById('ui') } = {}) {
     onCopy: (design) => {
       const copy = bestiary.duplicate(design.id);
       lair.render(lairState());
-      if (copy) toast(`'${copy.name}' 괴수를 복사했어요`, { kind: 'good' });
+      if (copy) toast(TEXT.copied(copy.name), { kind: 'good' });
     },
     onRemove: (design) => {
       bestiary.remove(design.id);
@@ -219,14 +238,14 @@ export async function startDemo({ root = document.getElementById('ui') } = {}) {
     const f = fake;
     fake = null;
     if (!f) return;
-    const bonuses = [{ id: 'blocks', label: `부순 블록 ${f.blocksPaid}개`, amount: f.blocksPaid * VILLAIN.town.payPerBlock }];
+    const bonuses = [{ id: 'blocks', label: TEXT.blocks(f.blocksPaid), amount: f.blocksPaid * VILLAIN.town.payPerBlock }];
     if (win) {
-      bonuses.push({ id: 'hero', label: `${VILLAIN.hero.name} 격파`, amount: VILLAIN.hero.payForWin });
-      if (f.ratio >= 1) bonuses.push({ id: 'clear', label: '마을 싹쓸이', amount: VILLAIN.town.clearBonus });
+      bonuses.push({ id: 'hero', label: TEXT.hero(VILLAIN.hero.name), amount: VILLAIN.hero.payForWin });
+      if (f.ratio >= 1) bonuses.push({ id: 'clear', label: TEXT.clear, amount: VILLAIN.town.clearBonus });
     }
     let earned = bonuses.reduce((sum, b) => sum + b.amount, 0);
     if (earned < VILLAIN.economy.minPay) {
-      bonuses.push({ id: 'minPay', label: '수고비', amount: VILLAIN.economy.minPay - earned });
+      bonuses.push({ id: 'minPay', label: TEXT.minPay, amount: VILLAIN.economy.minPay - earned });
       earned = VILLAIN.economy.minPay;
     }
     const raidResult = { win, aborted, earned, destroyedPercent: f.ratio * 100, time: f.time, bonuses, cost: f.cost };

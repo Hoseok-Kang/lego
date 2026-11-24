@@ -24,6 +24,8 @@
 <link rel="stylesheet" href="css/villain-sculpt.css">
 <link rel="stylesheet" href="css/villain-sculpt2.css">
 <link rel="stylesheet" href="css/villain-intro.css">
+<!-- 영어판(Doodle Kaiju)에서 긴 글자가 넘치지 않게 손본 것 (한국어 화면은 안 바뀜) -->
+<link rel="stylesheet" href="css/villain-en.css">
 </head>
 <body data-screen="boot">
 <!--
@@ -46,10 +48,10 @@
 <!-- 화면들이 들어가는 곳 -->
 <div id="ui" class="ui"></div>
 
-<!-- 처음 여는 동안 잠깐 보이는 글 -->
+<!-- 처음 여는 동안 잠깐 보이는 글 (영어판에서는 js/villain/lang/lang.js 가 영어로 바꿔 씀) -->
 <p id="bootMessage" class="boot-message">악당 소굴 문 여는 중…</p>
 
-<noscript><p class="boot-message">이 게임은 자바스크립트가 켜져 있어야 해요.</p></noscript>
+<noscript><p class="boot-message">이 게임은 자바스크립트가 켜져 있어야 해요.<br>This game needs JavaScript turned on.</p></noscript>
 
 <!-- 게임(js/villain/main.js)이 있으면 그것을, 아직 없으면 화면 미리보기(js/villain/ui/demoGame.js)를 엽니다 -->
 <script type="module" src="js/villain/ui/boot.js"></script>

@@ -15,6 +15,10 @@
 // 말풍선 수·간격 숫자는 villainConfig.js 의 villagers.shout, 외치는 말은 data/villagerLines.js 에서 바꿉니다.
 
 import { VILLAGER_LINES, LOCAL_SHARE } from '../data/villagerLines.js';
+import { L } from '../lang/lang.js';
+
+// 영웅 이름을 모를 때 쓰는 말
+const TEXT = L({ ko: { hero: '영웅' }, en: { hero: 'Hero' } });
 
 const DEFAULT_RULES = { maxOnScreen: 3, seconds: 1.7, cooldown: 4, gap: 0.35, hush: 0.6 };
 const LONG_KINDS = { hero: 1.25, saved: 1.3, wail: 1.45, home: 1.2 }; // 이 상황 말풍선은 조금 더 오래 (배)
@@ -32,7 +36,7 @@ export function pickLine(kind, { town = null, heroKind = null, heroName = '' } =
   const list = local.length && (rnd() < LOCAL_SHARE || !common.length) ? local : common;
   if (!list.length) return '';
   const line = list[Math.min(list.length - 1, Math.floor(rnd() * list.length))];
-  return String(line).replace(/\{hero\}/g, heroName || '영웅');
+  return String(line).replace(/\{hero\}/g, heroName || TEXT.hero);
 }
 
 export function createVillagerTalk({ events = null, rules = {}, rnd = Math.random, townId = null, headHeight = 2 } = {}) {

@@ -14,43 +14,83 @@
 //   home   자기 집이 와르르 무너질 때      trip   뛰다가 꽈당 넘어질 때
 //   hide   멀쩡한 건물 문으로 숨으러 갈 때  hero   영웅이 내려왔을 때 (영웅 가까운 사람이 응원)
 //   saved  괴수가 펑 터졌을 때 (만세!)     wail   괴수가 이겼을 때 (마을 가장자리에서 마지막 울음)
+// 한국어는 ko: 쪽, 영어는 en: 쪽 목록이에요 (영어도 짧게: 'AAAH!', 'Run!', 'My house!!').
 // 사람은 절대 다치지 않아요. 아파하는 말이나 무서운 말은 넣지 말아 주세요.
 // ─────────────────────────────────────────────────────────────
 
+import { L } from '../lang/lang.js';
+
 export const LOCAL_SHARE = 0.45; // 마을·영웅 말이 나올 확률 (0 ~ 1)
 
-export const VILLAGER_LINES = {
-  panic: {
-    all: ['으악!', '살려줘!', '괴물이다!', '엄마야!', '도망쳐!'],
-    harbor: ['배 띄워!', '물고기 버리고 튀어!'],
-    castle: ['후퇴!', '임금님을 지켜라!'],
+export const VILLAGER_LINES = L({
+  ko: {
+    panic: {
+      all: ['으악!', '살려줘!', '괴물이다!', '엄마야!', '도망쳐!'],
+      harbor: ['배 띄워!', '물고기 버리고 튀어!'],
+      castle: ['후퇴!', '임금님을 지켜라!'],
+    },
+    burst: {
+      all: ['으아아!', '집이 흔들려!', '탈출!'],
+      harbor: ['창고가 흔들려!'],
+      castle: ['성벽이 흔들려!'],
+    },
+    home: {
+      all: ['내 집!!'],
+      harbor: ['내 가게!!'],
+      castle: ['내 방!!'],
+    },
+    trip: {
+      all: ['꽈당!', '아이쿠!', '으앗!'],
+    },
+    hide: {
+      all: ['숨자!', '문 열어 줘!'],
+    },
+    hero: {
+      all: ['영웅이다!', '{hero}!'],
+      knight: ['기사님!'],
+      iceMage: ['마법사님!'],
+      guardian: ['수호자님!'],
+    },
+    saved: {
+      all: ['만세!', '살았다!', '{hero} 최고!'],
+    },
+    wail: {
+      all: ['으앙~', '으아앙~', '흑흑…'],
+    },
   },
-  burst: {
-    all: ['으아아!', '집이 흔들려!', '탈출!'],
-    harbor: ['창고가 흔들려!'],
-    castle: ['성벽이 흔들려!'],
+  en: {
+    panic: {
+      all: ['AAAH!', 'Help!', 'Monster!!', 'Mommy!', 'Run!'],
+      harbor: ['Launch the boats!', 'Drop the fish! Run!'],
+      castle: ['Retreat!', 'Protect the king!'],
+    },
+    burst: {
+      all: ['WAAAH!', "It's shaking!", 'Get out!'],
+      harbor: ['The shed is shaking!'],
+      castle: ['The walls are shaking!'],
+    },
+    home: {
+      all: ['My house!!'],
+      harbor: ['My shop!!'],
+      castle: ['My room!!'],
+    },
+    trip: {
+      all: ['Whoa!', 'Oops!', 'Oof!'],
+    },
+    hide: {
+      all: ['Hide!', 'Let me in!'],
+    },
+    hero: {
+      all: ["It's a hero!", '{hero}!'],
+      knight: ['Sir Knight!'],
+      iceMage: ['Go, Mage!'],
+      guardian: ['Go, Guardian!'],
+    },
+    saved: {
+      all: ['Hooray!', 'Phew, saved!', '{hero} rocks!'],
+    },
+    wail: {
+      all: ['Waaah~', 'Boo-hoo~', 'Sniff…'],
+    },
   },
-  home: {
-    all: ['내 집!!'],
-    harbor: ['내 가게!!'],
-    castle: ['내 방!!'],
-  },
-  trip: {
-    all: ['꽈당!', '아이쿠!', '으앗!'],
-  },
-  hide: {
-    all: ['숨자!', '문 열어 줘!'],
-  },
-  hero: {
-    all: ['영웅이다!', '{hero}!'],
-    knight: ['기사님!'],
-    iceMage: ['마법사님!'],
-    guardian: ['수호자님!'],
-  },
-  saved: {
-    all: ['만세!', '살았다!', '{hero} 최고!'],
-  },
-  wail: {
-    all: ['으앙~', '으아앙~', '흑흑…'],
-  },
-};
+});

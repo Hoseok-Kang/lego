@@ -16,11 +16,12 @@
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from '../villainConfig.js';
+import { L } from '../lang/lang.js';
 
 const LIST = [
   {
     id: 'village',
-    name: '꼬마 마을',
+    name: L({ ko: '꼬마 마을', en: 'Tiny Town' }),
     emoji: '🏘️',
     layout: 'village',
     hero: 'knight',
@@ -28,11 +29,11 @@ const LIST = [
     payMul: 1,
     notorietyBase: 20,
     hpPerBlock: VILLAIN.town.hpPerBlock,
-    blurb: '풍차가 도는 조용한 마을이에요. 첫 습격에 딱 좋아요.',
+    blurb: L({ ko: '풍차가 도는 조용한 마을이에요. 첫 습격에 딱 좋아요.', en: 'A sleepy town with a spinning windmill. Perfect for your first raid.' }),
   },
   {
     id: 'harbor',
-    name: '바닷가 마을',
+    name: L({ ko: '바닷가 마을', en: 'Harbor Town' }),
     emoji: '⚓',
     layout: 'harbor',
     hero: 'iceMage',
@@ -40,11 +41,11 @@ const LIST = [
     payMul: 1.2, // (E 조정: 1.4 → 1.2)
     notorietyBase: 40,
     hpPerBlock: 1,
-    blurb: '등대와 생선 가게가 있는 항구예요. 배를 와장창 부숴요.',
+    blurb: L({ ko: '등대와 생선 가게가 있는 항구예요. 배를 와장창 부숴요.', en: 'A port with a lighthouse and a fish shop. Smash the boats to bits!' }),
   },
   {
     id: 'castle',
-    name: '왕궁 성곽',
+    name: L({ ko: '왕궁 성곽', en: 'Royal Castle' }),
     emoji: '🏰',
     layout: 'castle',
     hero: 'guardian',
@@ -52,7 +53,7 @@ const LIST = [
     payMul: 1.35, // (E 조정: 2 → 1.35 — 성곽은 블록이 많아 이미 많이 벌어요)
     notorietyBase: 70,
     hpPerBlock: 1.4,
-    blurb: '튼튼한 성벽 안에 임금님 궁전이 있어요. 부수면 대박이에요.',
+    blurb: L({ ko: '튼튼한 성벽 안에 임금님 궁전이 있어요. 부수면 대박이에요.', en: "The king's palace behind thick walls. Smash it for a jackpot!" }),
   },
 ];
 

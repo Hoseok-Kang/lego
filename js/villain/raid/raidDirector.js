@@ -31,8 +31,9 @@ import { VILLAIN } from '../villainConfig.js';
 import { heroStats } from '../hero/hero.js';
 import { pickLandingSpot, pickBuilding, gapBetween } from './raidTargets.js';
 import { planRaid } from './raidRules.js';
-import { buildResult, saveResult } from './raidResult.js';
+import { buildResult, saveResult, START_TEXT as TEXT } from './raidResult.js'; // 출동을 못 할 때 알림 글자
 import { createRaidCamera, RAID_ZOOM } from './raidCamera.js';
+
 
 const HERO_NEAR = 10; // 영웅이 이만큼 가까우면 괴수가 영웅과 싸움 (칸, 영웅 숫자 engage 가 있으면 그것)
 const HERO_FAR_EXTRA = 4; // 싸우다가 영웅이 (가까움 + 이만큼) 멀어지면 다시 건물을 부숨
@@ -100,11 +101,11 @@ export function createRaid({ stage = null, town: townOption, events, makeMonster
 
   // ── 시작 ──
   function start(nextDesign, options = {}) {
-    if (!nextDesign) return { ok: false, message: '출동할 괴수를 골라 주세요', cost: 0 };
+    if (!nextDesign) return { ok: false, message: TEXT.pick, cost: 0 };
     const nextPlan = planRaid(nextDesign, options || {}, costOf);
     const cost = nextPlan.cost;
     const money = saveStore?.getSave?.().money ?? Infinity;
-    if (money < cost) return { ok: false, message: `돈이 모자라요 (${cost}원 필요)`, cost };
+    if (money < cost) return { ok: false, message: TEXT.poor(cost), cost };
     clear();
     prepareTown?.(nextPlan.town);
     if (saveStore && cost > 0) {

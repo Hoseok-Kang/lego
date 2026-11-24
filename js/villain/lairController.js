@@ -16,7 +16,7 @@
 //                                   화면 없이도 쓰는 짓기 함수 (돈 · 악명 단계 검사, 저장, 3D 움직임, 소리) → { ok, reason, id? }
 //   lair.view / lair.ui             3D 소굴 · 소굴 화면 (시험용)
 //
-// 글자는 아래 TEXT 에서 바꿉니다. 시설 값 · 효과는 data/facilities.js, 계책은 data/schemes.js 에 있어요.
+// 글자는 js/villain/gameText.js 의 LAIR_TEXT 에서 바꿉니다. 시설 값 · 효과는 data/facilities.js, 계책은 data/schemes.js 에 있어요.
 // ─────────────────────────────────────────────────────────────
 
 import { FACILITIES, sellRefundOf } from './data/facilities.js';
@@ -25,21 +25,8 @@ import * as sim from './lair/lairSim.js';
 import { createLairActions } from './lairActions.js';
 import { createLairScreen } from './ui/lairScreen.js';
 import { createLairView } from './lair/lairView.js';
-import { money, toast } from './ui/uiKit.js';
-
-const TEXT = {
-  welcome: '악당 소굴에 어서 와요! 위의 목표를 하나씩 해 봐요',
-  pickSpot: '먼저 3D 소굴에서 놓을 자리를 눌러요',
-  noSpot: '빈자리가 없어요. 시설을 옮기거나 팔아 봐요',
-  built: (name) => `${name}을(를) 지었어요!`,
-  upgraded: (name, lv) => `${name} ${lv}레벨이 됐어요!`,
-  moved: (name) => `${name}을(를) 옮겼어요`,
-  sold: (name, n) => `${name}을(를) 팔고 ${money(n)}원을 돌려받았어요`,
-  newScheme: (names) => `새 계책 발견: ${names.join(', ')}!`,
-  rankStamp: '악명 단계 UP!',
-  rankToast: (r) => `악명 ${r.rank}단계 '${r.name}'! 소굴 땅이 넓어졌어요`,
-  opened: (lines) => `새로 열림: ${lines.join(' · ')}`,
-};
+import { toast } from './ui/uiKit.js';
+import { LAIR_TEXT as TEXT } from './gameText.js'; // 화면 알림 글자 (한국어 / 영어)
 
 const RANK_PARTY_MS = 4200; // 단계 오름 축하 카드가 떠 있는 시간 (1/1000초)
 const GOAL_THEN_RANK = 1500; // 목표 보상으로 단계가 오르면 목표 축하 뒤 이만큼 있다가 (1/1000초)
@@ -206,7 +193,7 @@ export function createLairController(options) {
       return;
     }
     if (!p.preview.valid) {
-      toast(p.preview.reason || '여기는 안 돼요', { kind: 'bad' });
+      toast(p.preview.reason || TEXT.nope, { kind: 'bad' });
       play('nope');
       return;
     }

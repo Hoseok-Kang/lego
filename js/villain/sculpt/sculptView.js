@@ -20,14 +20,24 @@ import { claimRenderer, ownsRenderer, releaseRenderer } from '../monster/sharedR
 import { createSculptCamera } from './sculptCamera.js';
 import { createSculptScene } from './sculptScene.js';
 import { icon } from '../draw/paintIcons.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  zoomIn: '가까이',
-  zoomOut: '멀리',
-  reset: '정면 · 처음 모습',
-  turn: '옆으로 돌리기',
-  help: '빈 곳을 끌면 빙 돌아요 · 두 손가락으로 벌리면 가까이',
-};
+const TEXT = L({
+  ko: {
+    zoomIn: '가까이',
+    zoomOut: '멀리',
+    reset: '정면 · 처음 모습',
+    turn: '옆으로 돌리기',
+    help: '빈 곳을 끌면 빙 돌아요 · 두 손가락으로 벌리면 가까이',
+  },
+  en: {
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    reset: 'Front · Reset view',
+    turn: 'Turn sideways',
+    help: 'Drag empty space to spin · Pinch with two fingers to zoom',
+  },
+});
 const SLOP = { mouse: 5, touch: 12, pen: 8 }; // 이만큼(픽셀) 움직이면 '끌기'
 const DOUBLE_TAP_MS = 320;
 const WHEEL_STEP = 1.12;

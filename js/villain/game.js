@@ -16,7 +16,7 @@
 //       state: { screen, speed, paused, designId, townId }
 //
 // 돈이 다 떨어졌을 때의 '악당 지원금' 규칙은 아래 rescueIfBroke 에 있습니다.
-// 게임 숫자는 villainConfig.js 와 data/*.js, 화면 글자는 각 화면 파일에서 바꿉니다. 이 파일의 글자는 아래 TEXT.
+// 게임 숫자는 villainConfig.js 와 data/*.js, 화면 글자는 각 화면 파일에서 바꿉니다. 이 파일의 글자는 js/villain/gameText.js 의 GAME_TEXT.
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from './villainConfig.js';
@@ -45,17 +45,7 @@ import { createGameState } from './gameState.js';
 import { createLairController } from './lairController.js';
 import { createFirstRun } from './intro/firstRun.js';
 import { showWelcome, showEnding } from './intro/introCards.js';
-
-const TEXT = {
-  copied: (name) => `'${name}' 괴수를 복사했어요`,
-  saved: (name) => `'${name}' 괴수를 도감에 넣었어요`,
-  removed: '괴수를 지웠어요',
-  rescue: (amount) => `돈이 다 떨어져서 악당 협회가 지원금 ${amount}원을 줬어요`,
-  noMonster: '출동할 괴수를 찾지 못했어요',
-  keepMoney: (amount) => `괴수를 보낼 돈 ${amount}원은 남겨 둬야 해요. 조금 더 벌고 와요`,
-  poor: (amount) => `돈이 모자라요 (${amount}원 필요)`,
-  partLocked: (text) => `아직 못 사요. ${text}`,
-};
+import { GAME_TEXT as TEXT } from './gameText.js'; // 화면 알림 글자 (한국어 / 영어)
 
 export function createVillainGame({ container, uiRoot, capture = false }) {
   const events = createEvents();
@@ -375,7 +365,7 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
       res,
       {
         money: saveStore.getSave().money,
-        name: design?.name ?? '괴수',
+        name: design?.name ?? TEXT.monster,
         thumb: design ? thumbOf(design) : '',
         againCost: fresh ? gs.costOf(fresh) : res?.cost,
         fame: info.fame,

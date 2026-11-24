@@ -33,13 +33,23 @@ import { attachPaintKeys } from './paintKeys.js';
 import { EMPTY, countBlocks, flippedH, fromCells, makeGrid } from './paintOps.js';
 import { attachPaintStrokes } from './paintStroke.js';
 import { createPaintUi, TOOLS } from './paintToolbar.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  canvas: '괴수를 그리는 도화지',
-  clearAsk: '그림을 전부 지울까요?',
-  clearYes: '지울래요',
-  clearNo: '아니요',
-};
+const TEXT = L({
+  ko: {
+    canvas: '괴수를 그리는 도화지',
+    clearAsk: '그림을 전부 지울까요?',
+    clearYes: '지울래요',
+    clearNo: '아니요',
+  },
+  en: {
+    canvas: 'Monster drawing board',
+    clearAsk: 'Erase the whole drawing?',
+    clearYes: 'Erase',
+    clearNo: 'No',
+  },
+});
+
 const HISTORY_LIMIT = 100;
 const FLASH_MS = 170;
 const DEPTH_KEYS = new Set(DEPTH_CHOICES);

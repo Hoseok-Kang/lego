@@ -13,10 +13,17 @@
 //   toast(글, { kind: 'good' | 'bad' })     아래쪽에 잠깐 뜨는 알림
 //   isCalm()                               움직임 줄이기 설정이거나 녹화(body.capture) 중이면 true → 숫자 애니메이션 생략
 //
-// 모양은 css/villain.css (확인 창 .vt-dialog, 알림 .vt-toast) 에서 바꿉니다.
+// 확인 창 기본 단추 글자는 아래 TEXT, 모양은 css/villain.css (확인 창 .vt-dialog, 알림 .vt-toast) 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
 import { icon } from './uiIcons.js';
+import { L } from '../lang/lang.js';
+
+// 화면에 보이는 글자 (확인 창의 기본 단추)
+const TEXT = L({
+  ko: { yes: '네', no: '아니요' },
+  en: { yes: 'Yes', no: 'No' },
+});
 
 const TOAST_SECONDS = 2.4; // 알림이 떠 있는 시간
 
@@ -76,7 +83,7 @@ export function bump(node, className = 'is-bump') {
 }
 
 // 화면 안 확인 창. 바깥을 누르거나 Esc 는 '아니요'
-export function askDialog(host, { title = '', message = '', yes = '네', no = '아니요', danger = false } = {}) {
+export function askDialog(host, { title = '', message = '', yes = TEXT.yes, no = TEXT.no, danger = false } = {}) {
   return new Promise((resolve) => {
     host.querySelector(':scope > .vt-dialog')?.remove();
     const veil = el(`

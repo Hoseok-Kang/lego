@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // 악당 타이쿤: 화면 설정 작은 창 (소굴 머리줄의 톱니바퀴 단추를 누르면 그 아래에 뜸)
 //   화면 크기: [작게] [보통] [크게]   → ui/uiScale.js 가 화면 위의 글자 · 단추 · 판을 한꺼번에 줄이고 키움
+//   말: [한국어] [English]            → lang/lang.js 의 setLang 이 고른 말을 기억하고 페이지를 새로 엶
 //   3D 확대 안내 한 줄 (두 손가락 · 휠 · +/− 단추)
 // 창 밖을 누르거나 Esc 를 누르면 닫혀요.
 //
@@ -14,13 +15,24 @@
 
 import { el } from './uiKit.js';
 import { UI_SIZES, uiSize, setUiSize, uiScale } from './uiScale.js';
+import { L, LANG, LANG_CHOICES, setLang } from '../lang/lang.js';
 
-const TEXT = {
-  title: '화면 설정',
-  size: '글자 · 단추 크기',
-  zoomHint: '3D 화면은 두 손가락으로 벌리거나 마우스 휠로 확대해요',
-  close: '닫기',
-};
+const TEXT = L({
+  ko: {
+    title: '화면 설정',
+    size: '글자 · 단추 크기',
+    lang: '말 · Language',
+    zoomHint: '3D 화면은 두 손가락으로 벌리거나 마우스 휠로 확대해요',
+    close: '닫기',
+  },
+  en: {
+    title: 'Settings',
+    size: 'Text & button size',
+    lang: 'Language · 언어',
+    zoomHint: 'Zoom the 3D view with two fingers or the mouse wheel',
+    close: 'Close',
+  },
+});
 
 export function createSettingsPop({ host, button }) {
   const pop = el(`
@@ -30,6 +42,12 @@ export function createSettingsPop({ host, button }) {
         <span>${TEXT.size}</span>
         <div class="vt-seg" role="group" aria-label="${TEXT.size}">
           ${UI_SIZES.map((s) => `<button type="button" class="vt-seg-btn" data-size="${s.key}" aria-pressed="false">${s.label}</button>`).join('')}
+        </div>
+      </div>
+      <div class="vt-settings-row">
+        <span>${TEXT.lang}</span>
+        <div class="vt-seg vt-seg--two" role="group" aria-label="${TEXT.lang}">
+          ${LANG_CHOICES.map((c) => `<button type="button" class="vt-seg-btn" data-lang="${c.code}" lang="${c.code}" aria-pressed="${c.code === LANG}">${c.label}</button>`).join('')}
         </div>
       </div>
       <p class="vt-settings-hint">${TEXT.zoomHint}</p>
@@ -77,6 +95,11 @@ export function createSettingsPop({ host, button }) {
   });
 
   pop.addEventListener('click', (event) => {
+    const langChoice = event.target.closest('[data-lang]');
+    if (langChoice) {
+      if (langChoice.dataset.lang !== LANG) setLang(langChoice.dataset.lang); // 말을 바꾸면 페이지를 새로 엶
+      return;
+    }
     const choice = event.target.closest('[data-size]');
     if (!choice) return;
     setUiSize(choice.dataset.size);

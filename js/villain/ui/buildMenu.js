@@ -19,25 +19,50 @@
 import { el, escapeHTML, money, coin, bump, toast } from './uiKit.js';
 import { artOf, lairIcon } from './lairArt.js';
 import { describeEffect, effectChips, lockText, schemeOf, sheetHead, signature } from './lairKit.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  title: '무엇을 지을까요?',
-  sub: '칸에 놓고, 옆에 붙여서 계책을 찾아요',
-  locked: '악명이 오르면 열려요',
-  empty: '아직 지을 수 있는 시설이 없어요',
-  poor: (n) => `돈이 ${money(n)} 모자라요. 마을을 부숴서 벌어 와요`,
-  max: (n) => (n > 1 ? `${n}개까지만 지을 수 있어요` : '하나만 지을 수 있어요'),
-  maxShort: '다 지었어요',
-  where: '어디에 지을까요?',
-  whereMove: '어디로 옮길까요?',
-  tapHint: '땅을 눌러 자리를 골라요',
-  same: '이 자리에서는 계책이 그대로예요',
-  fresh: '새 계책!',
-  build: '짓기',
-  move: '옮기기',
-  cancel: '취소',
-  free: '공짜',
-};
+const TEXT = L({
+  ko: {
+    title: '무엇을 지을까요?',
+    sub: '칸에 놓고, 옆에 붙여서 계책을 찾아요',
+    locked: '악명이 오르면 열려요',
+    empty: '아직 지을 수 있는 시설이 없어요',
+    poor: (n) => `돈이 ${money(n)} 모자라요. 마을을 부숴서 벌어 와요`,
+    max: (n) => (n > 1 ? `${n}개까지만 지을 수 있어요` : '하나만 지을 수 있어요'),
+    maxShort: '다 지었어요',
+    count: (n) => `${n}개`,
+    where: '어디에 지을까요?',
+    whereMove: '어디로 옮길까요?',
+    tapHint: '땅을 눌러 자리를 골라요',
+    same: '이 자리에서는 계책이 그대로예요',
+    fresh: '새 계책!',
+    nope: '여기는 안 돼요',
+    build: '짓기',
+    move: '옮기기',
+    cancel: '취소',
+    free: '공짜',
+  },
+  en: {
+    title: 'What will you build?',
+    sub: 'Put buildings side by side to find combos',
+    locked: 'Unlocks as your infamy grows',
+    empty: 'Nothing to build yet',
+    poor: (n) => `You need ${money(n)} more coins. Go smash a town!`,
+    max: (n) => (n > 1 ? `You can only build ${n}` : 'You can only build one'),
+    maxShort: 'All built',
+    count: (n) => `×${n}`,
+    where: 'Where will you build it?',
+    whereMove: 'Where will you move it?',
+    tapHint: 'Tap the ground to pick a spot',
+    same: 'No combo change in this spot',
+    fresh: 'New combo!',
+    nope: "Can't go here",
+    build: 'Build',
+    move: 'Move',
+    cancel: 'Cancel',
+    free: 'Free',
+  },
+});
 
 const sizeText = (def) => `${def.size?.[0] ?? 1}×${def.size?.[1] ?? 1}`;
 
@@ -69,7 +94,7 @@ export function createBuildMenu({ onChoose, onClose } = {}) {
     else if (atMax) foot = `<span class="fcard-max">${lairIcon('check')}${TEXT.maxShort}</span>`;
     else foot = `<span class="fcard-price">${coin(price)}</span>`;
     // 이미 지은 개수 (최대 개수가 있으면 '1/2')
-    const count = def.count > 0 && unlocked ? `<span class="fcard-count">${def.maxCount != null ? `${def.count}/${def.maxCount}` : `${def.count}개`}</span>` : '';
+    const count = def.count > 0 && unlocked ? `<span class="fcard-count">${def.maxCount != null ? `${def.count}/${def.maxCount}` : TEXT.count(def.count)}</span>` : '';
     return `
       <button type="button" class="fcard${cls}" data-key="${escapeHTML(def.key)}" style="--i:${index}" ${!unlocked || atMax || !affordable ? 'aria-disabled="true"' : ''}>
         <span class="fcard-pic">${artOf(def)}<span class="fcard-size">${sizeText(def)}</span>${count}</span>
@@ -163,7 +188,7 @@ export function createPlaceBar({ onConfirm, onCancel } = {}) {
     const p = placing.preview;
     let chipHTML;
     if (!p) chipHTML = `<span class="pchip is-hint">${lairIcon('info')}${TEXT.tapHint}</span>`;
-    else if (p.valid === false) chipHTML = `<span class="pchip is-nope">${lairIcon('stop')}<b>${escapeHTML(p.reason || '여기는 안 돼요')}</b></span>`;
+    else if (p.valid === false) chipHTML = `<span class="pchip is-nope">${lairIcon('stop')}<b>${escapeHTML(p.reason || TEXT.nope)}</b></span>`;
     else {
       const gained = (p.gained ?? []).map((k) => schemeChip(k, '+')).join('');
       const lost = (p.lost ?? []).map((k) => schemeChip(k, '-')).join('');
@@ -190,7 +215,7 @@ export function createPlaceBar({ onConfirm, onCancel } = {}) {
     const p = state.placing?.preview;
     if (!p || p.valid === false) {
       bump(bar, 'is-shake');
-      toast(p ? p.reason || '여기는 안 돼요' : TEXT.tapHint, { kind: 'bad' });
+      toast(p ? p.reason || TEXT.nope : TEXT.tapHint, { kind: 'bad' });
       return;
     }
     onConfirm?.();

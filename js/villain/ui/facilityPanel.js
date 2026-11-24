@@ -19,31 +19,60 @@ import { VILLAIN } from '../villainConfig.js';
 import { el, escapeHTML, money, coin, bump, toast, askDialog } from './uiKit.js';
 import { art, artOf, lairIcon } from './lairArt.js';
 import { describeEffect, effectChips, unlockLines, schemeOf, needChips, sheetHead, signature } from './lairKit.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  level: (n, max) => `${n} / ${max} 레벨`,
-  now: '지금 효과',
-  next: '강화하면',
-  none: '효과 없음',
-  unlocks: '레벨마다 열리는 것',
-  schemes: '함께하는 계책',
-  owner: '주인공',
-  helper: '도우미',
-  times: (n) => `×${n}`,
-  noScheme: '아직 켜진 계책이 없어요. 옆에 다른 시설을 붙여 보세요!',
-  hints: '이렇게 붙여 볼까요?',
-  unknown: '???',
-  beside: '옆에',
-  upgrade: '강화',
-  maxed: '최고 레벨!',
-  move: '옮기기',
-  sell: '팔기',
-  noSell: '이 시설은 팔 수 없어요',
-  poor: (n) => `돈이 ${money(n)} 모자라요`,
-  sellAsk: (name, refund) => `'${name}'을(를) 팔고 ${money(refund)}원을 돌려받을까요?`,
-  sellYes: '팔래요',
-  sellNo: '아니요',
-};
+const TEXT = L({
+  ko: {
+    panel: '시설',
+    level: (n, max) => `${n} / ${max} 레벨`,
+    now: '지금 효과',
+    next: '강화하면',
+    none: '효과 없음',
+    unlocks: '레벨마다 열리는 것',
+    schemes: '함께하는 계책',
+    owner: '주인공',
+    helper: '도우미',
+    times: (n) => `×${n}`,
+    noScheme: '아직 켜진 계책이 없어요. 옆에 다른 시설을 붙여 보세요!',
+    hints: '이렇게 붙여 볼까요?',
+    unknown: '???',
+    beside: '옆에',
+    upgrade: '강화',
+    maxed: '최고 레벨!',
+    move: '옮기기',
+    sell: '팔기',
+    noSell: '이 시설은 팔 수 없어요',
+    poor: (n) => `돈이 ${money(n)} 모자라요`,
+    sellAsk: (name, refund) => `'${name}'을(를) 팔고 ${money(refund)}원을 돌려받을까요?`,
+    sellYes: '팔래요',
+    sellNo: '아니요',
+  },
+  en: {
+    panel: 'Building',
+    level: (n, max) => `Level ${n} / ${max}`,
+    now: 'Bonus now',
+    next: 'After upgrade',
+    none: 'No bonus',
+    unlocks: 'Unlocks per level',
+    schemes: 'Combos it joins',
+    owner: 'Star',
+    helper: 'Helper',
+    times: (n) => `×${n}`,
+    noScheme: 'No combos yet. Try building something right next to it!',
+    hints: 'Try putting these together?',
+    unknown: '???',
+    beside: 'next to',
+    upgrade: 'Upgrade',
+    maxed: 'Max level!',
+    move: 'Move',
+    sell: 'Sell',
+    noSell: "This building can't be sold",
+    poor: (n) => `You need ${money(n)} more coins`,
+    sellAsk: (name, refund) => `Sell the ${name} and get ${money(refund)} coins back?`,
+    sellYes: 'Sell it',
+    sellNo: 'No',
+  },
+});
 
 const sellable = (def) => def && def.sellable !== false && !(def.tags ?? []).includes('왕') && def.key !== 'throne';
 
@@ -63,7 +92,7 @@ const involves = (scheme, def) => fits(scheme?.self, def) || (scheme?.adjacent ?
 
 export function createFacilityPanel({ onUpgrade, onMove, onSell, onClose, refundOf } = {}) {
   const box = el(`
-    <section class="lpanel facpanel" aria-label="시설">
+    <section class="lpanel facpanel" aria-label="${TEXT.panel}">
       <div data-head></div>
       <div class="lpanel-body" data-body tabindex="-1"></div>
       <footer class="facpanel-actions" data-actions></footer>

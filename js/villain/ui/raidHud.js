@@ -32,24 +32,56 @@ import { icon } from './uiIcons.js';
 import { heroFace } from './lairArt.js';
 import { createZoomButtons } from './zoomButtons.js';
 import { USER_ZOOM } from '../core/townCamera.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  town: '마을 부서짐',
-  earned: '번 돈',
-  quit: '그만두기',
-  quitAsk: '습격을 그만둘까요?',
-  quitNote: '지금까지 번 돈은 받아요',
-  quitYes: '그만둘래요',
-  quitNo: '계속 부수기',
-  alert: '영웅 출동!',
-  alertSub: (name) => `${name}가 달려오고 있어요`,
-  heroAt: (percent) => `${percent}% 부서지면 영웅이 와요`,
-  captions: {
-    building: '블록이 모여 괴수가 되는 중…',
-    duel: (name) => `${name}와 맞대결!`,
-    cleanup: (left) => `남은 마을 마저 부수기! ${left}초`,
+const TEXT = L({
+  ko: {
+    hudLabel: '습격 정보',
+    monster: '괴수',
+    monsterHp: '괴수 체력',
+    heroHp: '영웅 체력',
+    sound: '소리',
+    speed: '빠르기',
+    town: '마을 부서짐',
+    earned: '번 돈',
+    quit: '그만두기',
+    quitAsk: '습격을 그만둘까요?',
+    quitNote: '지금까지 번 돈은 받아요',
+    quitYes: '그만둘래요',
+    quitNo: '계속 부수기',
+    alert: '영웅 출동!',
+    alertSub: (name) => `${name}가 달려오고 있어요`,
+    heroAt: (percent) => `${percent}% 부서지면 영웅이 와요`,
+    captions: {
+      building: '블록이 모여 괴수가 되는 중…',
+      duel: (name) => `${name}와 맞대결!`,
+      cleanup: (left) => `남은 마을 마저 부수기! ${left}초`,
+    },
   },
-};
+  en: {
+    hudLabel: 'Raid info',
+    monster: 'Monster',
+    monsterHp: 'Monster HP',
+    heroHp: 'Hero HP',
+    sound: 'Sound',
+    speed: 'Speed',
+    town: 'Town smashed',
+    earned: 'Coins earned',
+    quit: 'Quit',
+    quitAsk: 'Stop the raid?',
+    quitNote: 'You keep the coins you earned so far',
+    quitYes: 'Stop',
+    quitNo: 'Keep smashing',
+    alert: 'Hero alert!',
+    alertSub: (name) => `${name} is on the way!`,
+    heroAt: (percent) => `A hero comes at ${percent}% smashed`,
+    captions: {
+      building: 'Blocks are snapping into a monster…',
+      duel: (name) => `Showdown with ${name}!`,
+      cleanup: (left) => `Smash what's left! ${left}s`,
+    },
+  },
+});
 
 const LOW_HP = 0.3; // 체력이 이 비율 아래면 막대가 빨갛게 깜빡임
 const MONEY_TICK = 9; // 번 돈 숫자가 따라가는 빠르기 (클수록 빨리)
@@ -59,15 +91,15 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, onZoom, onZoomRe
   const hero = { name: VILLAIN.hero.name, kind: 'knight' };
   let heroAt = Math.round(VILLAIN.hero.appearAtDestroyed * 100);
   const hud = el(`
-    <section class="hud" hidden aria-label="습격 정보">
+    <section class="hud" hidden aria-label="${TEXT.hudLabel}">
       <div class="hud-floats" data-floats></div>
       <div class="hud-edge" aria-hidden="true"></div>
       <div class="hud-top">
         <div class="hud-fighter hud-fighter--monster" data-monster>
           <span class="hud-face"><img alt="" data-thumb draggable="false"></span>
           <div class="hud-fighter-body">
-            <span class="hud-name" data-name>괴수</span>
-            <div class="hud-bar" role="img" aria-label="괴수 체력"><i class="hud-bar-ghost"></i><i class="hud-bar-fill"></i></div>
+            <span class="hud-name" data-name>${TEXT.monster}</span>
+            <div class="hud-bar" role="img" aria-label="${TEXT.monsterHp}"><i class="hud-bar-ghost"></i><i class="hud-bar-fill"></i></div>
           </div>
         </div>
         <div class="hud-town">
@@ -84,7 +116,7 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, onZoom, onZoomRe
         <div class="hud-fighter hud-fighter--hero" data-hero hidden>
           <div class="hud-fighter-body">
             <span class="hud-name" data-heroname>${escapeHTML(hero.name)}</span>
-            <div class="hud-bar" role="img" aria-label="영웅 체력"><i class="hud-bar-ghost"></i><i class="hud-bar-fill"></i></div>
+            <div class="hud-bar" role="img" aria-label="${TEXT.heroHp}"><i class="hud-bar-ghost"></i><i class="hud-bar-fill"></i></div>
           </div>
           <span class="hud-face" data-heroface>${heroFace(hero.kind)}</span>
         </div>
@@ -98,8 +130,8 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, onZoom, onZoomRe
       <div class="hud-bottom">
         <button type="button" class="vt-btn hud-btn" data-act="quit">${icon('stop')}<span>${TEXT.quit}</span></button>
         <span class="hud-bottom-gap"></span>
-        <button type="button" class="vt-btn vt-btn--icon hud-btn" data-sound-toggle aria-label="소리">${icon('soundOn')}</button>
-        <button type="button" class="vt-btn hud-btn hud-speed" data-act="speed" aria-label="빠르기">${icon('speed')}<b data-speed>1×</b></button>
+        <button type="button" class="vt-btn vt-btn--icon hud-btn" data-sound-toggle aria-label="${TEXT.sound}">${icon('soundOn')}</button>
+        <button type="button" class="vt-btn hud-btn hud-speed" data-act="speed" aria-label="${TEXT.speed}">${icon('speed')}<b data-speed>1×</b></button>
       </div>
     </section>`);
   root.append(hud);
@@ -299,7 +331,7 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, onZoom, onZoomRe
     get speed() {
       return speed;
     },
-    show({ name = '괴수', thumb = '', heroName = null, heroKind = null, heroAt = null } = {}) {
+    show({ name = TEXT.monster, thumb = '', heroName = null, heroKind = null, heroAt = null } = {}) {
       reset();
       setHero({ heroName, heroKind, heroAt });
       q('[data-name]').textContent = name;

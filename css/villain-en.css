@@ -1,0 +1,16 @@
+/* ─────────────────────────────────────────────────────────────
+   악당 타이쿤 영어판 (Doodle Kaiju) 모양 손보기
+   영어 글자는 한국어보다 길어서 넘치는 곳만 여기서 고쳐요.
+   모든 규칙이 html[lang="en"] 아래에 있어서 한국어 화면은 하나도 바뀌지 않아요.
+   (말은 js/villain/lang/lang.js 가 정하고 <html lang="en"> 을 붙여 줘요)
+   ───────────────────────────────────────────────────────────── */
+
+/* 화면 미리보기(진짜 게임이 없을 때) 안내 글 */
+html[lang="en"] .stage.is-demo::after {
+  content: "The 3D town shows up here (screen preview)";
+}
+
+/* 시설 판의 '???' 힌트 줄: 시설 이름 칩까지 글자 사이가 벌어지지 않게 (??? 만 벌어짐) */
+html[lang="en"] .srow.is-unknown .srow-need b {
+  letter-spacing: normal;
+}

@@ -19,18 +19,32 @@
 
 import { el, escapeHTML, money, coin, bump, isCalm } from './uiKit.js';
 import { artOf, lairIcon } from './lairArt.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  title: '목표',
-  claim: '받기!',
-  done: '완료!',
-  party: '목표 달성!',
-  reward: '보상',
-  notoriety: (n) => `악명 +${money(n)}`,
-  progress: (p, n) => `${money(Math.min(p, n))} / ${money(n)}`,
-  empty: '모든 목표를 이뤘어요! 진짜 대마왕이에요',
-  close: '닫기',
-};
+const TEXT = L({
+  ko: {
+    title: '목표',
+    claim: '받기!',
+    done: '완료!',
+    party: '목표 달성!',
+    reward: '보상',
+    notoriety: (n) => `악명 +${money(n)}`,
+    progress: (p, n) => `${money(Math.min(p, n))} / ${money(n)}`,
+    empty: '모든 목표를 이뤘어요! 진짜 대마왕이에요',
+    close: '닫기',
+  },
+  en: {
+    title: 'Goals',
+    claim: 'Claim!',
+    done: 'Done!',
+    party: 'Goal complete!',
+    reward: 'Reward',
+    notoriety: (n) => `Infamy +${money(n)}`,
+    progress: (p, n) => `${money(Math.min(p, n))} / ${money(n)}`,
+    empty: "All goals done! You're a true Overlord",
+    close: 'Close',
+  },
+});
 
 const CLAIM_MS = 720; // 도장 · 동전 효과가 끝나고 onClaim 을 부를 때까지
 const PARTY_MS = 2600; // 축하 카드가 떠 있는 시간

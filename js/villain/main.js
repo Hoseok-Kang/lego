@@ -13,9 +13,16 @@
 //   window.villain.step(dt, { render })  멈춘 동안 한 장면씩 넘기기 (?capture 의 step 과 같음)
 // ─────────────────────────────────────────────────────────────
 
+import { L } from './lang/lang.js';
 import { createVillainGame } from './game.js';
 import { startFrameLoop } from '../core/frameLoop.js';
 import { installLandscapeGuard } from '../core/landscapeGuard.js';
+
+// 화면에 보이는 글자
+const TEXT = L({
+  ko: { noWebgl: '이 브라우저에서는 3D 마을을 열 수 없어요. 다른 브라우저로 열어 주세요.' },
+  en: { noWebgl: "This browser can't show the 3D town. Please try another browser." },
+});
 
 const captureMode = new URLSearchParams(location.search).has('capture');
 if (captureMode) document.body.classList.add('capture');
@@ -31,7 +38,7 @@ try {
   // 3D 화면을 열 수 없는 브라우저 (WebGL 없음 등)
   const message = document.getElementById('bootMessage');
   if (message) {
-    message.textContent = '이 브라우저에서는 3D 마을을 열 수 없어요. 다른 브라우저로 열어 주세요.';
+    message.textContent = TEXT.noWebgl;
     message.classList.add('is-error');
   }
   throw error;

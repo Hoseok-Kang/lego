@@ -17,23 +17,44 @@
 import { el, escapeHTML } from './uiKit.js';
 import { art, artOf, lairIcon } from './lairArt.js';
 import { describeEffect, effectChips, needChips, sheetHead, signature } from './lairKit.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  title: '계책 도감',
-  found: (n, all) => `${n} / ${all} 찾았어요`,
-  summary: '지금 소굴 효과',
-  noSummary: '아직 효과가 없어요. 시설을 지어 보세요!',
-  tiers: { 1: '쉬운 계책', 2: '솜씨 계책', 3: '전설 계책' },
-  on: (n) => (n > 1 ? `켜짐 ×${n}` : '켜짐'),
-  off: '꺼짐',
-  unknown: '???',
-  unknownDesc: '이 시설들을 붙여 보면 무언가 일어날지도…?',
-  beside: '옆에',
-  cross: '의 위·아래·왼쪽·오른쪽을 모두',
-  crossTail: '(으)로',
-  surround: '둘레를 시설로 꽉 채우기',
-  effect: '효과',
-};
+const TEXT = L({
+  ko: {
+    title: '계책 도감',
+    found: (n, all) => `${n} / ${all} 찾았어요`,
+    summary: '지금 소굴 효과',
+    noSummary: '아직 효과가 없어요. 시설을 지어 보세요!',
+    tiers: { 1: '쉬운 계책', 2: '솜씨 계책', 3: '전설 계책' },
+    tierN: (t) => `${t}단계 계책`,
+    on: (n) => (n > 1 ? `켜짐 ×${n}` : '켜짐'),
+    off: '꺼짐',
+    unknown: '???',
+    unknownDesc: '이 시설들을 붙여 보면 무언가 일어날지도…?',
+    beside: '옆에',
+    cross: '의 위·아래·왼쪽·오른쪽을 모두',
+    crossTail: '(으)로',
+    surround: '둘레를 시설로 꽉 채우기',
+    effect: '효과',
+  },
+  en: {
+    title: 'Combo Book',
+    found: (n, all) => `${n} / ${all} found`,
+    summary: 'Lair bonuses now',
+    noSummary: 'No bonuses yet. Build something!',
+    tiers: { 1: 'Easy combos', 2: 'Clever combos', 3: 'Legendary combos' },
+    tierN: (t) => `Tier ${t} combos`,
+    on: (n) => (n > 1 ? `On ×${n}` : 'On'),
+    off: 'Off',
+    unknown: '???',
+    unknownDesc: 'Put these side by side and see what happens…?',
+    beside: 'next to',
+    cross: 'with',
+    crossTail: 'on all 4 sides',
+    surround: 'with no empty space around it',
+    effect: 'Bonus',
+  },
+});
 
 export function createSchemeBook({ onClose } = {}) {
   const box = el(`
@@ -101,7 +122,7 @@ export function createSchemeBook({ onClose } = {}) {
       ${tiers
         .map(
           (t) => `
-        <h3 class="lpanel-sub tier-title"><span class="tier-stars">${lairIcon('star').repeat(t)}</span>${TEXT.tiers[t] ?? `${t}단계 계책`}</h3>
+        <h3 class="lpanel-sub tier-title"><span class="tier-stars">${lairIcon('star').repeat(t)}</span>${TEXT.tiers[t] ?? TEXT.tierN(t)}</h3>
         <div class="slist">${schemes
           .filter((s) => (s.tier ?? 1) === t)
           .map((s) => entryHTML(s, index++))

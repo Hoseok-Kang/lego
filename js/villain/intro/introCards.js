@@ -9,24 +9,44 @@
 //   두 함수 모두 카드를 닫는 함수를 돌려줍니다.
 // ─────────────────────────────────────────────────────────────
 import { el, escapeHTML, money } from '../ui/uiKit.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  welcomeTitle: '악당님, 어서 오세요!',
-  welcomeText: '마을을 부술 첫 괴수를 직접 그려 보세요. 다 그리면 바로 시골 마을로 출동해요!',
-  steps: ['칸을 칠해 괴수 그리기', '공격 부품 붙이기', '저장하면 바로 출동!'],
-  free: '첫 출동은 공짜예요',
-  go: '괴수 그리러 가기',
-  loseTitle: '앗, 영웅에게 졌어요!',
-  loseText: (r) => `${r.heroName || '영웅'}에게 졌지만, 마을을 ${r.destroyedPercent ?? 0}% 부숴서 ${money(r.earned ?? 0)}원을 벌었어요.`,
-  loseMore: '진짜 악당은 포기하지 않죠. 소굴을 키워서 복수해요!',
-  winTitle: '첫 출동부터 마을 정복!',
-  winText: (r) => `마을을 ${r.destroyedPercent ?? 0}% 부수고 ${money(r.earned ?? 0)}원을 벌었어요. 타고난 악당이네요!`,
-  winMore: '이제 소굴을 키워서 더 큰 마을로 가요!',
-  quitTitle: '출동을 멈췄어요',
-  quitText: '괜찮아요! 소굴에서 준비해서 다시 가요.',
-  quitMore: '그린 괴수는 괴수 도감에 들어 있어요.',
-  toLair: '소굴로 가기',
-};
+const TEXT = L({
+  ko: {
+    welcomeTitle: '악당님, 어서 오세요!',
+    welcomeText: '마을을 부술 첫 괴수를 직접 그려 보세요. 다 그리면 바로 시골 마을로 출동해요!',
+    steps: ['칸을 칠해 괴수 그리기', '공격 부품 붙이기', '저장하면 바로 출동!'],
+    free: '첫 출동은 공짜예요',
+    go: '괴수 그리러 가기',
+    loseTitle: '앗, 영웅에게 졌어요!',
+    loseText: (r) => `${r.heroName || '영웅'}에게 졌지만, 마을을 ${r.destroyedPercent ?? 0}% 부숴서 ${money(r.earned ?? 0)}원을 벌었어요.`,
+    loseMore: '진짜 악당은 포기하지 않죠. 소굴을 키워서 복수해요!',
+    winTitle: '첫 출동부터 마을 정복!',
+    winText: (r) => `마을을 ${r.destroyedPercent ?? 0}% 부수고 ${money(r.earned ?? 0)}원을 벌었어요. 타고난 악당이네요!`,
+    winMore: '이제 소굴을 키워서 더 큰 마을로 가요!',
+    quitTitle: '출동을 멈췄어요',
+    quitText: '괜찮아요! 소굴에서 준비해서 다시 가요.',
+    quitMore: '그린 괴수는 괴수 도감에 들어 있어요.',
+    toLair: '소굴로 가기',
+  },
+  en: {
+    welcomeTitle: 'Welcome, Villain!',
+    welcomeText: "Draw your very first monster to smash a town. When it's done, it goes straight to raid Tiny Town!",
+    steps: ['Paint blocks to draw a monster', 'Stick on attack parts', 'Save and it attacks!'],
+    free: 'Your first raid is free',
+    go: 'Draw a monster',
+    loseTitle: 'Oops, the hero won!',
+    loseText: (r) => `${r.heroName || 'The hero'} won, but you smashed ${r.destroyedPercent ?? 0}% of the town and earned ${money(r.earned ?? 0)} coins.`,
+    loseMore: 'Real villains never give up. Grow your lair and get revenge!',
+    winTitle: 'Conquered on your first raid!',
+    winText: (r) => `You smashed ${r.destroyedPercent ?? 0}% of the town and earned ${money(r.earned ?? 0)} coins. A born villain!`,
+    winMore: 'Now grow your lair and go for bigger towns!',
+    quitTitle: 'Raid stopped',
+    quitText: "That's OK! Get ready in your lair and try again.",
+    quitMore: 'Your monster is waiting in the Monster Book.',
+    toLair: 'Go to the lair',
+  },
+});
 
 // 카드 하나를 띄우고, 단추를 누르면 닫고 onGo 를 부름
 function showCard(host, html, onGo) {

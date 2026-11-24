@@ -23,24 +23,48 @@ import { VILLAIN } from '../villainConfig.js';
 import { partIconURL } from '../draw/partIcons.js';
 import { el, escapeHTML, money, coin, countTo, bump, toast } from './uiKit.js';
 import { icon } from './uiIcons.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  title: '부품 상점',
-  lead: '한 번 사면 어느 괴수에게나 붙일 수 있어요',
-  back: '소굴로',
-  buy: '사기',
-  owned: '가지고 있어요',
-  free: '처음부터 있어요',
-  bought: '샀어요!',
-  attach: '붙일 때마다',
-  poor: (n) => `돈이 ${money(n)} 모자라요. 마을을 부숴서 벌어 와요`,
-  slots: (n) => `괴수 한 마리에 부품을 ${n}개까지 붙일 수 있어요`,
-  locked: '아직 못 사요',
-  lockedHint: '소굴에 시설을 지으면 열려요',
-  power: '힘',
-  speed: '빠르기',
-  reach: '거리',
-};
+const TEXT = L({
+  ko: {
+    title: '부품 상점',
+    lead: '한 번 사면 어느 괴수에게나 붙일 수 있어요',
+    back: '소굴로',
+    buy: '사기',
+    owned: '가지고 있어요',
+    free: '처음부터 있어요',
+    bought: '샀어요!',
+    boughtHint: (name) => `${name}: 샀어요! 괴수를 고쳐서 붙여 보세요`,
+    attach: '붙일 때마다',
+    poor: (n) => `돈이 ${money(n)} 모자라요. 마을을 부숴서 벌어 와요`,
+    slots: (n) => `괴수 한 마리에 부품을 ${n}개까지 붙일 수 있어요`,
+    locked: '아직 못 사요',
+    lockedHint: '소굴에 시설을 지으면 열려요',
+    power: '힘',
+    speed: '빠르기',
+    reach: '거리',
+    myMoney: '가진 돈',
+  },
+  en: {
+    title: 'Parts Shop',
+    lead: 'Buy once, then stick it on any monster',
+    back: 'Lair',
+    buy: 'Buy',
+    owned: 'Owned',
+    free: 'Yours from the start',
+    bought: 'Bought!',
+    boughtHint: (name) => `${name} bought! Edit a monster to stick it on`,
+    attach: 'Adds to cost',
+    poor: (n) => `You need ${money(n)} more coins. Go smash a town!`,
+    slots: (n) => (n === 1 ? 'Each monster can carry 1 part' : `Each monster can carry up to ${n} parts`),
+    locked: "Can't buy yet",
+    lockedHint: 'Build in your lair to unlock',
+    power: 'Power',
+    speed: 'Speed',
+    reach: 'Reach',
+    myMoney: 'Your coins',
+  },
+});
 
 const PIPS = 5; // 세기 막대 칸 수
 
@@ -68,7 +92,7 @@ export function createShopScreen(root, { onBuy, onBack } = {}) {
       <header class="shop-head">
         <button type="button" class="vt-btn" data-act="back">${icon('back')}<span>${TEXT.back}</span></button>
         <div class="shop-title"><h1>${icon('shop')}${TEXT.title}</h1><p>${TEXT.lead}</p></div>
-        <div class="vt-money" title="가진 돈">${icon('coin')}<b data-money>0</b></div>
+        <div class="vt-money" title="${TEXT.myMoney}">${icon('coin')}<b data-money>0</b></div>
       </header>
       <div class="shop-list" data-list tabindex="-1"></div>
       <p class="shop-foot" data-foot>${TEXT.slots(VILLAIN.parts.slots)}</p>
@@ -154,7 +178,7 @@ export function createShopScreen(root, { onBuy, onBack } = {}) {
     const fresh = list.querySelector(`[data-type="${type}"]`);
     fresh?.insertAdjacentHTML('beforeend', `<span class="pcard-stamp">${TEXT.bought}</span>`);
     bump(fresh, 'is-bought');
-    toast(`${part.name}: ${TEXT.bought} 괴수를 고쳐서 붙여 보세요`, { kind: 'good' });
+    toast(TEXT.boughtHint(part.name), { kind: 'good' });
   });
 
   return {

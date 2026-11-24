@@ -2,13 +2,16 @@
 // 악당 타이쿤: 게임 숫자 설정
 // 이 파일의 숫자만 바꿔도 게임 느낌이 바뀝니다. (다른 파일은 건드리지 않아도 됩니다)
 // 길이 단위는 '블록 한 칸' 입니다. 방향: 화면 위쪽 = -z, 아래쪽(카메라 쪽) = +z, 오른쪽 = +x
+// 이름 · 설명 글자는 L({ ko: '한국어', en: 'English' }) 꼴이에요 (js/villain/lang/lang.js). 영어는 en 쪽만 고치면 됩니다.
 // ─────────────────────────────────────────────────────────────
+
+import { L } from './lang/lang.js';
 
 // ── 영웅 세 명 (마을마다 지키는 영웅이 다름) ──
 // 번개 기사 = 1단계 영웅 그대로. VILLAIN.hero 는 번개 기사와 같은 것 (옛 코드가 그대로 돌게)
 const KNIGHT = {
-  name: '번개 기사',
-  hint: '칼이 빨라요. 멀리서 불을 뿜으면 유리해요',
+  name: L({ ko: '번개 기사', en: 'Thunder Knight' }),
+  hint: L({ ko: '칼이 빨라요. 멀리서 불을 뿜으면 유리해요', en: 'Fast with a sword. Breathe fire from far away!' }),
   appearAtDestroyed: 0.3, // 마을이 이만큼(비율) 부서지면 출동 (주인 요청: 영웅은 20~30% 부쉈을 때. 시골 마을 30%)
   appearLatestSeconds: 30, // 마을이 덜 부서졌어도 부수기 시작한 지 이 시간(초)이 지나면 출동 (판이 늘어지지 않게)
   alertSeconds: 2, // '영웅 출동!' 경보 뒤 나타날 때까지
@@ -24,8 +27,8 @@ const KNIGHT = {
 
 // 얼음 마법사 (바닷가 마을): 멀찍이 서서 얼음을 던져 괴수를 느리게 하고, 가까이 오면 휙 사라져요
 const ICE_MAGE = {
-  name: '얼음 마법사',
-  hint: '멀리서 얼음을 던져 느리게 해요. 돌진 뿔로 확 들이받으면 좋아요',
+  name: L({ ko: '얼음 마법사', en: 'Ice Mage' }),
+  hint: L({ ko: '멀리서 얼음을 던져 느리게 해요. 돌진 뿔로 확 들이받으면 좋아요', en: 'Throws ice from afar to slow you down. Ram the mage with the Charge Horn!' }),
   appearAtDestroyed: 0.25, // 항구는 25% 부서지면 출동
   appearLatestSeconds: 28,
   alertSeconds: 2,
@@ -49,8 +52,8 @@ const ICE_MAGE = {
 
 // 황금 수호자 (왕궁 성곽): 크고 느림. 방패를 들면 앞에서 오는 공격을 반 막고, 땅을 쾅 내려찍음 (미리 표시)
 const GUARDIAN = {
-  name: '황금 수호자',
-  hint: '방패로 앞을 막아요. 멀리서 불을 뿜거나 크게 부수면 이겨요',
+  name: L({ ko: '황금 수호자', en: 'Golden Guardian' }),
+  hint: L({ ko: '방패로 앞을 막아요. 멀리서 불을 뿜거나 크게 부수면 이겨요', en: 'Blocks hits from the front with a shield. Use fire from afar or hit really hard!' }),
   appearAtDestroyed: 0.2, // 왕궁 성곽은 20% 부서지면 출동 (큰 마을일수록 영웅이 빨리 옴)
   appearLatestSeconds: 32,
   alertSeconds: 2.5,
@@ -80,19 +83,19 @@ export const VILLAIN = {
     maxThickness: 7, // (S) 두께 붓으로 정할 수 있는 가장 두꺼운 두께 (칸). 1 = 종이처럼 납작
     // 고를 수 있는 색 (글자 = 저장할 때 쓰는 기호, js/bricks/brickColors.js 의 색만)
     palette: [
-      { ch: 'G', hex: '#4B9F4A', name: '초록' },
-      { ch: 'g', hex: '#BBE90B', name: '라임' },
-      { ch: 'R', hex: '#C91A09', name: '빨강' },
-      { ch: 'O', hex: '#FE8A18', name: '주황' },
-      { ch: 'Y', hex: '#F2CD37', name: '노랑' },
-      { ch: 'B', hex: '#0055BF', name: '파랑' },
-      { ch: 'b', hex: '#9FC3E9', name: '하늘' },
-      { ch: 'P', hex: '#3F3691', name: '보라' },
-      { ch: 'p', hex: '#E4ADC8', name: '분홍' },
-      { ch: 'N', hex: '#582A12', name: '밤색' },
-      { ch: 'A', hex: '#A0A5A9', name: '회색' },
-      { ch: 'K', hex: '#1B2A34', name: '검정' },
-      { ch: 'W', hex: '#F4F4F4', name: '흰색' },
+      { ch: 'G', hex: '#4B9F4A', name: L({ ko: '초록', en: 'Green' }) },
+      { ch: 'g', hex: '#BBE90B', name: L({ ko: '라임', en: 'Lime' }) },
+      { ch: 'R', hex: '#C91A09', name: L({ ko: '빨강', en: 'Red' }) },
+      { ch: 'O', hex: '#FE8A18', name: L({ ko: '주황', en: 'Orange' }) },
+      { ch: 'Y', hex: '#F2CD37', name: L({ ko: '노랑', en: 'Yellow' }) },
+      { ch: 'B', hex: '#0055BF', name: L({ ko: '파랑', en: 'Blue' }) },
+      { ch: 'b', hex: '#9FC3E9', name: L({ ko: '하늘', en: 'Sky' }) },
+      { ch: 'P', hex: '#3F3691', name: L({ ko: '보라', en: 'Purple' }) },
+      { ch: 'p', hex: '#E4ADC8', name: L({ ko: '분홍', en: 'Pink' }) },
+      { ch: 'N', hex: '#582A12', name: L({ ko: '밤색', en: 'Brown' }) },
+      { ch: 'A', hex: '#A0A5A9', name: L({ ko: '회색', en: 'Gray' }) },
+      { ch: 'K', hex: '#1B2A34', name: L({ ko: '검정', en: 'Black' }) },
+      { ch: 'W', hex: '#F4F4F4', name: L({ ko: '흰색', en: 'White' }) },
     ],
   },
 
@@ -118,17 +121,17 @@ export const VILLAIN = {
     slots: 2, // 괴수 한 마리에 붙일 수 있는 개수 (기본. 연구실 3단계 · 악명 단계 덤으로 늘어남 → lair/modifiers.js 의 partSlots)
     maxSlots: 4, // 아무리 늘어도 이만큼까지 (그림에 저장되는 부품 수의 끝)
     types: {
-      claw: { name: '집게발', price: 0, cost: 15, damage: 16, interval: 0.9, range: 4, desc: '가까운 것을 세게 휘둘러 쳐요' },
-      fireMouth: { name: '불 뿜는 입', price: 120, cost: 25, damage: 10, interval: 0.25, range: 14, burstSeconds: 1.6, restSeconds: 1.4, desc: '멀리까지 불을 뿜어요' },
-      horn: { name: '돌진 뿔', price: 200, cost: 20, damage: 60, interval: 3.2, range: 16, dashSpeed: 30, desc: '멀리서 달려와 쿵 들이받아요' },
+      claw: { name: L({ ko: '집게발', en: 'Pincer Claw' }), price: 0, cost: 15, damage: 16, interval: 0.9, range: 4, desc: L({ ko: '가까운 것을 세게 휘둘러 쳐요', en: 'Swings hard at anything close' }) },
+      fireMouth: { name: L({ ko: '불 뿜는 입', en: 'Fire Breath' }), price: 120, cost: 25, damage: 10, interval: 0.25, range: 14, burstSeconds: 1.6, restSeconds: 1.4, desc: L({ ko: '멀리까지 불을 뿜어요', en: 'Breathes fire a long way' }) },
+      horn: { name: L({ ko: '돌진 뿔', en: 'Charge Horn' }), price: 200, cost: 20, damage: 60, interval: 3.2, range: 16, dashSpeed: 30, desc: L({ ko: '멀리서 달려와 쿵 들이받아요', en: 'Runs in from far away and rams. BONK!' }) },
       // (P) 꼬리 철퇴: 빙글 한 바퀴 돌며 range 안의 모든 것(건물·영웅)을 치고 영웅을 knockback 칸만큼 밀쳐 냄. 둘러싸였을 때 좋음
       //     knockMul: 영웅마다 밀려나는 배율 (무거운 황금 수호자는 덜 밀림, 멀리 서는 얼음 마법사는 너무 멀어지지 않게)
       //     (P 조정: 시험 습격 결과 피해 22 → 30, 간격 2.4 → 2.2, 거리 5.5 → 6 — 집게발보다 조금 나은 값 · 싼 범위 공격이 되게)
-      tailMace: { name: '꼬리 철퇴', price: 160, cost: 20, damage: 30, interval: 2.2, range: 6, knockback: 5, knockMul: { guardian: 0.45, iceMage: 0.6 }, desc: '빙글 한 바퀴! 둘레를 다 치고 영웅을 밀쳐요' },
+      tailMace: { name: L({ ko: '꼬리 철퇴', en: 'Tail Mace' }), price: 160, cost: 20, damage: 30, interval: 2.2, range: 6, knockback: 5, knockMul: { guardian: 0.45, iceMage: 0.6 }, desc: L({ ko: '빙글 한 바퀴! 둘레를 다 치고 영웅을 밀쳐요', en: 'Spin! Hits everything around and knocks heroes back' }) },
       // (P) 레이저 눈: chargeSeconds 동안 눈빛을 모았다가 beamSeconds 동안 곧은 빛줄기. tick 초마다 줄 위의 모든 것에 damage
       //     width: 빛줄기가 닿는 반쪽 너비 (칸). 황금 수호자의 방패는 레이저도 반 막음 (방패 깨기는 못 함)
       //     (P 조정: 한 번 지짐 14 → 10, 간격 5 → 5.5 — 14 일 때는 레이저 혼자 왕궁 성곽 영웅을 이겨서 다른 부품을 다 눌렀음)
-      laserEye: { name: '레이저 눈', price: 450, cost: 30, damage: 10, interval: 5.5, range: 22, chargeSeconds: 0.8, beamSeconds: 1.0, tick: 0.1, width: 1.1, desc: '눈빛을 모아 쏘면 한 줄을 다 꿰뚫어요' },
+      laserEye: { name: L({ ko: '레이저 눈', en: 'Laser Eyes' }), price: 450, cost: 30, damage: 10, interval: 5.5, range: 22, chargeSeconds: 0.8, beamSeconds: 1.0, tick: 0.1, width: 1.1, desc: L({ ko: '눈빛을 모아 쏘면 한 줄을 다 꿰뚫어요', en: 'Charges up and zaps through everything in a line' }) },
     },
   },
 
@@ -137,7 +140,7 @@ export const VILLAIN = {
     width: 64, // 바닥판 가로 칸
     depth: 44, // 바닥판 세로 칸
     groundColor: '#4B9F4A',
-    name: '꼬마 마을',
+    name: L({ ko: '꼬마 마을', en: 'Tiny Town' }),
     hpPerBlock: 0.8, // 건물 블록 하나를 떼어 내는 데 필요한 피해
     payPerBlock: 0.4, // 건물 블록 하나를 부술 때마다 버는 돈
     clearBonus: 150, // 영웅을 이기고 마을을 다 부수면 받는 보너스

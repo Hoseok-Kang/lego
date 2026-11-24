@@ -46,18 +46,42 @@ import { createBestiaryPanel } from './bestiaryPanel.js';
 import { createTownMap } from './townMap.js';
 import { createSettingsPop } from './settingsPop.js';
 import { fullscreenButton } from '../../core/fullscreen.js';
+import { L, GAME_TITLE_PARTS } from '../lang/lang.js';
 
-const TEXT = {
-  build: '짓기',
-  bestiary: '괴수 도감',
-  shop: '부품 상점',
-  raid: '출동!',
-  settings: '화면 설정',
-  schemes: '계책',
-  mods: '지금 소굴 효과',
-  noMods: '시설을 지으면 여기에 효과가 모여요',
-  rankHint: (left) => (left > 0 ? `악명 ${money(left)} 더 모으면 다음 단계! 마을을 부수고 영웅을 이겨 봐요` : '가장 높은 악명 단계예요!'),
-};
+const TEXT = L({
+  ko: {
+    build: '짓기',
+    bestiary: '괴수 도감',
+    shop: '부품 상점',
+    raid: '출동!',
+    settings: '화면 설정',
+    schemes: '계책',
+    schemeBook: '계책 도감',
+    lairLabel: '악당 소굴',
+    dockLabel: '소굴 단추',
+    myMoney: '가진 돈',
+    sound: '소리',
+    mods: '지금 소굴 효과',
+    noMods: '시설을 지으면 여기에 효과가 모여요',
+    rankHint: (left) => (left > 0 ? `악명 ${money(left)} 더 모으면 다음 단계! 마을을 부수고 영웅을 이겨 봐요` : '가장 높은 악명 단계예요!'),
+  },
+  en: {
+    build: 'Build',
+    bestiary: 'Monsters',
+    shop: 'Parts Shop',
+    raid: 'Attack!',
+    settings: 'Settings',
+    schemes: 'Combos',
+    schemeBook: 'Combo Book',
+    lairLabel: 'Villain lair',
+    dockLabel: 'Lair buttons',
+    myMoney: 'Your coins',
+    sound: 'Sound',
+    mods: 'Lair bonuses now',
+    noMods: 'Build facilities to collect bonuses here',
+    rankHint: (left) => (left > 0 ? `${money(left)} more infamy to rank up! Smash towns and beat heroes` : "You're at the top rank!"),
+  },
+});
 
 const HELLO_SECONDS = 6;
 
@@ -66,25 +90,25 @@ export function createLairScreen(root, options = {}) {
   const openEditor = (design) => (cb.onOpenEditor ? cb.onOpenEditor(design) : design ? cb.onEdit?.(design) : cb.onNew?.());
 
   const screen = el(`
-    <section class="lair vt-screen" hidden aria-label="악당 소굴">
+    <section class="lair vt-screen" hidden aria-label="${TEXT.lairLabel}">
       <div class="lair-sky" aria-hidden="true"><i class="lair-star s1"></i><i class="lair-star s2"></i><i class="lair-star s3"></i><i class="lair-star s4"></i><i class="lair-star s5"></i></div>
       <div class="lair-viewcell" data-cell>
         <div class="lair-view" data-view></div>
-        <button type="button" class="lair-bookbtn" data-act="schemes" aria-label="계책 도감">${lairIcon('book')}<span>${TEXT.schemes}</span><b data-found></b></button>
+        <button type="button" class="lair-bookbtn" data-act="schemes" aria-label="${TEXT.schemeBook}">${lairIcon('book')}<span>${TEXT.schemes}</span><b data-found></b></button>
         <p class="lair-hello" data-hello hidden></p>
       </div>
       <header class="lair-top">
-        <h1 class="vt-logo">${MASCOT}<span class="vt-logo-a">악당</span><span class="vt-logo-b">타이쿤</span></h1>
+        <h1 class="vt-logo">${MASCOT}<span class="vt-logo-a">${GAME_TITLE_PARTS[0]}</span><span class="vt-logo-b">${GAME_TITLE_PARTS[1]}</span></h1>
         <div class="lair-badge" data-badge></div>
         <div class="lair-wallet">
-          <div class="vt-money" title="가진 돈">${icon('coin')}<b data-money>0</b></div>
-          <button type="button" class="vt-btn vt-btn--icon" data-sound-toggle aria-label="소리">${icon('soundOn')}</button>
+          <div class="vt-money" title="${TEXT.myMoney}">${icon('coin')}<b data-money>0</b></div>
+          <button type="button" class="vt-btn vt-btn--icon" data-sound-toggle aria-label="${TEXT.sound}">${icon('soundOn')}</button>
         </div>
         <button type="button" class="vt-btn vt-btn--icon lair-gear" data-settings aria-label="${TEXT.settings}" title="${TEXT.settings}">${icon('gear')}</button>
         <i class="lair-drip d1" aria-hidden="true"></i><i class="lair-drip d2" aria-hidden="true"></i><i class="lair-drip d3" aria-hidden="true"></i>
       </header>
       <div class="lair-goals" data-goals><div class="lair-mods" data-mods></div></div>
-      <nav class="lair-dock" aria-label="소굴 단추">
+      <nav class="lair-dock" aria-label="${TEXT.dockLabel}">
         <button type="button" class="vt-btn dock-btn dock-build" data-act="build">${lairIcon('hammer')}<span>${TEXT.build}</span></button>
         <button type="button" class="vt-btn dock-btn dock-book" data-act="bestiary">${lairIcon('monster')}<span>${TEXT.bestiary}</span></button>
         <button type="button" class="vt-btn vt-btn--gold dock-btn dock-shop" data-act="shop">${icon('shop')}<span>${TEXT.shop}</span></button>

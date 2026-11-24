@@ -26,21 +26,27 @@ import { evaluate } from './lairSim.js';
 import { rankFor, rankPerks } from '../data/ranks.js';
 import { getTown } from '../data/towns.js';
 import { designCost } from '../data/bestiary.js';
+import { L } from '../lang/lang.js';
 
-// 배수 효과 이름표 (better: 1 이면 클수록 좋음, -1 이면 작을수록 좋음)
+// 배수 효과 이름표 (better: 1 이면 클수록 좋음, -1 이면 작을수록 좋음). 화면 글자는 label (한국어 / 영어)
 export const MOD_INFO = {
-  cost: { label: '출동 값', better: -1 },
-  hp: { label: '괴수 체력', better: 1 },
-  dmg: { label: '괴수 공격', better: 1 },
-  partDmg: { label: '부품 공격', better: 1 },
-  smash: { label: '부수는 힘', better: 1 },
-  pay: { label: '습격 수입', better: 1 },
-  notoriety: { label: '악명', better: 1 },
-  heroHp: { label: '영웅 체력', better: -1 },
-  heroDelay: { label: '영웅 늦게 오기', better: 1, kind: 'delay' },
-  raidBonus: { label: '습격 덤', better: 1, kind: 'money' },
-  partSlots: { label: '부품 칸', better: 1, kind: 'count' },
+  cost: { label: L({ ko: '출동 값', en: 'Cost' }), better: -1 },
+  hp: { label: L({ ko: '괴수 체력', en: 'Monster HP' }), better: 1 },
+  dmg: { label: L({ ko: '괴수 공격', en: 'Monster attack' }), better: 1 },
+  partDmg: { label: L({ ko: '부품 공격', en: 'Part attack' }), better: 1 },
+  smash: { label: L({ ko: '부수는 힘', en: 'Smash power' }), better: 1 },
+  pay: { label: L({ ko: '습격 수입', en: 'Raid coins' }), better: 1 },
+  notoriety: { label: L({ ko: '악명', en: 'Infamy' }), better: 1 },
+  heroHp: { label: L({ ko: '영웅 체력', en: 'Hero HP' }), better: -1 },
+  heroDelay: { label: L({ ko: '영웅 늦게 오기', en: 'Hero arrives later' }), better: 1, kind: 'delay' },
+  raidBonus: { label: L({ ko: '습격 덤', en: 'Raid bonus' }), better: 1, kind: 'money' },
+  partSlots: { label: L({ ko: '부품 칸', en: 'Part slots' }), better: 1, kind: 'count' },
 };
+// 숫자 뒤에 붙는 말 (돈 · 칸)
+const UNIT = L({
+  ko: { money: (n) => `${n}원`, count: (n) => `${n}칸` },
+  en: { money: (n) => `${n} coins`, count: (n) => `${n}` },
+});
 export const MUL_KEYS = ['cost', 'hp', 'dmg', 'partDmg', 'smash', 'pay', 'notoriety', 'heroHp'];
 
 function clampMul(key, value) {
@@ -83,8 +89,8 @@ function line(key, amount) {
   const info = MOD_INFO[key];
   if (!info || Math.abs(amount) < 0.005) return null;
   let value;
-  if (info.kind === 'money') value = `${amount > 0 ? '+' : ''}${Math.round(amount)}원`;
-  else if (info.kind === 'count') value = `${amount > 0 ? '+' : ''}${Math.round(amount)}칸`;
+  if (info.kind === 'money') value = `${amount > 0 ? '+' : ''}${UNIT.money(Math.round(amount))}`;
+  else if (info.kind === 'count') value = `${amount > 0 ? '+' : ''}${UNIT.count(Math.round(amount))}`;
   else value = pct(amount);
   return { key, label: info.label, value, good: amount * info.better > 0 };
 }

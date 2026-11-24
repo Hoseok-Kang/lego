@@ -32,17 +32,31 @@
 import { VILLAIN } from '../villainConfig.js';
 import { FACILITIES, matchesNeed, upgradePriceOf, sellRefundOf } from '../data/facilities.js';
 import { SCHEME_LIST } from '../data/schemes.js';
+import { L } from '../lang/lang.js';
 
-export const REASONS = {
-  unknown: '없는 시설이에요',
-  outside: '땅 밖이에요',
-  occupied: '다른 시설이 있어요',
-  onlyOne: '하나만 지을 수 있어요',
-  tooMany: (n) => `${n}개까지만 지을 수 있어요`,
-  missing: '그 시설이 없어요',
-  notSellable: '이 시설은 팔 수 없어요',
-  maxLevel: '이미 가장 높은 단계예요',
-};
+// 못 짓는 이유 (화면에 알림으로 보이는 글자)
+export const REASONS = L({
+  ko: {
+    unknown: '없는 시설이에요',
+    outside: '땅 밖이에요',
+    occupied: '다른 시설이 있어요',
+    onlyOne: '하나만 지을 수 있어요',
+    tooMany: (n) => `${n}개까지만 지을 수 있어요`,
+    missing: '그 시설이 없어요',
+    notSellable: '이 시설은 팔 수 없어요',
+    maxLevel: '이미 가장 높은 단계예요',
+  },
+  en: {
+    unknown: "That building doesn't exist",
+    outside: "That's off your land",
+    occupied: "There's already a building here",
+    onlyOne: 'You can only build one',
+    tooMany: (n) => `You can only build ${n}`,
+    missing: "That building isn't there",
+    notSellable: "This building can't be sold",
+    maxLevel: 'Already at max level',
+  },
+});
 
 const DX = [0, 1, 0, -1];
 const DY = [-1, 0, 1, 0];

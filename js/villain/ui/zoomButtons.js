@@ -13,13 +13,12 @@
 // ─────────────────────────────────────────────────────────────
 
 import { el } from './uiKit.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  group: '확대',
-  in: '가까이 보기',
-  out: '멀리 보기',
-  reset: '처음 보기로',
-};
+const TEXT = L({
+  ko: { group: '확대', in: '가까이 보기', out: '멀리 보기', reset: '처음 보기로' },
+  en: { group: 'Zoom', in: 'Zoom in', out: 'Zoom out', reset: 'Reset view' },
+});
 
 const line = 'fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"';
 const ICON = {

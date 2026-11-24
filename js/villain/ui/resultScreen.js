@@ -25,31 +25,60 @@ import { VILLAIN } from '../villainConfig.js';
 import { el, escapeHTML, money, coin, countTo, bump, toast, isCalm } from './uiKit.js';
 import { icon } from './uiIcons.js';
 import { lairIcon } from './lairArt.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  win: '마을 정복!',
-  winSub: (hero, town) => `${town ? `${town}의 ` : ''}${hero}를 물리쳤어요. 음하하!`,
-  lose: '괴수가 펑!',
-  loseSub: (hero) => `${hero}에게 졌어요. 그래도 번 돈은 챙겼어요`,
-  fame: (n) => `악명 +${money(n)}`,
-  fameLeft: (name, left) => `${name}까지 ${money(left)}`,
-  fameMax: '가장 높은 단계예요',
-  rankUp: '악명 단계 UP!',
-  opened: (list) => `새로 열림: ${list.join(' · ')}`,
-  quit: '돌아왔어요',
-  quitSub: '습격을 그만뒀어요. 번 돈은 챙겼어요',
-  smashed: '마을 부서짐',
-  time: '걸린 시간',
-  cost: '출동 값',
-  total: '번 돈',
-  wallet: '가진 돈',
-  profit: (n) => (n >= 0 ? `출동 값을 빼면 ${money(n)} 이득이에요` : `출동 값을 빼면 ${money(-n)} 손해예요. 더 크게 부숴 봐요`),
-  tipClose: '거의 이겼어요! 부품을 하나 더 붙여 보세요',
-  tipFar: '더 크게 그리면 더 튼튼해요. 부품도 사서 붙여 보세요',
-  again: '다시 출동',
-  lair: '소굴로',
-  poor: (n) => `돈이 ${money(n)} 모자라서 다시 보낼 수 없어요`,
-};
+const TEXT = L({
+  ko: {
+    label: '습격 결과',
+    win: '마을 정복!',
+    winSub: (hero, town) => `${town ? `${town}의 ` : ''}${hero}를 물리쳤어요. 음하하!`,
+    lose: '괴수가 펑!',
+    loseSub: (hero) => `${hero}에게 졌어요. 그래도 번 돈은 챙겼어요`,
+    fame: (n) => `악명 +${money(n)}`,
+    fameLeft: (name, left) => `${name}까지 ${money(left)}`,
+    fameMax: '가장 높은 단계예요',
+    rankUp: '악명 단계 UP!',
+    opened: (list) => `새로 열림: ${list.join(' · ')}`,
+    quit: '돌아왔어요',
+    quitSub: '습격을 그만뒀어요. 번 돈은 챙겼어요',
+    smashed: '마을 부서짐',
+    time: '걸린 시간',
+    cost: '출동 값',
+    total: '번 돈',
+    wallet: '가진 돈',
+    profit: (n) => (n >= 0 ? `출동 값을 빼면 ${money(n)} 이득이에요` : `출동 값을 빼면 ${money(-n)} 손해예요. 더 크게 부숴 봐요`),
+    tipClose: '거의 이겼어요! 부품을 하나 더 붙여 보세요',
+    tipFar: '더 크게 그리면 더 튼튼해요. 부품도 사서 붙여 보세요',
+    again: '다시 출동',
+    lair: '소굴로',
+    poor: (n) => `돈이 ${money(n)} 모자라서 다시 보낼 수 없어요`,
+  },
+  en: {
+    label: 'Raid results',
+    win: 'Town Conquered!',
+    winSub: (hero, town) => `You beat ${hero}${town ? ` of ${town}` : ''}. Mwahaha!`,
+    lose: 'Monster went POP!',
+    loseSub: (hero) => `${hero} won this time. You still keep your coins`,
+    fame: (n) => `Infamy +${money(n)}`,
+    fameLeft: (name, left) => `${money(left)} to ${name}`,
+    fameMax: "You're at the top rank",
+    rankUp: 'Rank UP!',
+    opened: (list) => `New: ${list.join(' · ')}`,
+    quit: 'Back Home',
+    quitSub: 'You stopped the raid. You keep your coins',
+    smashed: 'Town smashed',
+    time: 'Time',
+    cost: 'Cost',
+    total: 'Coins earned',
+    wallet: 'Your coins',
+    profit: (n) => (n >= 0 ? `That's ${money(n)} coins profit after the cost` : `That's ${money(-n)} coins short of the cost. Smash more!`),
+    tipClose: 'So close! Try sticking on one more part',
+    tipFar: 'Bigger drawings are tougher. Buy parts and stick them on too',
+    again: 'Attack again',
+    lair: 'Lair',
+    poor: (n) => `You need ${money(n)} more coins to send it again`,
+  },
+});
 
 const CLOSE_CALL = 0.4; // 영웅 체력이 이 비율 아래로 남았으면 '거의 이겼어요' 도움말
 const ROW_DELAY = 0.28; // 항목이 하나씩 나타나는 간격 (초)
@@ -61,7 +90,7 @@ function clock(seconds) {
 }
 
 export function createResultScreen(root, { onAgain, onLair, sound } = {}) {
-  const screen = el('<section class="result" hidden aria-label="습격 결과"></section>');
+  const screen = el(`<section class="result" hidden aria-label="${TEXT.label}"></section>`);
   root.append(screen);
   let timers = [];
   let context = {};

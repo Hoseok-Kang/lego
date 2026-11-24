@@ -13,7 +13,8 @@
 //
 // 쓰는 법
 //   import { installLandscapeGuard } from '../core/landscapeGuard.js';
-//   const guard = installLandscapeGuard({ onChange(blocked) { 게임 멈춤 = blocked } })
+//   const guard = installLandscapeGuard({ onChange(blocked) { 게임 멈춤 = blocked }, lang? })
+//       lang: 'ko' | 'en' (안 주면 <html lang="…"> 을 따름)
 //       onChange 는 처음 한 번(지금 상태) 불리고, 그 뒤 막힘 ↔풀림이 바뀔 때마다 불립니다.
 //       여러 번 불러도 안내판은 하나만 생기고, onChange 만 하나씩 더해집니다.
 //   guard.blocked     지금 막혀 있는지
@@ -21,17 +22,27 @@
 //   guard.off()       이 onChange 그만 듣기
 //
 // 안내판이 떠 있는 동안 <html> 에 class="lscape-blocked" 가 붙습니다 (게임 CSS 에서 쓸 수 있음).
-// 글자는 아래 TEXT, 색은 아래 CSS 의 --lg-* 값(또는 게임 CSS 에서 .lscape-guard { --lg-bg: … } 로 덮어쓰기)에서 바꿉니다.
+// 글자는 아래 TEXTS (ko · en), 색은 아래 CSS 의 --lg-* 값(또는 게임 CSS 에서 .lscape-guard { --lg-bg: … } 로 덮어쓰기)에서 바꿉니다.
 // 전체 화면 단추는 js/core/fullscreen.js 가 만들고, 전체 화면을 못 쓰는 곳(아이폰 사파리 등)에서는 숨습니다.
 // ─────────────────────────────────────────────────────────────
 
 import { fullscreenButton } from './fullscreen.js';
 
-const TEXT = {
-  title: '휴대폰을 가로로 돌려 주세요',
-  sub: '이 게임은 가로 화면에서 해요. 돌리면 바로 이어져요!',
-  fullscreen: '전체 화면으로 하기',
+// 글자: 페이지의 말(<html lang="…">)이 en 으로 시작하면 영어, 아니면 한국어 (악당 타이쿤은 js/villain/lang/lang.js 가 정해 줌)
+// installLandscapeGuard({ lang: 'en' }) 처럼 직접 정할 수도 있어요.
+const TEXTS = {
+  ko: {
+    title: '휴대폰을 가로로 돌려 주세요',
+    sub: '이 게임은 가로 화면에서 해요. 돌리면 바로 이어져요!',
+    fullscreen: '전체 화면으로 하기',
+  },
+  en: {
+    title: 'Please turn your phone sideways',
+    sub: 'This game is played in landscape. Turn it and keep playing!',
+    fullscreen: 'Go full screen',
+  },
 };
+const pickText = (lang) => (String(lang || document.documentElement.lang || 'ko').toLowerCase().startsWith('en') ? TEXTS.en : TEXTS.ko);
 
 // 막는 규칙: 세로 화면 + (손가락 기기 또는 너비 600px 이하)
 const BLOCK_QUERY = '(orientation: portrait) and (pointer: coarse), (orientation: portrait) and (max-width: 600px)';
@@ -180,7 +191,8 @@ const ARROW = `<svg class="lscape-arrow" viewBox="0 0 150 150" aria-hidden="true
 
 let guard = null; // 안내판은 페이지에 하나만
 
-function createGuard() {
+function createGuard(lang) {
+  const TEXT = pickText(lang);
   if (!document.getElementById('lscape-guard-style')) {
     const style = document.createElement('style');
     style.id = 'lscape-guard-style';
@@ -236,8 +248,8 @@ function createGuard() {
   };
 }
 
-export function installLandscapeGuard({ onChange } = {}) {
-  if (!guard) guard = createGuard();
+export function installLandscapeGuard({ onChange, lang } = {}) {
+  if (!guard) guard = createGuard(lang);
   const off = onChange ? guard.listen(onChange) : () => {};
   return {
     el: guard.el,

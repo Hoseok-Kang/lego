@@ -13,7 +13,7 @@
 //   act.markSchemes()        → [처음 켜진 계책 키]                    계책 도감에 적기
 //   돈이 바뀌면 events 에 moneyChanged { money, delta } 를 보냅니다.
 //
-// 이유 글자는 아래 TEXT, 시설 값은 data/facilities.js 에서 바꿉니다.
+// 이유 글자는 js/villain/gameText.js 의 LAIR_ACTION_TEXT, 시설 값은 data/facilities.js 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
 import { FACILITIES } from './data/facilities.js';
@@ -21,13 +21,7 @@ import { RANKS } from './data/ranks.js';
 import * as sim from './lair/lairSim.js';
 import { claimGoal, markSchemesSeen } from './lair/goalTracker.js';
 import { lockText } from './ui/lairKit.js';
-import { money } from './ui/uiKit.js';
-
-const TEXT = {
-  poorBuild: (name, n) => `${name}을(를) 지을 돈이 ${money(n)} 모자라요. 마을을 부숴서 벌어 와요`,
-  poorUp: (n) => `강화할 돈이 ${money(n)} 모자라요. 한 번 더 출동해 봐요`,
-  notYet: '아직 다 못 했어요',
-};
+import { LAIR_ACTION_TEXT as TEXT } from './gameText.js'; // 화면 알림 글자 (한국어 / 영어)
 
 export function createLairActions({ saveStore, gameState: gs, events = null }) {
   const save = () => saveStore.getSave();

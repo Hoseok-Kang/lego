@@ -18,11 +18,12 @@
 // 숫자는 아래 SIZES · AUTO 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
-const TEXT = {
-  small: '작게',
-  normal: '보통',
-  large: '크게',
-};
+import { L } from '../lang/lang.js';
+
+const TEXT = L({
+  ko: { small: '작게', normal: '보통', large: '크게' },
+  en: { small: 'Small', normal: 'Normal', large: 'Large' },
+});
 
 const KEY = 'villainTycoon.uiScale';
 const SIZES = { small: 0.86, normal: 1, large: 1.15 }; // 사용자가 고르는 크기 (보통 = 1)

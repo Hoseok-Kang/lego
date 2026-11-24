@@ -20,23 +20,41 @@ import { createPaintCanvas } from './paintCanvas.js';
 import { icon } from './paintIcons.js';
 import { EMPTY, fromCells } from './paintOps.js';
 import { partIconURL } from './partIcons.js';
+import { L } from '../lang/lang.js';
 
 // 화면 글자
-const TEXT = {
-  hint: '부품을 고르고 칠한 칸을 눌러요. 붙인 부품은 누르면 떼어져요.',
-  slots: '붙인 부품',
-  owned: '가진 부품',
-  canvas: '부품을 붙일 괴수 그림',
-  locked: '부품 상점에서 살 수 있어요',
-  badge: (name) => `${name}: 누르면 떼어져요`,
-  onlyPainted: '칠한 칸 위에만 붙일 수 있어요.',
-  taken: '그 칸에는 이미 부품이 있어요.',
-  full: (n) => `부품은 ${n}개까지 붙일 수 있어요. 붙인 부품을 눌러 떼어 보세요.`,
-  part: '부품',
-  placed: (name, josa) => `${name}${josa ? '을' : '를'} 붙였어요!`, // josa: 받침이 있는지
-  removed: (name, josa) => `${name}${josa ? '을' : '를'} 뗐어요.`,
-  pickFirst: '먼저 아래에서 부품을 골라 주세요.',
-};
+const TEXT = L({
+  ko: {
+    hint: '부품을 고르고 칠한 칸을 눌러요. 붙인 부품은 누르면 떼어져요.',
+    slots: '붙인 부품',
+    owned: '가진 부품',
+    canvas: '부품을 붙일 괴수 그림',
+    locked: '부품 상점에서 살 수 있어요',
+    badge: (name) => `${name}: 누르면 떼어져요`,
+    onlyPainted: '칠한 칸 위에만 붙일 수 있어요.',
+    taken: '그 칸에는 이미 부품이 있어요.',
+    full: (n) => `부품은 ${n}개까지 붙일 수 있어요. 붙인 부품을 눌러 떼어 보세요.`,
+    part: '부품',
+    placed: (name, josa) => `${name}${josa ? '을' : '를'} 붙였어요!`, // josa: 받침이 있는지
+    removed: (name, josa) => `${name}${josa ? '을' : '를'} 뗐어요.`,
+    pickFirst: '먼저 아래에서 부품을 골라 주세요.',
+  },
+  en: {
+    hint: 'Pick a part, then tap a painted block. Tap a stuck part to take it off.',
+    slots: 'Stuck on',
+    owned: 'Your parts',
+    canvas: 'Monster drawing to stick parts on',
+    locked: 'Buy it in the Parts Shop',
+    badge: (name) => `${name}: tap to take it off`,
+    onlyPainted: 'Parts only stick on painted blocks.',
+    taken: 'That block already has a part.',
+    full: (n) => `You can stick on up to ${n} parts. Tap one to take it off.`,
+    part: 'Part',
+    placed: (name) => `${name} stuck on!`, // 영어는 받침(josa) 표시를 안 씀
+    removed: (name) => `${name} taken off.`,
+    pickFirst: 'Pick a part below first.',
+  },
+});
 const DRAG_START = 8; // 이만큼(픽셀) 움직이면 '끌기'로 봄
 const HINT_DEFAULT = TEXT.hint;
 

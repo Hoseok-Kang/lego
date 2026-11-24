@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { frontCells } from './voxelDesign.js';
+import { L } from '../lang/lang.js';
 
 const W = 16;
 const H = 16;
@@ -66,5 +67,5 @@ function voxelMonster(id, name, voxels, parts) {
 }
 
 export const VOXEL_MONSTERS = Object.freeze([
-  voxelMonster('builtin-penguin', '통통 펭귄', makePenguin(), [{ type: 'claw', col: 13, row: 11 }]),
+  voxelMonster('builtin-penguin', L({ ko: '통통 펭귄', en: 'Chubby Penguin' }), makePenguin(), [{ type: 'claw', col: 13, row: 11 }]),
 ]);

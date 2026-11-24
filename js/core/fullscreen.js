@@ -16,13 +16,15 @@
 //       showLabel: true 면 아이콘 옆에 글자도 보여 줌 (가로로 돌려 주세요 안내판에서 씀)
 //   FULLSCREEN_ICONS.enter / .exit   아이콘 SVG 글자 (글자색을 따라감)
 //
-// 단추 글자는 아래 TEXT 에서 바꿉니다.
+// 단추 글자는 아래 TEXTS (ko · en) 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
-const TEXT = {
-  enter: '전체 화면',
-  exit: '전체 화면 끄기',
+// 페이지의 말(<html lang="…">)이 en 으로 시작하면 영어, 아니면 한국어 (단추를 그릴 때마다 봄)
+const TEXTS = {
+  ko: { enter: '전체 화면', exit: '전체 화면 끄기' },
+  en: { enter: 'Full screen', exit: 'Exit full screen' },
 };
+const pickText = () => (String(document.documentElement.lang || 'ko').toLowerCase().startsWith('en') ? TEXTS.en : TEXTS.ko);
 
 const line = 'fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"';
 const svg = (body) => `<svg class="ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">${body}</svg>`;
@@ -99,6 +101,7 @@ export function fullscreenButton({ className = '', label = null, showLabel = fal
   button.dataset.fullscreen = '';
   button.hidden = !canFullscreen();
   const paint = () => {
+    const TEXT = pickText();
     const on = isFullscreen();
     const text = on ? TEXT.exit : label ?? TEXT.enter;
     button.innerHTML = (on ? FULLSCREEN_ICONS.exit : FULLSCREEN_ICONS.enter) + (showLabel ? `<span>${text}</span>` : '');

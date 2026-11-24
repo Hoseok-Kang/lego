@@ -16,7 +16,7 @@
 //   makeThumbs(thumbOf) → (design) → 그림 주소   괴수 카드 그림 (한 번 그린 것은 기억)
 //   partIcons(design)                  괴수에 붙인 부품 아이콘 HTML
 //
-// 효과 이름 글자는 js/villain/lair/modifiers.js 의 MOD_INFO 에서 바꿉니다.
+// 효과 이름 글자는 js/villain/lair/modifiers.js 의 MOD_INFO, 나머지 글자는 아래 TEXT 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
 import { escapeHTML, coin } from './uiKit.js';
@@ -25,6 +25,27 @@ import { partIconURL } from '../draw/partIcons.js';
 import { designThumbURL } from '../draw/pixelThumb.js';
 import { describeEffect } from '../lair/modifiers.js';
 import { VILLAIN } from '../villainConfig.js';
+import { L } from '../lang/lang.js';
+
+// 화면에 보이는 글자
+const TEXT = L({
+  ko: {
+    lock: (rank, name) => `악명 ${rank}단계${name ? `(${name})` : ''}에 열려요`,
+    anyFacility: '아무 시설',
+    or: '또는',
+    inShop: (name) => `${name} 상점에 나와요`,
+    partSlot: (n) => `괴수 부품 칸 +${n}`,
+    close: '닫기',
+  },
+  en: {
+    lock: (rank, name) => `Unlocks at rank ${rank}${name ? ` (${name})` : ''}`,
+    anyFacility: 'Any building',
+    or: 'or',
+    inShop: (name) => `${name} appears in the shop`,
+    partSlot: (n) => `Monster part slots +${n}`,
+    close: 'Close',
+  },
+});
 
 // 효과 글은 소굴 효과 계산(lair/modifiers.js)과 같은 이름표를 씀 → [{ key, label: '출동 값', value: '-12%', good }]
 export { describeEffect };
@@ -42,7 +63,7 @@ export function rankName(rank, ranks) {
 
 export function lockText(rank, ranks) {
   const name = rankName(rank, ranks);
-  return `악명 ${rank}단계${name ? `(${name})` : ''}에 열려요`;
+  return TEXT.lock(rank, name);
 }
 
 export function facilityOf(key, facilities) {
@@ -56,7 +77,7 @@ export function schemeOf(key, schemes) {
 // 'f:paint' → 물감 창고 하나,  '물' → 태그가 '물' 인 시설 모두
 export function needFacilities(need, facilities) {
   if (!need) return [];
-  if (need === '*') return [{ key: 'any', name: '아무 시설', icon: 'question' }];
+  if (need === '*') return [{ key: 'any', name: TEXT.anyFacility, icon: 'question' }];
   if (String(need).startsWith('f:')) {
     const def = facilityOf(need.slice(2), facilities);
     return def ? [def] : [{ key: need.slice(2), name: need.slice(2), icon: need.slice(2) }];
@@ -72,7 +93,7 @@ export function facilityChip(def, { hidden = false } = {}) {
 export function needChips(need, facilities, { hidden = false, count = 1 } = {}) {
   const list = needFacilities(need, facilities);
   if (!list.length) return `<span class="fac-chip"><b>${escapeHTML(need)}</b></span>`;
-  const chips = list.map((f) => facilityChip(f, { hidden })).join(`<i class="fac-or">${hidden ? '·' : '또는'}</i>`);
+  const chips = list.map((f) => facilityChip(f, { hidden })).join(`<i class="fac-or">${hidden ? '·' : TEXT.or}</i>`);
   return `<span class="fac-group">${chips}${count > 1 ? `<i class="fac-count">×${count}</i>` : ''}</span>`;
 }
 
@@ -83,11 +104,11 @@ export function unlockLines(def) {
   for (const [level, list] of Object.entries(parts)) {
     for (const type of list ?? []) {
       const name = VILLAIN.parts.types[type]?.name ?? type;
-      lines.push({ level: Number(level), html: `<img class="unlock-part" src="${partIconURL(type, 54)}" alt="">${escapeHTML(name)} 상점에 나와요` });
+      lines.push({ level: Number(level), html: `<img class="unlock-part" src="${partIconURL(type, 54)}" alt="">${escapeHTML(TEXT.inShop(name))}` });
     }
   }
   for (const [level, n] of Object.entries(def?.unlocks?.partSlots ?? {})) {
-    lines.push({ level: Number(level), html: `${lairIcon('plus')}괴수 부품 칸 +${n}` });
+    lines.push({ level: Number(level), html: `${lairIcon('plus')}${TEXT.partSlot(n)}` });
   }
   return lines.sort((a, b) => a.level - b.level);
 }
@@ -97,7 +118,7 @@ export function sheetHead({ icon = '', title = '', sub = '' } = {}) {
     <header class="lsheet-head">
       ${icon ? `<span class="lsheet-icon">${icon}</span>` : ''}
       <h2 class="lsheet-title">${escapeHTML(title)}${sub ? ` <small data-sub>${escapeHTML(sub)}</small>` : ''}</h2>
-      <button type="button" class="vt-btn vt-btn--icon lsheet-close" data-close aria-label="닫기" title="닫기">${lairIcon('close')}</button>
+      <button type="button" class="vt-btn vt-btn--icon lsheet-close" data-close aria-label="${TEXT.close}" title="${TEXT.close}">${lairIcon('close')}</button>
     </header>`;
 }
 

@@ -12,20 +12,24 @@
 // ─────────────────────────────────────────────────────────────
 
 import { icon } from '../draw/paintIcons.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = { mirror: '좌우 대칭', mirrorHint: '좌우 대칭: 한쪽에 쌓으면 반대쪽에도 똑같이 쌓여요' };
+const TEXT = L({
+  ko: { mirror: '좌우 대칭', mirrorHint: '좌우 대칭: 한쪽에 쌓으면 반대쪽에도 똑같이 쌓여요' },
+  en: { mirror: 'Mirror', mirrorHint: 'Mirror: stack on one side and the other side copies it' },
+});
 
 export const TOOLS = [
-  { id: 'add', label: '쌓기', icon: 'addBlock', key: 'B', hint: '블록 면을 누르면 그 옆에 하나 붙어요. 바닥을 눌러도 돼요' },
-  { id: 'erase', label: '지우기', icon: 'eraser', key: 'E', hint: '누르거나 문질러서 블록을 빼요' },
-  { id: 'paint', label: '칠하기', icon: 'fill', key: 'G', hint: '블록 색만 바꿔요' },
-  { id: 'pick', label: '색 뽑기', icon: 'picker', key: 'I', hint: '블록을 눌러 그 색을 골라요' },
+  { id: 'add', label: L({ ko: '쌓기', en: 'Stack' }), icon: 'addBlock', key: 'B', hint: L({ ko: '블록 면을 누르면 그 옆에 하나 붙어요. 바닥을 눌러도 돼요', en: 'Tap a block face to add one next to it. You can tap the floor too' }) },
+  { id: 'erase', label: L({ ko: '지우기', en: 'Erase' }), icon: 'eraser', key: 'E', hint: L({ ko: '누르거나 문질러서 블록을 빼요', en: 'Tap or rub to remove blocks' }) },
+  { id: 'paint', label: L({ ko: '칠하기', en: 'Paint' }), icon: 'fill', key: 'G', hint: L({ ko: '블록 색만 바꿔요', en: 'Changes only the block color' }) },
+  { id: 'pick', label: L({ ko: '색 뽑기', en: 'Picker' }), icon: 'picker', key: 'I', hint: L({ ko: '블록을 눌러 그 색을 골라요', en: 'Tap a block to pick its color' }) },
 ];
 
 export const ACTIONS = [
-  { id: 'undo', label: '되돌리기', icon: 'undo', hint: '되돌리기 (Ctrl+Z)' },
-  { id: 'redo', label: '다시하기', icon: 'redo', hint: '다시하기 (Ctrl+Shift+Z)' },
-  { id: 'clear', label: '전부 지우기', icon: 'trash', hint: '블록을 전부 지워요' },
+  { id: 'undo', label: L({ ko: '되돌리기', en: 'Undo' }), icon: 'undo', hint: L({ ko: '되돌리기 (Ctrl+Z)', en: 'Undo (Ctrl+Z)' }) },
+  { id: 'redo', label: L({ ko: '다시하기', en: 'Redo' }), icon: 'redo', hint: L({ ko: '다시하기 (Ctrl+Shift+Z)', en: 'Redo (Ctrl+Shift+Z)' }) },
+  { id: 'clear', label: L({ ko: '전부 지우기', en: 'Clear all' }), icon: 'trash', hint: L({ ko: '블록을 전부 지워요', en: 'Remove all the blocks' }) },
 ];
 
 function button(className, data, iconName, label, title) {

@@ -32,19 +32,34 @@ import { VILLAIN } from '../villainConfig.js';
 import { el, bump } from './uiKit.js';
 import { pixelArt } from './uiIcons.js';
 import { partIconURL } from '../draw/partIcons.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  group: '공격 단추',
-  headbutt: '박치기',
-  manual: '직접 조종 중',
-  auto: '자동',
-  toAuto: '눌러서 자동으로 바꾸기',
-  toManual: '눌러서 직접 조종하기',
-  lost: '떨어져 나갔어요',
-  space: 'Space',
-  hintTouch: '왼쪽을 끌면 움직이고, 오른쪽 단추로 공격해요 · 가만두면 알아서 싸워요',
-  hintKeys: 'W A S D 로 움직이고, 숫자 키 · 스페이스로 공격해요 · 가만두면 알아서 싸워요',
-};
+const TEXT = L({
+  ko: {
+    group: '공격 단추',
+    headbutt: '박치기',
+    manual: '직접 조종 중',
+    auto: '자동',
+    toAuto: '눌러서 자동으로 바꾸기',
+    toManual: '눌러서 직접 조종하기',
+    lost: '떨어져 나갔어요',
+    space: 'Space',
+    hintTouch: '왼쪽을 끌면 움직이고, 오른쪽 단추로 공격해요 · 가만두면 알아서 싸워요',
+    hintKeys: 'W A S D 로 움직이고, 숫자 키 · 스페이스로 공격해요 · 가만두면 알아서 싸워요',
+  },
+  en: {
+    group: 'Attack buttons',
+    headbutt: 'Headbutt',
+    manual: 'You control',
+    auto: 'Auto',
+    toAuto: 'Tap to switch to auto',
+    toManual: 'Tap to take control',
+    lost: 'It fell off',
+    space: 'Space',
+    hintTouch: 'Drag on the left to move, tap the right buttons to attack · Let go and it fights by itself',
+    hintKeys: 'Move with W A S D, attack with number keys · Space · Let go and it fights by itself',
+  },
+});
 
 const BUZZ_MS = 8; // 단추를 누를 때 휴대폰 진동 (안드로이드만, 0 이면 끔)
 

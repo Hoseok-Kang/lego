@@ -13,6 +13,10 @@
 
 import * as THREE from '../../lib/three.js';
 import { TILE, ZERO_MATRIX, seededRandom } from './lairKit.js';
+import { L } from '../lang/lang.js';
+
+// 강화할 때 시설 위에 떠오르는 글자
+const TEXT = L({ ko: { level: (n) => `${n}단계!` }, en: { level: (n) => `Level ${n}!` } });
 
 const DROP = 15; // 블록이 떨어지기 시작하는 높이
 const FALL = 0.3; // 블록 하나가 떨어지는 시간
@@ -177,7 +181,7 @@ function finishAnim(rec, fx, onLanded) {
   } else {
     fx.ring(g.x, 0.25, g.z, '#F2CD37', { radius: rec.w * TILE * 0.9, life: 0.8 });
     fx.sparkle(g.x, top, g.z, 34, '#FFF03A', { spread: rec.w * 2, up: 9, size: 1.1 });
-    fx.label(g.x, Math.min(top, 9) + 2, g.z, `${rec.level}단계!`, '#FFF03A');
+    fx.label(g.x, Math.min(top, 9) + 2, g.z, TEXT.level(rec.level), '#FFF03A');
   }
   onLanded?.(rec, kind);
 }

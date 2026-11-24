@@ -15,15 +15,26 @@
 import { createPaintCanvas } from '../draw/paintCanvas.js';
 import { icon } from '../draw/paintIcons.js';
 import { linePoints } from '../draw/paintOps.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  title: '한 장씩',
-  front: '앞',
-  back: '뒤',
-  layer: (n, d) => `앞에서 ${n}째 장 / ${d}`,
-  prev: '앞 장',
-  next: '뒤 장',
-};
+const TEXT = L({
+  ko: {
+    title: '한 장씩',
+    front: '앞',
+    back: '뒤',
+    layer: (n, d) => `앞에서 ${n}째 장 / ${d}`,
+    prev: '앞 장',
+    next: '뒤 장',
+  },
+  en: {
+    title: 'Layer by layer',
+    front: 'Front',
+    back: 'Back',
+    layer: (n, d) => `Layer ${n} of ${d} from the front`,
+    prev: 'Layer in front',
+    next: 'Layer behind',
+  },
+});
 const GHOST_ALPHA = 0.42; // 다른 장 블록 점의 진하기
 
 export function createSculptSlice(rootEl, { grid, colorOf, hooks, onLayer }) {

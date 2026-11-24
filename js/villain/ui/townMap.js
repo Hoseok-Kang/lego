@@ -21,27 +21,53 @@ import { el, escapeHTML, money, coin, bump, toast, countTo } from './uiKit.js';
 import { icon } from './uiIcons.js';
 import { townArt, heroFace, lairIcon } from './lairArt.js';
 import { effectChips, lockText, makeThumbs, partIcons, signature } from './lairKit.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  title: '어느 마을을 습격할까요?',
-  back: '소굴로',
-  backTowns: '마을',
-  pickTitle: () => '누구를 보낼까요?',
-  hero: '지키는 영웅',
-  pay: (m) => `수입 ×${Number(m ?? 1).toFixed(1)}`,
-  noto: (n) => `악명 +${money(n)}`,
-  wins: (n) => (n > 0 ? `${money(n)}번 이겼어요` : '아직 못 이겼어요'),
-  go: '출동!',
-  pickFirst: '보낼 괴수를 골라요',
-  poor: (n) => `돈이 ${money(n)} 모자라요. 더 작은 괴수를 보내 보세요`,
-  noMonster: '괴수가 없어요. 소굴에서 먼저 그려 와요',
-  mods: '소굴 효과',
-};
+const TEXT = L({
+  ko: {
+    title: '어느 마을을 습격할까요?',
+    back: '소굴로',
+    backTowns: '마을',
+    pickTitle: () => '누구를 보낼까요?',
+    hero: '지키는 영웅',
+    pay: (m) => `수입 ×${Number(m ?? 1).toFixed(1)}`,
+    noto: (n) => `악명 +${money(n)}`,
+    wins: (n) => (n > 0 ? `${money(n)}번 이겼어요` : '아직 못 이겼어요'),
+    go: '출동!',
+    pickFirst: '보낼 괴수를 골라요',
+    poor: (n) => `돈이 ${money(n)} 모자라요. 더 작은 괴수를 보내 보세요`,
+    noMonster: '괴수가 없어요. 소굴에서 먼저 그려 와요',
+    mods: '소굴 효과',
+    myMoney: '가진 돈',
+    noName: '이름 없는 괴수',
+    hero0: '영웅',
+    heroNames: { knight: '번개 기사', iceMage: '얼음 마법사', guardian: '황금 수호자' },
+  },
+  en: {
+    title: 'Which town will you raid?',
+    back: 'Lair',
+    backTowns: 'Towns',
+    pickTitle: () => 'Who will you send?',
+    hero: 'Defended by',
+    pay: (m) => `Coins ×${Number(m ?? 1).toFixed(1)}`,
+    noto: (n) => `Infamy +${money(n)}`,
+    wins: (n) => (n > 0 ? (n === 1 ? 'Won once' : `Won ${money(n)} times`) : 'Not won yet'),
+    go: 'Attack!',
+    pickFirst: 'Pick a monster to send',
+    poor: (n) => `You need ${money(n)} more coins. Try a smaller monster`,
+    noMonster: 'No monsters yet. Draw one in your lair first',
+    mods: 'Lair bonuses',
+    myMoney: 'Your coins',
+    noName: 'Nameless monster',
+    hero0: 'Hero',
+    heroNames: { knight: 'Thunder Knight', iceMage: 'Ice Mage', guardian: 'Golden Guardian' },
+  },
+});
 
 // 괴수 고르기 위에 보여 줄 소굴 효과 (습격에 바로 드러나는 것만)
 const RAID_KEYS = ['cost', 'pay', 'hp', 'dmg', 'partDmg', 'smash', 'heroHp', 'heroDelay'];
-const HERO_NAMES = { knight: '번개 기사', iceMage: '얼음 마법사', guardian: '황금 수호자' };
-const heroNameOf = (t) => t.heroName ?? VILLAIN.heroes?.[t.hero]?.name ?? (t.hero === 'knight' ? VILLAIN.hero?.name : null) ?? HERO_NAMES[t.hero] ?? '영웅';
+const HERO_NAMES = TEXT.heroNames;
+const heroNameOf = (t) => t.heroName ?? VILLAIN.heroes?.[t.hero]?.name ?? (t.hero === 'knight' ? VILLAIN.hero?.name : null) ?? HERO_NAMES[t.hero] ?? TEXT.hero0;
 const heroHintOf = (t) => t.heroHint ?? VILLAIN.heroes?.[t.hero]?.hint ?? (t.hero === 'knight' ? VILLAIN.hero?.hint : '') ?? '';
 
 export function createTownMap(options = {}) {
@@ -57,7 +83,7 @@ export function createTownMap(options = {}) {
       <header class="townmap-head">
         <button type="button" class="vt-btn townmap-back" data-act="back">${icon('back')}<span data-back>${TEXT.back}</span></button>
         <h2 class="townmap-title" data-title>${TEXT.title}</h2>
-        <div class="vt-money" title="가진 돈">${icon('coin')}<b data-money>0</b></div>
+        <div class="vt-money" title="${TEXT.myMoney}">${icon('coin')}<b data-money>0</b></div>
       </header>
       <div class="townmap-towns" data-towns tabindex="-1"></div>
       <div class="townmap-pick" data-pick hidden>
@@ -115,7 +141,7 @@ export function createTownMap(options = {}) {
     return `
       <button type="button" class="pick${design.id === pickedId ? ' is-picked' : ''}${poor ? ' is-poor' : ''}" data-id="${escapeHTML(design.id)}" style="--i:${index}" aria-pressed="${design.id === pickedId}">
         <span class="pick-pic"><img src="${thumb(design)}" alt="" draggable="false"><span class="pick-check">${icon('check')}</span></span>
-        <b class="pick-name">${escapeHTML(design.name || '이름 없는 괴수')}</b>
+        <b class="pick-name">${escapeHTML(design.name || TEXT.noName)}</b>
         <span class="pick-stats"><span class="vt-chip">${icon('block')}${money(blocksOf(design))}</span><span class="vt-chip vt-chip--hp">${icon('heart')}${money(hpOf(design))}</span><span class="mcard-parts">${partIcons(design)}</span></span>
         <span class="pick-cost">${base !== cost ? `<s>${money(base)}</s>` : ''}${coin(cost)}</span>
       </button>`;

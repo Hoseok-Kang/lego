@@ -8,7 +8,13 @@
 //   Esc 또는 바깥을 누르면 '아니요' 입니다.
 // ─────────────────────────────────────────────────────────────
 
-const TEXT = { yes: '네', no: '아니요' }; // 단추 글자를 안 주면 쓰는 글자
+import { L } from '../lang/lang.js';
+
+// 단추 글자를 안 주면 쓰는 글자
+const TEXT = L({
+  ko: { yes: '네', no: '아니요' },
+  en: { yes: 'Yes', no: 'No' },
+});
 
 export function askConfirm(hostEl, { message, yes = TEXT.yes, no = TEXT.no, danger = false } = {}) {
   return new Promise((resolve) => {

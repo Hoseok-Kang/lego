@@ -20,6 +20,13 @@
 import { GOALS, GOAL_MAP, GOALS_OPEN } from '../data/goals.js';
 import { SCHEMES } from '../data/schemes.js';
 import { evaluate } from './lairSim.js';
+import { L } from '../lang/lang.js';
+
+// 보상 한 줄 글자
+const TEXT = L({
+  ko: { money: (n) => `+${n}원`, notoriety: (n) => `악명 +${n}` },
+  en: { money: (n) => `+${n} coins`, notoriety: (n) => `Infamy +${n}` },
+});
 
 function withEvaluation(save, ctx) {
   if (ctx?.evaluation || !save?.lair) return ctx || {};
@@ -46,8 +53,8 @@ export function progressOf(goal, save, ctx) {
 
 function rewardText(reward) {
   const bits = [];
-  if (reward?.money) bits.push(`+${reward.money}원`);
-  if (reward?.notoriety) bits.push(`악명 +${reward.notoriety}`);
+  if (reward?.money) bits.push(TEXT.money(reward.money));
+  if (reward?.notoriety) bits.push(TEXT.notoriety(reward.notoriety));
   return bits.join(' · ');
 }
 

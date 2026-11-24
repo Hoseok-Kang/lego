@@ -6,22 +6,41 @@
 //       result = { win, aborted, earned, cost, destroyedPercent, time, bonuses: [{ id, label, amount }], designId, heroLeft,
 //                  townId, townName, heroKind, heroName, notoriety, blocksBroken, heroBeaten }
 //   saveResult(saveStore, result) → 저장된 save
+//   START_TEXT                      출동을 못 할 때 알림 글자 (raidDirector.js 가 씀)
 //       save.money += earned, save.stats: raids, wins, bestPay (1단계와 같음)
 //       악명·마을별 승리·부순 블록·영웅 격파는 여기서 안 넣어요 → 게임 본체가 raidEnded 때
 //       lair/goalTracker.js 의 recordRaid(save, result, { townId: result.townId, notoriety: result.notoriety }) 로 넣음 (두 번 세지 않게)
 //
+// 돈 줄 이름 글자는 아래 LABEL (한국어 / 영어).
 // 돈 숫자(블록당 돈, 싹쓸이 보너스, 수고비)는 villainConfig.js 의 town · economy, 영웅 격파 돈은 heroes(hero).payForWin.
 
 import { VILLAIN } from '../villainConfig.js';
 import { notorietyOf } from './raidRules.js';
+import { L } from '../lang/lang.js';
 
-const LABEL = {
-  blocks: (n) => `부순 블록 ${n}개`,
-  hero: (name) => `${name} 격파`,
-  clear: '마을 싹쓸이',
-  minPay: '수고비',
-  raidBonus: '소굴 금고 보너스',
-};
+// 결과 화면의 돈 줄 이름 (화면에 보이는 글자)
+const LABEL = L({
+  ko: {
+    blocks: (n) => `부순 블록 ${n}개`,
+    hero: (name) => `${name} 격파`,
+    clear: '마을 싹쓸이',
+    minPay: '수고비',
+    raidBonus: '소굴 금고 보너스',
+  },
+  en: {
+    blocks: (n) => (n === 1 ? '1 block smashed' : `${n} blocks smashed`),
+    hero: (name) => `Beat ${name}`,
+    clear: 'Town wiped out',
+    minPay: 'Effort pay',
+    raidBonus: 'Lair vault bonus',
+  },
+});
+
+// 출동을 못 할 때 알림 글자 (raidDirector.js 가 씀. 그 파일이 400줄을 넘지 않게 여기에 둠)
+export const START_TEXT = L({
+  ko: { pick: '출동할 괴수를 골라 주세요', poor: (cost) => `돈이 모자라요 (${cost}원 필요)` },
+  en: { pick: 'Pick a monster to send', poor: (cost) => `Not enough coins (you need ${cost})` },
+});
 
 export function buildResult({ win, aborted = false, cleared = false, paidBlocks = 0, plan, time = 0, ratio = 0, heroLeft = 1, heroName = '', heroPay = 0, designId = null }) {
   const bonuses = [];

@@ -12,36 +12,50 @@
 // ─────────────────────────────────────────────────────────────
 
 import { icon } from './paintIcons.js';
+import { L } from '../lang/lang.js';
 
 // 화면 글자 (도구 이름 · 설명은 아래 TOOLS / ACTIONS)
-const TEXT = {
-  tools: '그리기 도구',
-  colors: '색 고르기',
-  cells: '칠한 칸 수',
-  cellUnit: '칸',
-  cost: '괴수를 보낼 때 드는 돈',
-  mirror: '좌우 대칭',
-  mirrorHint: '좌우 대칭: 한쪽만 그려도 반대쪽이 똑같이 그려져요',
-  rect: '네모',
-  rectFilled: '채운 네모',
-};
+const TEXT = L({
+  ko: {
+    tools: '그리기 도구',
+    colors: '색 고르기',
+    cells: '칠한 칸 수',
+    cellUnit: '칸',
+    cost: '괴수를 보낼 때 드는 돈',
+    mirror: '좌우 대칭',
+    mirrorHint: '좌우 대칭: 한쪽만 그려도 반대쪽이 똑같이 그려져요',
+    rect: '네모',
+    rectFilled: '채운 네모',
+  },
+  en: {
+    tools: 'Drawing tools',
+    colors: 'Pick a color',
+    cells: 'Painted blocks',
+    cellUnit: 'blocks',
+    cost: 'Coins it costs to send this monster',
+    mirror: 'Mirror',
+    mirrorHint: 'Mirror: draw one side and the other side copies it',
+    rect: 'Box',
+    rectFilled: 'Filled box',
+  },
+});
 
 export const TOOLS = [
-  { id: 'pencil', label: '연필', icon: 'pencil', key: 'B', hint: '끌어서 그려요' },
-  { id: 'eraser', label: '지우개', icon: 'eraser', key: 'E', hint: '끌어서 지워요' },
-  { id: 'fill', label: '페인트통', icon: 'fill', key: 'G', hint: '이어진 칸을 한 번에 칠해요' },
-  { id: 'picker', label: '색 뽑기', icon: 'picker', key: 'I', hint: '그림에서 색을 골라요' },
-  { id: 'line', label: '선', icon: 'line', key: 'L', hint: '끌어서 곧은 선을 그어요' },
-  { id: 'rect', label: '네모', icon: 'rect', key: 'R', hint: '끌어서 네모를 그려요. 한 번 더 누르면 속까지 채워요' },
-  { id: 'move', label: '옮기기', icon: 'move', key: 'M', hint: '그림을 통째로 끌어 옮겨요' },
-  { id: 'thick', label: '두께', icon: 'thick', key: 'T', hint: '칠한 칸을 문질러 두껍게 · 얇게 해요' },
+  { id: 'pencil', label: L({ ko: '연필', en: 'Pencil' }), icon: 'pencil', key: 'B', hint: L({ ko: '끌어서 그려요', en: 'Drag to draw' }) },
+  { id: 'eraser', label: L({ ko: '지우개', en: 'Eraser' }), icon: 'eraser', key: 'E', hint: L({ ko: '끌어서 지워요', en: 'Drag to erase' }) },
+  { id: 'fill', label: L({ ko: '페인트통', en: 'Fill' }), icon: 'fill', key: 'G', hint: L({ ko: '이어진 칸을 한 번에 칠해요', en: 'Fills all connected blocks at once' }) },
+  { id: 'picker', label: L({ ko: '색 뽑기', en: 'Picker' }), icon: 'picker', key: 'I', hint: L({ ko: '그림에서 색을 골라요', en: 'Pick a color from the drawing' }) },
+  { id: 'line', label: L({ ko: '선', en: 'Line' }), icon: 'line', key: 'L', hint: L({ ko: '끌어서 곧은 선을 그어요', en: 'Drag to draw a straight line' }) },
+  { id: 'rect', label: L({ ko: '네모', en: 'Box' }), icon: 'rect', key: 'R', hint: L({ ko: '끌어서 네모를 그려요. 한 번 더 누르면 속까지 채워요', en: 'Drag to draw a box. Tap again to fill it in' }) },
+  { id: 'move', label: L({ ko: '옮기기', en: 'Move' }), icon: 'move', key: 'M', hint: L({ ko: '그림을 통째로 끌어 옮겨요', en: 'Drag the whole drawing around' }) },
+  { id: 'thick', label: L({ ko: '두께', en: 'Thickness' }), icon: 'thick', key: 'T', hint: L({ ko: '칠한 칸을 문질러 두껍게 · 얇게 해요', en: 'Rub painted blocks to make them thicker or thinner' }) },
 ];
 
 export const ACTIONS = [
-  { id: 'undo', label: '되돌리기', icon: 'undo', hint: '되돌리기 (Ctrl+Z)' },
-  { id: 'redo', label: '다시하기', icon: 'redo', hint: '다시하기 (Ctrl+Shift+Z)' },
-  { id: 'flip', label: '뒤집기', icon: 'flip', hint: '그림을 좌우로 뒤집어요' },
-  { id: 'clear', label: '전부 지우기', icon: 'trash', hint: '그림을 전부 지워요' },
+  { id: 'undo', label: L({ ko: '되돌리기', en: 'Undo' }), icon: 'undo', hint: L({ ko: '되돌리기 (Ctrl+Z)', en: 'Undo (Ctrl+Z)' }) },
+  { id: 'redo', label: L({ ko: '다시하기', en: 'Redo' }), icon: 'redo', hint: L({ ko: '다시하기 (Ctrl+Shift+Z)', en: 'Redo (Ctrl+Shift+Z)' }) },
+  { id: 'flip', label: L({ ko: '뒤집기', en: 'Flip' }), icon: 'flip', hint: L({ ko: '그림을 좌우로 뒤집어요', en: 'Flip the drawing left to right' }) },
+  { id: 'clear', label: L({ ko: '전부 지우기', en: 'Clear all' }), icon: 'trash', hint: L({ ko: '그림을 전부 지워요', en: 'Erase the whole drawing' }) },
 ];
 
 function button(className, data, iconName, label, title) {

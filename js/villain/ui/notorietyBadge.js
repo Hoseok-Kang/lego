@@ -13,13 +13,24 @@
 
 import { el, money, bump } from './uiKit.js';
 import { rankEmblem } from './lairArt.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  level: (n) => `악명 ${n}단계`,
-  toNext: (now, next) => `${money(now)} / ${money(next)}`,
-  max: '최고 단계!',
-  title: (name, left) => (left > 0 ? `${name} · 다음 단계까지 악명 ${money(left)}` : `${name} · 가장 높은 단계예요`),
-};
+const TEXT = L({
+  ko: {
+    level: (n) => `악명 ${n}단계`,
+    toNext: (now, next) => `${money(now)} / ${money(next)}`,
+    max: '최고 단계!',
+    title: (name, left) => (left > 0 ? `${name} · 다음 단계까지 악명 ${money(left)}` : `${name} · 가장 높은 단계예요`),
+    firstRank: '동네 말썽꾼', // 단계 정보가 아직 없을 때
+  },
+  en: {
+    level: (n) => `Rank ${n}`,
+    toNext: (now, next) => `${money(now)} / ${money(next)}`,
+    max: 'Top rank!',
+    title: (name, left) => (left > 0 ? `${name} · ${money(left)} infamy to the next rank` : `${name} · You're at the top rank`),
+    firstRank: 'Little Rascal',
+  },
+});
 
 export function createNotorietyBadge({ onClick } = {}) {
   const badge = el(`
@@ -38,7 +49,7 @@ export function createNotorietyBadge({ onClick } = {}) {
   let lastKey = '';
 
   function render({ notoriety = 0, rank = null, nextRank = null } = {}) {
-    const r = rank ?? { rank: 0, name: '동네 말썽꾼', at: 0 };
+    const r = rank ?? { rank: 0, name: TEXT.firstRank, at: 0 };
     const isMax = !!rank && !nextRank; // 단계 정보가 아예 없으면 '최고 단계'라고 하지 않음
     const key = `${notoriety}|${r.rank}|${nextRank?.at ?? '-'}|${isMax}`;
     if (key === lastKey) return;

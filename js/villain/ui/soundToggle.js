@@ -11,6 +11,13 @@
 // ─────────────────────────────────────────────────────────────
 
 import { icon } from './uiIcons.js';
+import { L } from '../lang/lang.js';
+
+// 화면에 보이는 글자 (소리 단추에 마우스를 올리면 보이는 이름)
+const TEXT = L({
+  ko: { off: '소리 끄기', on: '소리 켜기' },
+  en: { off: 'Sound off', on: 'Sound on' },
+});
 
 const PREF_KEY = 'villainTycoon.sound'; // 'off' 면 꺼 둔 것
 
@@ -29,7 +36,7 @@ export function bindSoundButtons(sounds, { root = document } = {}) {
     for (const button of root.querySelectorAll('[data-sound-toggle]')) {
       button.innerHTML = icon(wanted ? 'soundOn' : 'soundOff');
       button.setAttribute('aria-pressed', String(wanted));
-      button.title = wanted ? '소리 끄기' : '소리 켜기';
+      button.title = wanted ? TEXT.off : TEXT.on;
       button.classList.toggle('is-off', !wanted);
     }
   }

@@ -8,10 +8,12 @@
 //
 // 맨 끝에는 3D 작업대로 쌓은 기본 괴수(data/voxelMonsters.js)도 붙습니다.
 //
+// 이름은 L({ ko: '한국어', en: 'English' }) 꼴 (js/villain/lang/lang.js).
 // 쓰는 법: DEFAULT_MONSTERS (괴수 그림 목록). 도감(bestiary.js)이 가져다 씁니다.
 // ─────────────────────────────────────────────────────────────
 
 import { VOXEL_MONSTERS } from './voxelMonsters.js';
+import { L } from '../lang/lang.js';
 
 const COLS = 16;
 const ROWS = 16;
@@ -23,7 +25,7 @@ function monster(id, name, cells, parts) {
 export const DEFAULT_MONSTERS = Object.freeze([
   monster(
     'builtin-dino',
-    '초록 공룡',
+    L({ ko: '초록 공룡', en: 'Green Dino' }),
     [
       '................',
       '................',
@@ -46,7 +48,7 @@ export const DEFAULT_MONSTERS = Object.freeze([
   ),
   monster(
     'builtin-octopus',
-    '보라 문어',
+    L({ ko: '보라 문어', en: 'Purple Octopus' }),
     [
       '................',
       '......PPPP......',
@@ -69,7 +71,7 @@ export const DEFAULT_MONSTERS = Object.freeze([
   ),
   monster(
     'builtin-dokkaebi',
-    '빨강 도깨비',
+    L({ ko: '빨강 도깨비', en: 'Red Goblin' }),
     [
       '....Y......Y....',
       '....YY....YY....',

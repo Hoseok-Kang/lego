@@ -26,17 +26,29 @@ import { DEFAULT_MONSTERS } from './defaultMonsters.js';
 import { getSave, update } from './saveStore.js';
 import { cleanDepths, cleanVoxels, emptyVoxels, frontCells, voxelBlocks } from './voxelDesign.js';
 import { designStats, isVoxelDesign } from '../monster/monsterPower.js';
+import { L } from '../lang/lang.js';
 
 // 화면에 보이는 글자 (검사 안내 · 기본 이름)
-const TEXT = {
-  defaultName: '내 괴수',
-  noDesign: '그림이 없어요.',
-  drawFirst: '먼저 괴수를 그려 주세요.',
-  needCells: (need, now) => `${need}칸 이상 칠해 주세요. (지금 ${now}칸)`,
-  stackFirst: '먼저 블록을 쌓아 주세요.',
-  needBlocks: (need, now) => `블록을 ${need}개 이상 쌓아 주세요. (지금 ${now}개)`,
-  tooMany: (max, now) => `블록은 ${max}개까지예요. (지금 ${now}개)`,
-};
+const TEXT = L({
+  ko: {
+    defaultName: '내 괴수',
+    noDesign: '그림이 없어요.',
+    drawFirst: '먼저 괴수를 그려 주세요.',
+    needCells: (need, now) => `${need}칸 이상 칠해 주세요. (지금 ${now}칸)`,
+    stackFirst: '먼저 블록을 쌓아 주세요.',
+    needBlocks: (need, now) => `블록을 ${need}개 이상 쌓아 주세요. (지금 ${now}개)`,
+    tooMany: (max, now) => `블록은 ${max}개까지예요. (지금 ${now}개)`,
+  },
+  en: {
+    defaultName: 'My Monster',
+    noDesign: 'There is no drawing.',
+    drawFirst: 'Draw a monster first.',
+    needCells: (need, now) => `Paint at least ${need} blocks. (Now: ${now})`,
+    stackFirst: 'Stack some blocks first.',
+    needBlocks: (need, now) => `Stack at least ${need} blocks. (Now: ${now})`,
+    tooMany: (max, now) => `You can use up to ${max} blocks. (Now: ${now})`,
+  },
+});
 const EMPTY = '.';
 const NAME_MAX = 12;
 

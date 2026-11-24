@@ -14,10 +14,11 @@
 //   feedback.timeScale                  지금 시간 배율 (1 = 보통)
 //   feedback.clear() ; feedback.dispose()
 //
-// 글자 크기·색, 흔들림 세기, 멈춤 길이는 아래 상수에서 바꿉니다. (글씨체는 페이지의 Jua 를 씀)
+// 떠오르는 글자는 아래 TEXT, 글자 크기·색, 흔들림 세기, 멈춤 길이는 아래 상수에서 바꿉니다. (글씨체는 페이지의 Jua 를 씀)
 
 import * as THREE from '../../lib/three.js';
 import { VILLAIN } from '../villainConfig.js';
+import { L } from '../lang/lang.js';
 import { createVillagerShouts } from '../town/villagerShouts.js'; // (V) 마을 사람 말풍선 '으악!' (같은 글자 상자에 띄움)
 
 const MONEY_GAP = 0.32; // '+돈' 글자를 모아서 띄우는 간격 (초)
@@ -29,7 +30,11 @@ const STOP = { big: 0.07, building: 0.09, pop: 0.16, arrive: 0.12 }; // 멈춤 �
 const SHAKE = { hitMin: 0.03, hitPer: 0.006, hitMax: 0.28, building: 0.5, pop: 1, arrive: 0.8, step: 0.035 };
 const BIG_HIT = 28; // 이 피해 이상이면 '센 타격' (잠깐 멈춤)
 const NOTE_GAP = 1.4; // '막았다!' '꽁꽁!' 같은 같은 글자를 다시 띄우기까지 (초)
-const TEXT = { slowed: '꽁꽁!', blink: '휙!', blocked: '막았다!', shieldBroken: '방패 깨짐!', partLost: '부품이 떨어졌어요!', crash: '와르르!', boom: '펑!', alert: '영웅 출동!' };
+// 떠오르는 글자 (한국어 / 영어)
+const TEXT = L({
+  ko: { slowed: '꽁꽁!', blink: '휙!', blocked: '막았다!', shieldBroken: '방패 깨짐!', partLost: '부품이 떨어졌어요!', crash: '와르르!', boom: '펑!', alert: '영웅 출동!' },
+  en: { slowed: 'Frozen!', blink: 'Poof!', blocked: 'Blocked!', shieldBroken: 'Shield broke!', partLost: 'A part fell off!', crash: 'CRASH!', boom: 'BOOM!', alert: 'Hero alert!' },
+});
 
 const STYLE_ID = 'villain-float-style';
 const CSS = `

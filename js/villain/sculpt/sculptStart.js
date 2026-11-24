@@ -14,21 +14,38 @@
 // ─────────────────────────────────────────────────────────────
 
 import { icon } from '../draw/paintIcons.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  title: '어떻게 시작할까요?',
-  blank: '빈 작업대',
-  blankHint: '바닥부터 하나하나 쌓아요',
-  drawing: '그림에서 시작',
-  drawingHint: '그린 괴수를 두께 그대로 블록으로',
-  example: '기본 예시',
-  exampleHint: '귀여운 3D 괴수를 고쳐 봐요',
-  pickDrawing: '어떤 그림으로 시작할까요?',
-  pickExample: '어떤 예시로 시작할까요?',
-  none: '아직 그림판 괴수가 없어요',
-  back: '뒤로',
-  cancel: '소굴로',
-};
+const TEXT = L({
+  ko: {
+    title: '어떻게 시작할까요?',
+    blank: '빈 작업대',
+    blankHint: '바닥부터 하나하나 쌓아요',
+    drawing: '그림에서 시작',
+    drawingHint: '그린 괴수를 두께 그대로 블록으로',
+    example: '기본 예시',
+    exampleHint: '귀여운 3D 괴수를 고쳐 봐요',
+    pickDrawing: '어떤 그림으로 시작할까요?',
+    pickExample: '어떤 예시로 시작할까요?',
+    none: '아직 그림판 괴수가 없어요',
+    back: '뒤로',
+    cancel: '소굴로',
+  },
+  en: {
+    title: 'How do you want to start?',
+    blank: 'Empty workbench',
+    blankHint: 'Stack blocks from the floor up',
+    drawing: 'From a drawing',
+    drawingHint: 'Turn a drawing into blocks, thickness and all',
+    example: 'Starter example',
+    exampleHint: 'Remix a cute 3D monster',
+    pickDrawing: 'Which drawing do you want to start from?',
+    pickExample: 'Which example do you want to start from?',
+    none: 'No drawn monsters yet',
+    back: 'Back',
+    cancel: 'Lair',
+  },
+});
 
 const escape = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 

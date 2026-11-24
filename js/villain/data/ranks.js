@@ -17,13 +17,14 @@
 
 import { FACILITY_LIST } from './facilities.js';
 import { TOWN_LIST } from './towns.js';
+import { L } from '../lang/lang.js';
 
 export const RANKS = [
-  { rank: 0, name: '동네 말썽꾼', emoji: '😼', at: 0, lairSize: 8 },
-  { rank: 1, name: '골목 악당', emoji: '😈', at: 200, lairSize: 9 }, // (E 조정: 160 → 200)
-  { rank: 2, name: '마을의 공포', emoji: '👹', at: 500, lairSize: 10, perks: { partSlots: 1 } },
-  { rank: 3, name: '왕국의 골칫거리', emoji: '👺', at: 1200, lairSize: 11 }, // (E 조정: 1100 → 1200)
-  { rank: 4, name: '전설의 대마왕', emoji: '🐲', at: 2500, lairSize: 12, perks: { pay: 0.1, notoriety: 0.1 } },
+  { rank: 0, name: L({ ko: '동네 말썽꾼', en: 'Little Rascal' }), emoji: '😼', at: 0, lairSize: 8 },
+  { rank: 1, name: L({ ko: '골목 악당', en: 'Alley Nuisance' }), emoji: '😈', at: 200, lairSize: 9 }, // (E 조정: 160 → 200)
+  { rank: 2, name: L({ ko: '마을의 공포', en: 'Town Terror' }), emoji: '👹', at: 500, lairSize: 10, perks: { partSlots: 1 } },
+  { rank: 3, name: L({ ko: '왕국의 골칫거리', en: 'Kingdom Menace' }), emoji: '👺', at: 1200, lairSize: 11 }, // (E 조정: 1100 → 1200)
+  { rank: 4, name: L({ ko: '전설의 대마왕', en: 'Legendary Overlord' }), emoji: '🐲', at: 2500, lairSize: 12, perks: { pay: 0.1, notoriety: 0.1 } },
 ];
 
 function amount(notoriety) {

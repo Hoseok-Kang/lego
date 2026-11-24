@@ -28,6 +28,25 @@ import { evaluate, countOf } from './lair/lairSim.js';
 import { computeModifiers, describeModifiers, raidCost } from './lair/modifiers.js';
 import { activeGoals } from './lair/goalTracker.js';
 import { lockText } from './ui/lairKit.js';
+import { L } from './lang/lang.js';
+
+// 화면에 보이는 글자 (상점 잠금 글 · 단계 오름 때 새로 열린 것)
+const TEXT = L({
+  ko: {
+    partLock: (name, level) => `${name} ${level}단계에 열려요`,
+    notYet: '아직 못 사요',
+    partSlots: (n) => `부품 칸 +${n}`,
+    pay: (p) => `습격 수입 +${p}%`,
+    land: (n) => `땅 ${n}×${n}`,
+  },
+  en: {
+    partLock: (name, level) => `Unlocks with ${name} level ${level}`,
+    notYet: "Can't buy yet",
+    partSlots: (n) => `Part slots +${n}`,
+    pay: (p) => `Raid coins +${p}%`,
+    land: (n) => `Land ${n}×${n}`,
+  },
+});
 
 export function createGameState({ saveStore, bestiary }) {
   // 같은 저장 내용이면 계산을 다시 하지 않음 (saveStore.update 가 끝나면 새 저장 물체가 됨)
@@ -95,7 +114,7 @@ export function createGameState({ saveStore, bestiary }) {
       if (m.parts.has(type)) continue;
       const by = FACILITY_LIST.find((f) => Object.values(f.unlocks?.parts ?? {}).some((list) => list.includes(type)));
       const level = by ? Object.entries(by.unlocks.parts).find(([, list]) => list.includes(type))?.[0] : null;
-      locks[type] = by ? `${by.name} ${level}단계에 열려요` : '아직 못 사요';
+      locks[type] = by ? TEXT.partLock(by.name, level) : TEXT.notYet;
     }
     return { available, locks, slots: m.partSlots };
   }
@@ -136,9 +155,9 @@ export function createGameState({ saveStore, bestiary }) {
       const u = unlocksAtRank(r);
       for (const t of u.towns) lines.push(`${t.emoji ?? ''} ${t.name}`.trim());
       for (const f of u.facilities) lines.push(`${f.emoji ?? ''} ${f.name}`.trim());
-      if (u.perks?.partSlots) lines.push(`부품 칸 +${u.perks.partSlots}`);
-      if (u.perks?.pay) lines.push(`습격 수입 +${Math.round(u.perks.pay * 100)}%`);
-      if (u.lairSize && RANKS[r - 1] && u.lairSize > RANKS[r - 1].lairSize) lines.push(`땅 ${u.lairSize}×${u.lairSize}`);
+      if (u.perks?.partSlots) lines.push(TEXT.partSlots(u.perks.partSlots));
+      if (u.perks?.pay) lines.push(TEXT.pay(Math.round(u.perks.pay * 100)));
+      if (u.lairSize && RANKS[r - 1] && u.lairSize > RANKS[r - 1].lairSize) lines.push(TEXT.land(u.lairSize));
     }
     const r = RANKS[after];
     return { rank: after, name: r.name, emoji: r.emoji, lines: [...new Set(lines)] };

@@ -17,17 +17,30 @@
 import { VILLAIN } from '../villainConfig.js';
 import { readCells } from '../monster/monsterDepth.js';
 import { EMPTY, toCells } from './paintOps.js';
+import { L } from '../lang/lang.js';
 
-const TEXT = {
-  title: '두께 붓',
-  hint: '칠한 칸을 문질러요',
-  auto: '자동',
-  autoHint: '통통하게 저절로 (가장자리 얇게, 속은 두껍게)',
-  pickHint: (n) => `${n}칸 두께`,
-  allAuto: '모두 자동',
-  allFlat: '납작하게 (1)',
-  legend: '진한 숫자 = 정한 두께 · 흐린 숫자 = 자동',
-};
+const TEXT = L({
+  ko: {
+    title: '두께 붓',
+    hint: '칠한 칸을 문질러요',
+    auto: '자동',
+    autoHint: '통통하게 저절로 (가장자리 얇게, 속은 두껍게)',
+    pickHint: (n) => `${n}칸 두께`,
+    allAuto: '모두 자동',
+    allFlat: '납작하게 (1)',
+    legend: '진한 숫자 = 정한 두께 · 흐린 숫자 = 자동',
+  },
+  en: {
+    title: 'Thickness brush',
+    hint: 'Rub over painted blocks',
+    auto: 'Auto',
+    autoHint: 'Chubby by itself (thin edges, thick middle)',
+    pickHint: (n) => (n === 1 ? '1 block thick' : `${n} blocks thick`),
+    allAuto: 'All auto',
+    allFlat: 'Flat (1)',
+    legend: 'Dark number = set by you · Light number = auto',
+  },
+});
 
 const SHADE = 0.065; // 두께 1칸마다 어두워지는 정도
 
