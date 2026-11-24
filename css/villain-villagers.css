@@ -6,7 +6,7 @@
    바꾸고 싶을 때
      글자 크기 → .vv-bubble 의 font-size (휴대폰 가로 844×390 에서 약 18px, 큰 화면에서 28px 까지)
      색       → 상황별 .vv-panic · .vv-home · .vv-hero … 의 --vv-fill (말풍선 바탕) · --vv-ink (글자·테두리)
-   화면 크기 배율 --ui-scale 이 있으면 그만큼 같이 커지고 작아집니다.
+   말풍선 상자는 #ui 안(정보판의 떠오르는 글자 상자)에 있어서, 화면 크기 배율 --ui-scale (작게·보통·크게)을 저절로 따릅니다.
    ───────────────────────────────────────────────────────────── */
 
 .vv-shouts {
@@ -20,7 +20,7 @@
 .vv-bubble {
   --vv-fill: #ffffff;
   --vv-ink: #1B2A34;
-  --vv-line: calc(2.5px * var(--ui-scale, 1));
+  --vv-line: 2.5px;
   position: absolute;
   left: 0;
   top: 0;
@@ -32,7 +32,7 @@
   box-shadow: 0 0.16em 0 rgba(27, 42, 52, 0.45);
   color: var(--vv-ink);
   font-family: 'Jua', 'IBM Plex Sans KR', sans-serif;
-  font-size: calc(clamp(15px, 2.6vmin + 8px, 28px) * var(--ui-scale, 1));
+  font-size: clamp(15px, 2.6vmin + 8px, 28px);
   line-height: 1;
   white-space: nowrap;
   will-change: transform, opacity;
@@ -64,7 +64,7 @@
 .vv-home {
   --vv-fill: #FFD3DD;
   --vv-ink: #8A1538;
-  font-size: calc(clamp(17px, 3vmin + 9px, 32px) * var(--ui-scale, 1));
+  font-size: clamp(17px, 3vmin + 9px, 32px);
 }
 .vv-hero,
 .vv-saved {

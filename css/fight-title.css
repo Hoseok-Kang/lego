@@ -407,3 +407,14 @@ body.touch-mode .cheat--keys {
     font-size: 13px;
   }
 }
+
+/* 휴대폰 가로 (손가락 기기 + 낮은 화면): 키보드 · 마우스 안내는 빼고 터치 안내만 → 시작 화면이 한 화면에 들어감 */
+@media (max-height: 500px) and (pointer: coarse) {
+  .cheat--keys {
+    display: none;
+  }
+
+  .cheats {
+    justify-content: center;
+  }
+}

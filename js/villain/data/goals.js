@@ -152,6 +152,18 @@ export const GOALS = [
     done: '아이들이 내 이름만 들어도 이불 속에 숨어요!',
   },
   {
+    // (S) 3D 블록 작업대가 열리면 (villainConfig 의 sculpt.unlockRank)
+    key: 'build3d',
+    name: '3D 괴수 만들기',
+    emoji: '🧊',
+    desc: '괴수 도감 → 3D로 쌓기. 블록을 하나하나 쌓아 입체 괴수를 만들어요.',
+    need: 1,
+    after: ['rank2'],
+    progress: (s) => (Array.isArray(s?.designs) ? s.designs.filter((d) => d?.kind === 'voxel').length : 0),
+    reward: { money: 200, notoriety: 20 },
+    done: '진짜 입체 괴수가 태어났어요!',
+  },
+  {
     key: 'bigLair',
     name: '북적북적 소굴',
     emoji: '🏚️',

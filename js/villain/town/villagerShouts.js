@@ -45,7 +45,8 @@ export function createVillagerShouts({ events = null, view = null, layer = null 
     // 크기는 한 번만 잼 (겹침 비키기에 씀)
     const item = { el, bubble, w: el.offsetWidth || 60, h: el.offsetHeight || 28, x: 0, y: 0 };
     items.push(item);
-    place(item, root.getBoundingClientRect());
+    const box = root.getBoundingClientRect();
+    place(item, box, scaleOf(box));
     write(item);
   }
 
@@ -55,7 +56,8 @@ export function createVillagerShouts({ events = null, view = null, layer = null 
     pool.push(item.el);
   }
 
-  function place(item, box) {
+  // box: 상자의 화면 위치, k: 상자가 화면 크기 배율(--ui-scale)로 줄거나 커진 정도 (화면 px = 상자 안 px × k)
+  function place(item, box, k = 1) {
     const b = item.bubble;
     const screen = view.worldToScreen(b.anchor);
     const age = b.age;
@@ -66,8 +68,8 @@ export function createVillagerShouts({ events = null, view = null, layer = null 
     const tilt = Math.sin(age * WOBBLE_RATE + (b.text.length % 3)) * WOBBLE_DEG * Math.exp(-age * WOBBLE_DAMP);
     const left = b.life - age;
     const opacity = left < FADE_SECONDS ? Math.max(0, left / FADE_SECONDS) : 1;
-    item.x = screen.x - box.left;
-    item.y = screen.y - box.top - t * RISE_PX;
+    item.x = (screen.x - box.left) / k;
+    item.y = (screen.y - box.top) / k - t * RISE_PX;
     item.scale = scale;
     item.tilt = tilt;
     item.el.style.opacity = screen.visible ? opacity.toFixed(3) : '0';
@@ -88,15 +90,22 @@ export function createVillagerShouts({ events = null, view = null, layer = null 
     }
   }
 
+  // 말풍선 상자는 화면 크기 배율(#ui 의 --ui-scale)만큼 통째로 줄거나 커져 있음 → 화면 px 을 상자 안 px 로 바꿀 때 나눔
+  function scaleOf(box) {
+    const local = root.offsetWidth;
+    return local > 0 && box.width > 0 ? box.width / local : 1;
+  }
+
   function update() {
     if (!items.length) return;
     const box = root.getBoundingClientRect();
+    const k = scaleOf(box);
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (item.bubble.done) {
         release(item);
         items.splice(i, 1);
-      } else place(item, box);
+      } else place(item, box, k);
     }
     unstack();
     for (const item of items) write(item);
