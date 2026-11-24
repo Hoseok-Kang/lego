@@ -44,7 +44,7 @@ import { createLairSky } from './lairSky.js';
 import { createLairPointer } from './lairPointer.js';
 import { createLairStage } from './lairStage.js';
 import { createLairZoom } from './lairZoom.js';
-import { installLandscapeGuard } from '../../core/landscapeGuard.js';
+import { createLairLoop } from './lairLoop.js';
 
 const SLIDE_SECONDS = 0.9; // 땅이 넓어질 때 가운데로 미끄러지는 시간
 const EMBERS_PER_SECOND = 2.5; // 칸 사이 용암에서 올라오는 불티 (땅 8칸 기준)
@@ -78,10 +78,7 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
   const slide = { t: 0, x: 0, z: 0 };
   let time = 0;
   let visible = true;
-  let blocked = false; // 휴대폰을 세로로 들어 "가로로 돌려 주세요" 안내판이 떠 있는 동안 멈춤
   let disposed = false;
-  let raf = 0;
-  let last = 0;
   let emberClock = 0;
   const tmpV = new THREE.Vector3();
   const screenOut = { x: 0, y: 0 };
@@ -330,23 +327,9 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
     if (render && container.clientWidth > 0) renderer.render(scene, camera);
   }
 
-  function running() {
-    return visible && !blocked && !disposed && !manual && !document.hidden;
-  }
-  function loop(now) {
-    raf = 0;
-    if (!running()) return;
-    raf = requestAnimationFrame(loop);
-    step((now - last) / 1000);
-    last = now;
-  }
-  function wake() {
-    if (raf || !running()) return;
-    last = performance.now();
-    raf = requestAnimationFrame(loop);
-  }
-  document.addEventListener('visibilitychange', wake);
-  const guard = installLandscapeGuard({ onChange: (on) => ((blocked = on), wake()) });
+  // 보일 때만 돌고, 탭을 떠나거나 세로 화면 안내판이 뜨면 멈춤 (lairLoop.js)
+  const loop = createLairLoop(step, () => visible && !disposed && !manual);
+  const wake = loop.wake;
   resize();
   wake();
 
@@ -388,10 +371,7 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
       if (visible) {
         resize();
         wake();
-      } else if (raf) {
-        cancelAnimationFrame(raf);
-        raf = 0;
-      }
+      } else loop.stop();
     },
     step,
     get placing() {
@@ -399,10 +379,8 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
     },
     dispose() {
       disposed = true;
-      if (raf) cancelAnimationFrame(raf);
-      document.removeEventListener('visibilitychange', wake);
+      loop.dispose();
       observer?.disconnect();
-      guard.off();
       zoom.dispose();
       pointer.dispose();
       marks.dispose();
