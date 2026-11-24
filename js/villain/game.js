@@ -32,6 +32,7 @@ import { createVillainSounds, connectVillainSounds } from './audio/villainSounds
 import { createScreens } from './ui/screens.js';
 import { createShopScreen } from './ui/shopScreen.js';
 import { createRaidHud } from './ui/raidHud.js';
+import { createRaidZoom } from './raid/raidZoom.js';
 import { createResultScreen } from './ui/resultScreen.js';
 import { bindSoundButtons } from './ui/soundToggle.js';
 import { lockText } from './ui/lairKit.js';
@@ -134,6 +135,8 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
       state.paused = !!on; // "그만둘까요?" 창이 떠 있는 동안 멈춤
     },
     onQuit: () => world.raid.abort(),
+    onZoom: (dir) => raidZoom.step(dir), // 습격 화면 확대 단추 (두 손가락 · 휠도 됨, raid/raidZoom.js)
+    onZoomReset: () => raidZoom.reset(),
   });
 
   const result = createResultScreen(uiRoot, {
@@ -161,6 +164,8 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
   // ── 3D 세상 (떠오르는 글자는 정보판 안의 상자에 띄움) ──
   const world = createGameWorld({ container, events, saveStore, floatLayer: hud.floatLayer });
   const { raid, stage } = world;
+  const raidZoom = createRaidZoom(stage.renderer.domElement, stage.view, { onChange: (level) => hud.setZoomLevel(level) });
+  hud.setZoomLevel(raidZoom.level);
 
   screens
     .add('lair', lair.screen)

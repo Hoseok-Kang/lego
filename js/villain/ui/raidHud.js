@@ -10,6 +10,7 @@
 //     onQuit(),             그만두기 (이 화면이 먼저 "정말요?" 를 물어봄)
 //     onPause(true|false),  (없어도 됨) "정말요?" 창이 떠 있는 동안 true → 그동안 게임을 멈추고 싶을 때
 //     speeds,               고를 수 있는 빠르기 목록 (기본: villainConfig 의 speedOptions)
+//     onZoom(+1|-1), onZoomReset(),   (없어도 됨) 아래 단추 줄의 [−] [+] [처음 보기] 확대 단추 (raid/raidZoom.js 로 이어 줌)
 //   })
 //   hud.show({ name, thumb, heroName, heroKind, heroAt })   습격 시작: 괴수 이름 · 작은 그림 주소, 이번 마을 영웅
 //                                   (이름 · 얼굴 종류 'knight'|'iceMage'|'guardian' · 마을이 몇(0~1) 부서지면 오는지). 숫자를 처음으로 되돌림
@@ -17,6 +18,7 @@
 //   hud.update({ earned, destroyedRatio, monsterHp, monsterMaxHp, heroHp, heroMaxHp, heroVisible, phase, cleanupLeft })
 //   hud.sync(raid)                  raidDirector 의 raid 를 그대로 넘기면 위 값을 알아서 읽음
 //   hud.setSpeed(배율) / hud.speed
+//   hud.setZoomLevel(배율)          확대 단추 모양 맞추기 (1 이 아니면 [처음 보기] 가 보임)
 //   hud.getInsets() → { top, bottom, left, right }   정보판이 가리는 크기(px). 카메라(stage.view.setInsets)에 넘겨 주세요
 //   hud.floatLayer                  떠오르는 글자를 넣을 상자 (raidFeedback 의 layer 로 쓰기 좋음)
 //   hud.hide() / hud.el
@@ -28,6 +30,8 @@ import { VILLAIN } from '../villainConfig.js';
 import { el, escapeHTML, money, bump, askDialog } from './uiKit.js';
 import { icon } from './uiIcons.js';
 import { heroFace } from './lairArt.js';
+import { createZoomButtons } from './zoomButtons.js';
+import { USER_ZOOM } from '../core/townCamera.js';
 
 const TEXT = {
   town: '마을 부서짐',
@@ -50,7 +54,7 @@ const TEXT = {
 const LOW_HP = 0.3; // 체력이 이 비율 아래면 막대가 빨갛게 깜빡임
 const MONEY_TICK = 9; // 번 돈 숫자가 따라가는 빠르기 (클수록 빨리)
 
-export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN.speedOptions } = {}) {
+export function createRaidHud(root, { onSpeed, onQuit, onPause, onZoom, onZoomReset, speeds = VILLAIN.speedOptions } = {}) {
   // 이번 마을 영웅 (마을마다 다름 → show / setHero 로 바꿈)
   const hero = { name: VILLAIN.hero.name, kind: 'knight' };
   let heroAt = Math.round(VILLAIN.hero.appearAtDestroyed * 100);
@@ -276,6 +280,11 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN
     }
   });
 
+  // 확대 단추 (소리 단추 왼쪽)
+  const zoomButtons = createZoomButtons({ className: 'hud-zoom', min: USER_ZOOM.min, max: USER_ZOOM.max, onZoom: (dir) => onZoom?.(dir), onReset: () => onZoomReset?.() });
+  zoomButtons.el.hidden = !onZoom;
+  q('.hud-bottom-gap').after(zoomButtons.el);
+
   setSpeed(speed);
   reset();
 
@@ -286,6 +295,7 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN
     sync,
     setSpeed,
     setHero,
+    setZoomLevel: (level) => zoomButtons.setLevel(level),
     get speed() {
       return speed;
     },
@@ -305,10 +315,12 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN
       hud.querySelector(':scope > .vt-dialog')?.remove();
     },
     // 정보판이 가리는 크기 (위쪽 줄만. 아래 단추는 양쪽 구석에 작게 있어서 마을을 거의 안 가림). 화면 픽셀 기준
+    // 들어오는 움직임(위에서 툭 떨어짐) 중에도 제자리 기준으로 셈. #ui 는 화면 크기 배율만큼 줄어 있으므로 화면 px 로 바꿈
     getInsets() {
       if (hud.hidden) return { top: 0, bottom: 0, left: 0, right: 0 };
-      const top = q('.hud-top').getBoundingClientRect().bottom;
-      return { top: Math.round(top), bottom: 0, left: 0, right: 0 };
+      const box = q('.hud-top');
+      const scale = hud.getBoundingClientRect().height / Math.max(1, hud.offsetHeight) || 1;
+      return { top: Math.round((box.offsetTop + box.offsetHeight) * scale), bottom: 0, left: 0, right: 0 };
     },
   };
 }

@@ -1,7 +1,8 @@
 // 마을 카메라
 // 위에서 비스듬히 내려다보는 고정 시점입니다. 마을 바닥판 전체가 위쪽 정보판·아래쪽 단추 사이 빈 화면에 들어오게 거리를 맞추고,
 // '볼거리'(괴수, 싸움)를 정해 주면 그쪽으로 살짝 다가갑니다. 다가가도 바닥판 밖은 되도록 보이지 않게 움직임을 묶어 둡니다.
-// 세로로 긴 화면(휴대폰)에서는 마을이 너무 작아 보이므로, 볼거리가 있으면 마을 세로가 화면에 찰 만큼 다가가 좌우로 따라다닙니다.
+// 마을보다 홀쭉한 화면(4:3 태블릿 등)에서는 마을이 너무 작아 보이므로, 볼거리가 있으면 마을 세로가 화면에 찰 만큼 다가가 좌우로 따라다닙니다.
+// (아래 PORTRAIT_* 값: 화면 모양이 마을보다 '세로로 긴' 경우. 휴대폰 세로 화면은 안내판이 막으므로 쓰지 않음)
 //
 //   const view = createTownCamera(camera, element, { width, depth, pitchDeg })
 //   view.update(dt)                              매 장면 (움직임 계산 + 카메라 놓기)
@@ -10,7 +11,9 @@
 //   view.snap()                                  부드럽게 따라가지 않고 바로 그 자리로
 //   view.shake(세기)                              화면 흔들기 (0.2 살짝 ~ 1 크게)
 //   view.worldToScreen(위치) → { x, y, visible } 화면 위 좌표 (떠오르는 글자 위치에 씀)
-//   view.zoom                                    지금 확대 정도
+//   view.zoom                                    지금 확대 정도 (놀이하는 사람 확대까지 곱한 값)
+// 놀이하는 사람의 확대 (raid/raidZoom.js 가 두 손가락 · 휠 · +/− 단추로 부름): 자동 카메라 위에 곱해짐
+//   view.userZoom / view.setUserZoom(배)          1 = 자동 그대로, 작을수록 멀리 (마을 전체까지), 클수록 가까이
 //
 // 따라가는 빠르기·흔들림 세기·휴대폰 확대 한도는 아래 상수에서 바꿉니다.
 
@@ -33,6 +36,8 @@ const ZOOM_RATE = 1.7; // 다가가고 물러나는 빠르기
 const SHAKE_DECAY = 7; // 흔들림이 잦아드는 빠르기
 const SHAKE_SIZE = 0.9; // 세기 1 일 때 흔들리는 크기 (칸)
 const MAX_SHAKE = 1.2;
+export const USER_ZOOM = { min: 0.45, max: 2.2 }; // 놀이하는 사람 확대 한도 (자동 확대에 곱함)
+const LOWEST_ZOOM = 0.92; // 아무리 멀리 해도 이보다는 (1 = 마을 전체가 딱 맞음)
 
 export function createTownCamera(camera, element, { width = 64, depth = 44, pitchDeg = 48 } = {}) {
   const halfW = width / 2;
@@ -43,6 +48,7 @@ export function createTownCamera(camera, element, { width = 64, depth = 44, pitc
 
   const goal = { x: 0, z: 0, zoom: 1, active: false };
   const current = { x: 0, z: 0, zoom: 1 };
+  let userZoom = 1;
   let needSnap = true;
   let shakeAmount = 0;
   let shakeTime = 0;
@@ -176,7 +182,7 @@ export function createTownCamera(camera, element, { width = 64, depth = 44, pitc
       current.z += (goal.z - current.z) * follow;
       current.zoom += (zoomGoal - current.zoom) * (1 - Math.exp(-dt * ZOOM_RATE));
     }
-    const zoom = current.zoom;
+    const zoom = clamp(current.zoom * userZoom, LOWEST_ZOOM, MAX_ZOOM * USER_ZOOM.max);
     // 다가간 만큼만 볼거리 쪽으로 옮길 수 있음 (바닥판 밖이 화면에 들어오지 않게)
     const roomX = halfW * Math.max(0, 1 - solved.fillX / zoom);
     const portrait = goal.active && solved.fillZ > solved.fillX;
@@ -242,7 +248,14 @@ export function createTownCamera(camera, element, { width = 64, depth = 44, pitc
       shakeAmount = Math.min(MAX_SHAKE, shakeAmount + strength);
     },
     get zoom() {
-      return current.zoom;
+      return clamp(current.zoom * userZoom, LOWEST_ZOOM, MAX_ZOOM * USER_ZOOM.max);
+    },
+    get userZoom() {
+      return userZoom;
+    },
+    setUserZoom(value) {
+      userZoom = clamp(Number(value) || 1, USER_ZOOM.min, USER_ZOOM.max);
+      return userZoom;
     },
     get fit() {
       return solveFit();

@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // 악당 타이쿤: 악당 소굴 (첫 화면) — 3D 소굴이 화면 대부분을 차지하고, 둘레에 머리줄 · 목표 · 아래 단추.
-//   머리줄: 로고, 악명 휘장(단계 이름 + 다음 단계까지 막대), 가진 돈, 소리
+//   머리줄: 로고, 악명 휘장(단계 이름 + 다음 단계까지 막대), 가진 돈, 소리, 전체 화면(되는 곳만), 화면 설정(톱니바퀴 → settingsPop.js)
 //   목표 띠: 목표 3개 (goalsBar.js)          가운데: lair.viewBox ← game.js 가 3D 소굴을 여기에 붙임
 //   아래 단추: [짓기] [괴수 도감] [부품 상점] [출동!]      3D 위 작은 단추: [계책 도감]
 //   판(시트): 언제나 왼쪽 옆판 (가로 화면 전용). 판이 가리는 만큼 3D 칸이 줄어 소굴이 다 보여요.
@@ -44,6 +44,8 @@ import { createFacilityPanel } from './facilityPanel.js';
 import { createSchemeBook } from './schemeBook.js';
 import { createBestiaryPanel } from './bestiaryPanel.js';
 import { createTownMap } from './townMap.js';
+import { createSettingsPop } from './settingsPop.js';
+import { fullscreenButton } from '../../core/fullscreen.js';
 
 const TEXT = {
   build: '짓기',
@@ -77,6 +79,7 @@ export function createLairScreen(root, options = {}) {
           <div class="vt-money" title="가진 돈">${icon('coin')}<b data-money>0</b></div>
           <button type="button" class="vt-btn vt-btn--icon" data-sound-toggle aria-label="소리">${icon('soundOn')}</button>
         </div>
+        <button type="button" class="vt-btn vt-btn--icon lair-gear" data-settings aria-label="화면 설정" title="화면 설정">${icon('gear')}</button>
         <i class="lair-drip d1" aria-hidden="true"></i><i class="lair-drip d2" aria-hidden="true"></i><i class="lair-drip d3" aria-hidden="true"></i>
       </header>
       <div class="lair-goals" data-goals><div class="lair-mods" data-mods></div></div>
@@ -96,6 +99,8 @@ export function createLairScreen(root, options = {}) {
   const moneyEl = screen.querySelector('[data-money]');
   const hello = screen.querySelector('[data-hello]');
   const dock = screen.querySelector('.lair-dock');
+  screen.querySelector('.lair-wallet').append(fullscreenButton({ className: 'vt-btn vt-btn--icon lair-full' })); // 못 쓰는 곳(아이폰)에서는 숨음
+  const settings = createSettingsPop({ host: screen, button: screen.querySelector('[data-settings]') });
 
   let state = { money: 0, notoriety: 0, goals: undefined, facilities: [], designs: [], towns: null, placing: null, selectedId: null };
   let panel = null; // 지금 열린 판 이름
@@ -230,7 +235,8 @@ export function createLairScreen(root, options = {}) {
     if (screen.hidden || !book.offsetParent) return { top: 0, bottom: 0, left: 0, right: 0 };
     const v = viewBox.getBoundingClientRect();
     const b = book.getBoundingClientRect();
-    return { top: Math.max(0, Math.round(b.bottom - v.top + 6)), bottom: 0, left: 0, right: 0 };
+    const k = v.height / Math.max(1, viewBox.clientHeight) || 1; // 화면 크기 배율 (3D 카메라는 상자 안 px 로 셈)
+    return { top: Math.max(0, Math.round((b.bottom - v.top) / k + 6)), bottom: 0, left: 0, right: 0 };
   }
 
   // 3D 상자 크기가 바뀌면 알려 줌 (한 장면에 한 번만)
@@ -355,6 +361,7 @@ export function createLairScreen(root, options = {}) {
     },
     hide() {
       screen.querySelector(':scope > .vt-dialog [data-answer="no"]')?.click(); // 떠 있던 확인 창은 '아니요' 로 닫음
+      settings.close();
       goals.closePop();
       screen.querySelector(':scope > .goal-party')?.remove();
       if (panel === 'towns') setPanel(null, { notify: false });

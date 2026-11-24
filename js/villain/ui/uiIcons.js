@@ -36,6 +36,7 @@ export const ICONS = {
   clock: svg(`<circle cx="12" cy="12" r="8" ${stroke}/><path d="M12 7.5V12l3 2" ${stroke}/>`),
   bolt: svg(`<path d="M13.5 2.5 5 13.5h5.5l-1 8L18.5 10H13z" fill="currentColor"/>`),
   house: svg(`<path d="M3 11.5 12 4l9 7.5h-2.5v8.5h-13v-8.5z" fill="currentColor"/>`),
+  gear: svg(`<circle cx="12" cy="12" r="5.7" fill="none" stroke="currentColor" stroke-width="3.4"/><g fill="currentColor"><rect x="10.4" y="1.6" width="3.2" height="4.6" rx="1" transform="rotate(0 12 12)"/><rect x="10.4" y="1.6" width="3.2" height="4.6" rx="1" transform="rotate(45 12 12)"/><rect x="10.4" y="1.6" width="3.2" height="4.6" rx="1" transform="rotate(90 12 12)"/><rect x="10.4" y="1.6" width="3.2" height="4.6" rx="1" transform="rotate(135 12 12)"/><rect x="10.4" y="1.6" width="3.2" height="4.6" rx="1" transform="rotate(180 12 12)"/><rect x="10.4" y="1.6" width="3.2" height="4.6" rx="1" transform="rotate(225 12 12)"/><rect x="10.4" y="1.6" width="3.2" height="4.6" rx="1" transform="rotate(270 12 12)"/><rect x="10.4" y="1.6" width="3.2" height="4.6" rx="1" transform="rotate(315 12 12)"/></g>`),
 };
 
 export function icon(name) {

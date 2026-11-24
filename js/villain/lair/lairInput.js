@@ -9,7 +9,9 @@
 //     onRelease(clientX, clientY, wasDrag),        뗌
 //     onHover(clientX, clientY) / onLeave(),       마우스만: 누르지 않고 움직임 / 화면 밖으로 나감
 //   })
+//   input.cancel()    지금 누르고 있는 것을 없던 일로 (두 손가락 확대가 시작될 때: 톡 · 끌기 · 뗌을 더는 알리지 않음)
 //   input.dispose()
+// 두 번째 손가락은 여기서 무시합니다 (두 손가락 확대 · 옮기기는 lairZoom.js 가 맡음).
 
 const TAP_SLOP = { mouse: 6, pen: 8, touch: 12 };
 const TAP_MAX_MS = 700;
@@ -65,6 +67,9 @@ export function createLairInput(canvas, handlers) {
   canvas.addEventListener('contextmenu', noMenu);
 
   return {
+    cancel() {
+      active = null;
+    },
     dispose() {
       canvas.removeEventListener('pointerdown', down);
       canvas.removeEventListener('pointermove', move);

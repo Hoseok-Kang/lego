@@ -102,6 +102,7 @@
 }
 
 .lair-wallet .vt-btn--icon,
+.lair-gear,
 .shop-head > .vt-btn,
 .townmap-head > .vt-btn {
   border-color: rgb(255 255 255 / 0.16);
@@ -229,6 +230,16 @@
 .lair-bookbtn.is-on {
   background: var(--accent);
   border-color: rgb(255 255 255 / 0.4);
+}
+
+/* 3D 확대 단추 [처음 보기] [−] [+] (lair/lairZoom.js): 3D 칸 오른쪽 아래 */
+.lair-zoom {
+  right: 10px;
+  bottom: max(10px, var(--edge-bottom));
+}
+
+.lair-gear.is-on {
+  background: var(--accent);
 }
 
 /* 인사 한 줄: 꼬마 악당의 말풍선 */
@@ -979,12 +990,12 @@
   }
 
   .lair-badge {
-    flex: 1 1 100%;
+    flex: 1 1 0;
   }
 
   .lair-wallet {
+    order: 3;
     flex: 1 1 100%;
-    justify-content: space-between;
     gap: 6px;
     margin: 0;
   }
@@ -992,6 +1003,7 @@
   .lair-wallet .vt-money {
     min-width: 0;
     min-height: 40px;
+    margin-right: auto;
     padding: 2px 12px 4px 7px;
     border-bottom-width: 4px;
     font-size: 21px;
@@ -1002,9 +1014,11 @@
     height: 25px;
   }
 
-  .lair-wallet .vt-btn--icon {
-    width: 42px;
-    min-height: 42px;
+  .lair-wallet .vt-btn--icon,
+  .lair-gear {
+    flex: none;
+    width: 45px;
+    min-height: 45px;
     border-bottom-width: 4px;
   }
 

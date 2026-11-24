@@ -110,8 +110,10 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
     const rise = (1 - (1 - t) * (1 - t)) * FLOAT_RISE * (item.big ? 1.3 : 1);
     // 뿅 하고 커졌다가 제 크기로, 끝에는 흐려짐
     const pop = t < 0.14 ? 0.4 + (t / 0.14) * 0.85 : t < 0.26 ? 1.25 - ((t - 0.14) / 0.12) * 0.25 : 1;
-    const x = screen.x - box.left + item.drift * (item.big ? 0 : 1);
-    const y = screen.y - box.top - rise;
+    // 글자 상자는 #ui 안이라 화면 크기 배율만큼 줄어 있음 → 화면 px 를 상자 안 px 로 바꿈
+    const k = box.width / Math.max(1, root.offsetWidth) || 1;
+    const x = (screen.x - box.left) / k + item.drift * (item.big ? 0 : 1);
+    const y = (screen.y - box.top) / k - rise;
     item.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-50%) scale(${pop.toFixed(3)})`;
     item.el.style.opacity = t > 0.72 ? String(Math.max(0, 1 - (t - 0.72) / 0.28).toFixed(3)) : '1';
   }

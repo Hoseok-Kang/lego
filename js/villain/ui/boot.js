@@ -3,7 +3,16 @@
 // 진짜 게임(js/villain/main.js)이 있으면 그것을 엽니다.
 // 아직 없거나 주소 끝에 ?uidemo 를 붙이면 '화면 미리보기'(demoGame.js: 화면은 진짜, 습격은 흉내)를 엽니다.
 // 여는 데 실패하면 화면에 한 줄로 알려 줍니다 (자세한 내용은 브라우저 개발자 도구의 콘솔).
+// 게임보다 먼저: 화면 크기 배율(uiScale.js)을 맞추고, 휴대폰을 세로로 들면 "가로로 돌려 주세요" 안내판(landscapeGuard.js)을 띄웁니다.
 // ─────────────────────────────────────────────────────────────
+
+import { initUiScale } from './uiScale.js';
+import { installLandscapeGuard } from '../../core/landscapeGuard.js';
+
+initUiScale();
+installLandscapeGuard(); // 게임을 멈추는 일은 main.js 가 이 안내판을 한 번 더 불러 onChange 로 함
+// 아이폰 사파리는 user-scalable=no 를 무시하고 두 손가락으로 페이지를 확대함 → 막음 (3D 확대는 게임 안 기능으로)
+document.addEventListener('gesturestart', (event) => event.preventDefault());
 
 const params = new URLSearchParams(location.search);
 const message = document.getElementById('bootMessage');

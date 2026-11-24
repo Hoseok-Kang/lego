@@ -20,6 +20,7 @@
 //                                         (낀 시설이 아직 쌓이는 중이면 다 쌓인 뒤에 번쩍 — playBuild 바로 뒤에 불러도 됨)
 //   view.setInsets({ top, bottom, left, right })   3D 상자 위에 떠서 가리는 단추 · 띠 크기(px) → 그 사이에 땅판을 맞춤
 //   view.setTheme('auto' | 'light' | 'dark')       하늘 색 (기본 auto: 페이지 data-theme 또는 기기 설정)
+//   view.resetZoom()                      놀이하는 사람이 바꾼 확대 · 옮기기를 처음으로 (확대는 lairZoom.js: 두 손가락 · 휠 · +/− 단추)
 //   view.screenPoint(id) → { x, y } | null         시설 지붕 위의 화면(페이지) 좌표 (말풍선 자리)
 //   view.tileScreen(x, y) → { x, y }               칸 가운데의 화면(페이지) 좌표
 //   view.resize() / view.setVisible(보임?) / view.dispose()
@@ -42,11 +43,14 @@ import { createLairFx } from './lairFx.js';
 import { createLairSky } from './lairSky.js';
 import { createLairPointer } from './lairPointer.js';
 import { createLairStage } from './lairStage.js';
+import { createLairZoom } from './lairZoom.js';
+import { installLandscapeGuard } from '../../core/landscapeGuard.js';
 
 const SLIDE_SECONDS = 0.9; // 땅이 넓어질 때 가운데로 미끄러지는 시간
 const EMBERS_PER_SECOND = 2.5; // 칸 사이 용암에서 올라오는 불티 (땅 8칸 기준)
 const PULSE_WAIT = 6; // 계책 번쩍임을 이만큼(초)까지 기다렸다가 (시설이 다 쌓일 때까지)
 const TIER_LABEL = { 1: '#BBE90B', 2: '#FF698F', 3: '#FFF03A' };
+const MAX_RATIO = 2; // 화면 픽셀 배율 한도 (#ui 크기 배율까지 곱한 값)
 
 export function createLairView(container, { onTap = null, onGhostMove = null, manual = false } = {}) {
   const stage = createLairStage(container);
@@ -74,6 +78,7 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
   const slide = { t: 0, x: 0, z: 0 };
   let time = 0;
   let visible = true;
+  let blocked = false; // 휴대폰을 세로로 들어 "가로로 돌려 주세요" 안내판이 떠 있는 동안 멈춤
   let disposed = false;
   let raf = 0;
   let last = 0;
@@ -95,6 +100,9 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
   function resize() {
     const w = Math.max(1, container.clientWidth);
     const h = Math.max(1, container.clientHeight);
+    // 3D 칸은 #ui 안에 있어서 화면 크기 배율(작게 · 보통 · 크게)만큼 줄어 보임 → 그만큼 픽셀을 맞춰 선명하고 가볍게
+    const shown = container.getBoundingClientRect().width / w || 1;
+    renderer.setPixelRatio(Math.min(MAX_RATIO, (window.devicePixelRatio || 1) * shown));
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -271,6 +279,7 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
     onTap: (spot) => onTap?.(spot),
     onGhostMove: onGhostMove ? (spot) => onGhostMove(spot) : null,
   });
+  const zoom = createLairZoom(container, canvas, { cam, pointer, isPlacing: () => !!placing, onChange: () => wake() });
 
   // ── 장면 반복 ──
   // 시설(짓는 중이면 유령) 지붕 위 자리. linked: 계책 줄용이면 아직 쌓이는 시설은 빼고 (다 쌓인 뒤에 줄이 이어짐)
@@ -322,7 +331,7 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
   }
 
   function running() {
-    return visible && !disposed && !manual && !document.hidden;
+    return visible && !blocked && !disposed && !manual && !document.hidden;
   }
   function loop(now) {
     raf = 0;
@@ -337,6 +346,7 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
     raf = requestAnimationFrame(loop);
   }
   document.addEventListener('visibilitychange', wake);
+  const guard = installLandscapeGuard({ onChange: (on) => ((blocked = on), wake()) });
   resize();
   wake();
 
@@ -357,6 +367,7 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
       sky.setFrame({ width: container.clientWidth || 1, height: container.clientHeight || 1, insets: lastInsets });
     },
     setTheme: (mode = 'auto') => stage.setTheme(mode),
+    resetZoom: () => zoom.reset(),
     tileScreen(x, y) {
       tmpV.set((x + 0.5 - landSize / 2) * TILE, 0, (y + 0.5 - landSize / 2) * TILE).add(world.position);
       const p = cam.worldToScreen(tmpV, screenOut);
@@ -388,6 +399,8 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
       if (raf) cancelAnimationFrame(raf);
       document.removeEventListener('visibilitychange', wake);
       observer?.disconnect();
+      guard.off();
+      zoom.dispose();
       pointer.dispose();
       marks.dispose();
       links.dispose();

@@ -15,6 +15,7 @@
 
 import { createVillainGame } from './game.js';
 import { startFrameLoop } from '../core/frameLoop.js';
+import { installLandscapeGuard } from '../core/landscapeGuard.js';
 
 const captureMode = new URLSearchParams(location.search).has('capture');
 if (captureMode) document.body.classList.add('capture');
@@ -68,8 +69,16 @@ window.villain = Object.assign(game.debug, {
 });
 if (captureMode) window.villainCapture = { step, status };
 
+// 휴대폰을 세로로 들면 "가로로 돌려 주세요" 안내판이 뜨고, 그동안 습격이 멈춤 (돌리면 이어서. 3D 소굴은 lairView 가 스스로 멈춤)
+let blocked = false;
+installLandscapeGuard({
+  onChange(on) {
+    blocked = on;
+  },
+});
+
 startFrameLoop((dt) => {
-  if (manual) return;
+  if (manual || blocked) return;
   game.update(dt);
   game.render();
 });

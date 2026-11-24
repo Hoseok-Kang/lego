@@ -8,6 +8,7 @@
 //       onTap(spot) / onGhostMove(spot | null)  spot = { x, y, buildingId, tileX, tileY } (lairView.js 머리말 참고)
 //   pointer.pickAt(clientX, clientY) → spot | null
 //   pointer.setGhostKey(x, y)   유령이 지금 있는 칸 (같은 칸이면 다시 알리지 않음)
+//   pointer.cancelGesture()     지금 누르는 것을 없던 일로 (두 손가락 확대가 시작됨) → 누를 때 옮겨진 유령도 제자리로
 //   pointer.dispose()
 
 import * as THREE from '../../lib/three.js';
@@ -18,6 +19,7 @@ export function createLairPointer(canvas, { cam, world, buildings, marks, state,
   const localRay = new THREE.Ray();
   let lastGhostKey = '';
   let hoverKey = '';
+  let beforePress = null; // 누르기 직전 유령 칸 (두 손가락 확대로 바뀌면 되돌림)
 
   function groundAt(clientX, clientY) {
     const { landSize } = state();
@@ -76,7 +78,9 @@ export function createLairPointer(canvas, { cam, world, buildings, marks, state,
 
   const input = createLairInput(canvas, {
     onPress(x, y) {
-      if (state().placing) ghostFollow(x, y, false);
+      if (!state().placing) return;
+      beforePress = lastGhostKey;
+      ghostFollow(x, y, false);
     },
     onDrag(x, y) {
       if (state().placing) ghostFollow(x, y, false);
@@ -112,6 +116,14 @@ export function createLairPointer(canvas, { cam, world, buildings, marks, state,
     pickAt,
     setGhostKey(x, y) {
       lastGhostKey = `${x},${y}`;
+    },
+    cancelGesture() {
+      input.cancel();
+      if (!state().placing || !beforePress || beforePress === lastGhostKey) return;
+      const [x, y] = beforePress.split(',').map(Number);
+      lastGhostKey = beforePress;
+      marks.moveGhost(x, y, state().landSize, { valid: marks.ghost?.valid ?? true });
+      onGhostMove?.({ x, y });
     },
     dispose: () => input.dispose(),
   };

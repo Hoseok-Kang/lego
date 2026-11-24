@@ -508,6 +508,13 @@
   flex: 1;
 }
 
+/* 확대 단추 [처음 보기] [−] [+] (소리 단추 왼쪽, raid/raidZoom.js) */
+.hud-zoom {
+  position: static;
+  align-self: center;
+  margin-right: 4px;
+}
+
 .hud-btn {
   pointer-events: auto;
   box-shadow: var(--shadow);

@@ -13,8 +13,12 @@
 //   view.pointerRay(clientX, clientY) → THREE.Ray   화면 점에서 나가는 광선 (같은 물건을 돌려 씀)
 //   view.worldToScreen(위치, out) → out { x, y }      화면(페이지) 좌표
 //   view.moving                            아직 옮겨 가는 중인지
+// 놀이하는 사람의 확대 · 옮겨 보기 (lairZoom.js 가 두 손가락 · 휠 · +/- 단추로 부름). 자동으로 맞춘 자리 위에 더해짐
+//   view.zoomBy(배, clientX?, clientY?)   배만큼 확대 (1보다 크면 가까이). 화면 점을 주면 그 점이 손가락 아래 그대로
+//   view.panBy(dx, dy)                     화면 px 만큼 끌어 옮기기 (확대했을 때만 움직임)
+//   view.resetZoom()                       처음 보기로 · view.zoom   지금 확대 배율 (1 = 땅 전체가 딱 맞음)
 //
-// 보는 각도 · 화면 여유 · 따라가는 빠르기는 아래 상수에서 바꿉니다.
+// 보는 각도 · 화면 여유 · 따라가는 빠르기 · 확대 범위는 아래 상수에서 바꿉니다.
 
 import * as THREE from '../../lib/three.js';
 import { TILE } from './lairKit.js';
@@ -30,6 +34,9 @@ const MARGIN_X = 0.035; // 화면 양옆 여유 (-1 ~ 1 기준)
 const MARGIN_Y = 0.045; // 화면 위아래 여유
 const EASE_RATE = 3.2; // 새 자리로 옮겨 가는 빠르기
 const SHAKE_DECAY = 8;
+const ZOOM_MIN = 0.85; // 놀이하는 사람이 줄일 수 있는 한도 (1 = 땅 전체가 딱 맞음)
+const ZOOM_MAX = 2.8; // 키울 수 있는 한도
+const PAN_SPARE = 0.15; // 확대했을 때 땅 끝보다 조금 더(땅 반 너비의 이만큼) 옮겨 볼 수 있음
 
 export function createLairCamera(camera, element) {
   camera.fov = FOV;
@@ -51,6 +58,7 @@ export function createLairCamera(camera, element) {
   let needSnap = true;
   let shakeAmount = 0;
   let shakeTime = 0;
+  const user = { zoom: 1, a: 0, b: 0 }; // 놀이하는 사람이 바꾼 확대 · 옮기기
   const points = [];
   for (let i = 0; i < 10; i++) points.push(new THREE.Vector3());
   const raycaster = new THREE.Raycaster();
@@ -119,8 +127,46 @@ export function createLairCamera(camera, element) {
     goal.d = hi;
   }
 
+  // 확대했을 때 옮길 수 있는 범위 (땅 밖으로 너무 나가지 않게)
+  function clampPan() {
+    const half = (land * TILE) / 2 + RIM;
+    const room = Math.max(0, 1 - 1 / user.zoom) + (user.zoom > 1 ? PAN_SPARE : 0);
+    const maxA = half * room;
+    const maxB = half * Math.sin(pitch) * room;
+    user.a = Math.max(-maxA, Math.min(maxA, user.a));
+    user.b = Math.max(-maxB, Math.min(maxB, user.b));
+    if (user.zoom <= 1) user.a = user.b = 0;
+  }
+
+  // 화면 점(-1 ~ 1)이 그대로 있도록 확대 → 카메라를 그 점 쪽으로 옮김
+  function zoomBy(factor, clientX = null, clientY = null) {
+    const before = user.zoom;
+    user.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, user.zoom * factor));
+    const k = user.zoom / before;
+    if (k !== 1 && clientX !== null) {
+      const rect = element.getBoundingClientRect();
+      const nx = ((clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+      const ny = -((clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+      const d = current.d / before;
+      const tanY = Math.tan((FOV * DEG) / 2);
+      user.a += nx * tanY * camera.aspect * d * (1 - 1 / k);
+      user.b += ny * tanY * d * (1 - 1 / k);
+    }
+    clampPan();
+  }
+
+  function panBy(dx, dy) {
+    const rect = element.getBoundingClientRect();
+    const d = current.d / user.zoom;
+    const tanY = Math.tan((FOV * DEG) / 2);
+    user.a -= (dx / Math.max(1, rect.width)) * 2 * tanY * camera.aspect * d;
+    user.b += (dy / Math.max(1, rect.height)) * 2 * tanY * d;
+    clampPan();
+  }
+
   function place() {
-    camera.position.copy(right).multiplyScalar(current.a).addScaledVector(up, current.b).addScaledVector(forward, -current.d);
+    const d = current.d / user.zoom;
+    camera.position.copy(right).multiplyScalar(current.a + user.a).addScaledVector(up, current.b + user.b).addScaledVector(forward, -d);
     if (shakeAmount > 0.001) {
       camera.position.x += Math.sin(shakeTime * 61) * shakeAmount;
       camera.position.y += Math.sin(shakeTime * 47 + 1.3) * shakeAmount * 0.6;
@@ -176,6 +222,7 @@ export function createLairCamera(camera, element) {
     setLand(size, { snap = false } = {}) {
       land = size;
       if (snap) needSnap = true;
+      clampPan();
     },
     // 뒤쪽 시설 높이 [{ height, back }] (back: 땅 뒤 끝에서 그 시설 뒤 끝까지 거리, 블록) → 꼭대기가 화면 밖으로 안 잘리게 위 여유
     setTall(list) {
@@ -199,6 +246,15 @@ export function createLairCamera(camera, element) {
     },
     get moving() {
       return Math.abs(goal.d - current.d) > 0.05 || Math.abs(goal.a - current.a) > 0.02 || Math.abs(goal.b - current.b) > 0.02;
+    },
+    zoomBy,
+    panBy,
+    resetZoom() {
+      user.zoom = 1;
+      user.a = user.b = 0;
+    },
+    get zoom() {
+      return user.zoom;
     },
   };
 }
