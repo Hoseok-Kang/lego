@@ -3,7 +3,7 @@
 // 작업대 화면(sculptScreen.js)에 보이는 글자는 모두 여기 TEXT 에 있어요. 글자만 바꾸면 화면에 그대로 나옵니다.
 //
 // 쓰는 법: TEXT (글자 묶음), sculptMarkup(maxBlocks) → 화면 틀 HTML
-// 모양은 css/villain-sculpt.css 에서 바꿉니다.
+// 모양은 css/villain-sculpt.css · css/villain-sculpt2.css 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
 import { icon } from '../draw/paintIcons.js';

@@ -16,7 +16,7 @@
 //   editor.close()               화면을 닫음 (onDone 은 부르지 않음)
 //   editor.el / editor.isOpen / editor.board / editor.placer / editor.getDesign()
 //
-// 화면 모양은 css/villain-draw.css · villain-draw2.css, 글자는 editorText.js 의 TEXT 를 고치면 됩니다.
+// 화면 모양은 css/villain-draw*.css (틀 · 그림판 · 미리보기 · 부품 · 휴대폰), 글자는 editorText.js 의 TEXT 를 고치면 됩니다.
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from '../villainConfig.js';

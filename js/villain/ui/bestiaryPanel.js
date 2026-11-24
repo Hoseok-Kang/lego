@@ -15,7 +15,7 @@
 //   book.el / book.render({ designs, money })
 //
 // 글자는 아래 TEXT, 카드 모양은 css/villain-lair.css (.mcard), 판 모양은 css/villain-lair2.css (.bestiary),
-// 새 괴수 카드의 두 단추 · 3D 딱지는 css/villain-sculpt.css 맨 아래.
+// 새 괴수 카드의 두 단추 · 3D 딱지는 css/villain-sculpt2.css 맨 아래.
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from '../villainConfig.js';

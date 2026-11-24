@@ -10,7 +10,7 @@
 //     kind: 'blank' | 'drawing' | 'example'
 //   start.show() / start.hide() / start.isOpen
 //
-// 글자는 아래 TEXT, 모양은 css/villain-sculpt.css (.vs-start).
+// 글자는 아래 TEXT, 모양은 css/villain-sculpt2.css (.vs-start).
 // ─────────────────────────────────────────────────────────────
 
 import { icon } from '../draw/paintIcons.js';

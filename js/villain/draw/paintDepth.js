@@ -11,7 +11,7 @@
 //   autoDepths(grid, cols, rows) → 칸마다 자동 두께 숫자 (빈 칸은 0)
 //   DEPTH_CHOICES   고를 수 있는 값 목록
 //
-// 글자는 아래 TEXT, 가장 두꺼운 두께는 villainConfig.js 의 draw.maxThickness, 모양은 css/villain-draw.css (.pb-depth).
+// 글자는 아래 TEXT, 가장 두꺼운 두께는 villainConfig.js 의 draw.maxThickness, 모양은 css/villain-draw-board.css (.pb-depth).
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from '../villainConfig.js';
