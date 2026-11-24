@@ -102,6 +102,8 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
     fx.setPixelScale(scale);
     links.setPixelScale(scale);
     sky.setFrame({ width: w, height: h, insets: lastInsets });
+    // (E) 크기를 바꾸면 캔버스가 비워지므로 바로 한 장면 다시 그림 (판이 열릴 때 한 장면 깜빡이지 않게)
+    if (landSize && visible && !disposed) step(0, { render: true });
   }
   let lastInsets = { top: 0, bottom: 0, left: 0, right: 0 };
   const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => resize()) : null;

@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // 악당 타이쿤: 소굴 조종 (소굴 화면 + 3D 소굴 + 짓기 · 강화 · 옮기기 · 팔기 · 목표 · 계책 · 악명 단계)
-// 소굴 화면(ui/lairScreen.js)의 단추와 3D 소굴(lair/lairView.js)의 누름을 받아 저장을 바꾸고, 다시 보여 줍니다.
-// 모든 일을 한 뒤에는 곧바로 저장해요 (saveStore.update).
+// 소굴 화면(ui/lairScreen.js)의 단추와 3D 소굴(lair/lairView.js)의 누름을 받아 저장을 바꾸고(lairActions.js), 다시 보여 줍니다.
+// 모든 일을 한 뒤에는 곧바로 저장해요.
 //
 //   const lair = createLairController({ uiRoot, saveStore, bestiary, gameState, sounds, events, manual,
 //                                       thumbOf, onOpenEditor, onShop, onRaid, onCopy, onRemove })
@@ -21,18 +21,14 @@
 
 import { FACILITIES, sellRefundOf } from './data/facilities.js';
 import { SCHEMES } from './data/schemes.js';
-import { RANKS } from './data/ranks.js';
 import * as sim from './lair/lairSim.js';
-import { claimGoal, markSchemesSeen } from './lair/goalTracker.js';
+import { createLairActions } from './lairActions.js';
 import { createLairScreen } from './ui/lairScreen.js';
 import { createLairView } from './lair/lairView.js';
-import { lockText } from './ui/lairKit.js';
 import { money, toast } from './ui/uiKit.js';
 
 const TEXT = {
   welcome: '악당 소굴에 어서 와요! 위의 목표를 하나씩 해 봐요',
-  poorBuild: (name, n) => `${name}을(를) 지을 돈이 ${money(n)} 모자라요. 마을을 부숴서 벌어 와요`,
-  poorUp: (n) => `강화할 돈이 ${money(n)} 모자라요. 한 번 더 출동해 봐요`,
   pickSpot: '먼저 3D 소굴에서 놓을 자리를 눌러요',
   noSpot: '빈자리가 없어요. 시설을 옮기거나 팔아 봐요',
   built: (name) => `${name}을(를) 지었어요!`,
@@ -58,10 +54,7 @@ export function createLairController(options) {
 
   const play = (name) => sounds?.play(name);
   const save = () => saveStore.getSave();
-  const moneyEvent = (before) => {
-    const now = save().money;
-    if (now !== before) events?.emit('moneyChanged', { money: now, delta: now - before });
-  };
+  const act = createLairActions({ saveStore, gameState: gs, events });
 
   // ── 소굴 화면 ──
   const screen = createLairScreen(uiRoot, {
@@ -159,7 +152,7 @@ export function createLairController(options) {
   function startBuild(type) {
     const def = FACILITIES[type];
     if (!def) return;
-    const check = buildCheck(type);
+    const check = act.check(type);
     if (!check.ok) {
       toast(check.reason, { kind: 'bad' });
       play('nope');
@@ -238,122 +231,67 @@ export function createLairController(options) {
     view.stopPlacing();
   }
 
-  // ── 저장을 바꾸는 일 (화면에서도, 시험 도구에서도 씀) ──
-  function buildCheck(type) {
-    const def = FACILITIES[type];
-    if (!def) return { ok: false, reason: sim.REASONS.unknown };
-    const s = save();
-    if (gs.rank().rank < def.unlockRank) return { ok: false, reason: lockText(def.unlockRank, RANKS) };
-    const max = def.maxCount ?? Infinity;
-    if (sim.countOf(s.lair, type) >= max) return { ok: false, reason: max > 1 ? sim.REASONS.tooMany(max) : sim.REASONS.onlyOne };
-    const price = def.price[0];
-    if (s.money < price) return { ok: false, reason: TEXT.poorBuild(def.name, price - s.money) };
-    return { ok: true, price };
-  }
-
+  // ── 저장을 바꾸는 일 (lairActions.js) + 3D 움직임 · 소리 · 알림. 화면에서도, 시험 도구에서도 씀 ──
   function build(type, x, y, { fromUI = false } = {}) {
-    const check = buildCheck(type);
-    if (!check.ok) return check;
-    const place = sim.place(save().lair, type, x, y);
-    if (!place.ok) return { ok: false, reason: place.reason };
-    const before = save().money;
-    saveStore.update((s) => {
-      s.lair = place.lair;
-      s.money -= check.price;
-    });
-    moneyEvent(before);
+    const r = act.build(type, x, y);
+    if (!r.ok) return r;
     if (fromUI || ui.placing) endPlacing();
-    const fresh = afterChange({ built: place.id });
+    const fresh = afterChange({ built: r.id });
     play('build');
     if (fromUI && !fresh.length) toast(TEXT.built(FACILITIES[type].name), { kind: 'good' });
-    return { ok: true, id: place.id };
+    return r;
   }
 
   function move(id, x, y, { fromUI = false } = {}) {
-    const b = sim.findBuilding(save().lair, id);
-    const moved = sim.move(save().lair, id, x, y);
-    if (!moved.ok) return { ok: false, reason: moved.reason };
-    saveStore.update((s) => {
-      s.lair = moved.lair;
-    });
+    const r = act.move(id, x, y);
+    if (!r.ok) return r;
     if (fromUI || ui.placing) endPlacing();
     const fresh = afterChange({});
     play('move');
-    if (fromUI && !fresh.length && b && (b.x !== x || b.y !== y)) toast(TEXT.moved(FACILITIES[b.type]?.name ?? ''));
-    return { ok: true, id };
+    if (fromUI && !fresh.length && r.moved) toast(TEXT.moved(FACILITIES[r.building.type]?.name ?? ''));
+    return r;
   }
 
   function upgrade(id) {
-    const s = save();
-    const b = sim.findBuilding(s.lair, id);
-    const price = sim.upgradePrice(s.lair, id);
-    if (!b || price == null) {
-      const reason = b ? sim.REASONS.maxLevel : sim.REASONS.missing;
-      toast(reason, { kind: 'bad' });
-      return { ok: false, reason };
+    const r = act.upgrade(id);
+    if (!r.ok) {
+      toast(r.reason, { kind: 'bad' });
+      if (r.poor) play('nope');
+      return r;
     }
-    if (s.money < price) {
-      const reason = TEXT.poorUp(price - s.money);
-      toast(reason, { kind: 'bad' });
-      play('nope');
-      return { ok: false, reason };
-    }
-    const up = sim.upgrade(s.lair, id);
-    if (!up.ok) return { ok: false, reason: up.reason };
-    const before = s.money;
-    saveStore.update((next) => {
-      next.lair = up.lair;
-      next.money -= up.price;
-    });
-    moneyEvent(before);
     const fresh = afterChange({ upgraded: id });
     play('upgrade');
-    if (!fresh.length) toast(TEXT.upgraded(FACILITIES[b.type]?.name ?? '', b.level + 1), { kind: 'good' });
-    return { ok: true, id, price: up.price };
+    if (!fresh.length) toast(TEXT.upgraded(FACILITIES[r.building.type]?.name ?? '', r.building.level + 1), { kind: 'good' });
+    return r;
   }
 
   function sell(id) {
-    const s = save();
-    const b = sim.findBuilding(s.lair, id);
-    const removed = sim.remove(s.lair, id);
-    if (!b || !removed.ok) {
-      if (removed.reason) toast(removed.reason, { kind: 'bad' });
-      return { ok: false, reason: removed.reason };
+    const r = act.sell(id);
+    if (!r.ok) {
+      if (r.reason) toast(r.reason, { kind: 'bad' });
+      return r;
     }
-    const before = s.money;
-    saveStore.update((next) => {
-      next.lair = removed.lair;
-      next.money += removed.refund;
-    });
-    moneyEvent(before);
     if (ui.selectedId === id) ui.selectedId = null;
     view.playRemove(id);
     afterChange({});
     play('sell');
-    toast(TEXT.sold(FACILITIES[b.type]?.name ?? '', removed.refund));
-    return { ok: true, refund: removed.refund };
+    toast(TEXT.sold(FACILITIES[r.building.type]?.name ?? '', r.refund));
+    return r;
   }
 
   function claim(key) {
-    const rankBefore = gs.rank().rank;
-    const before = save().money;
-    let goal = null;
-    saveStore.update((s) => {
-      goal = claimGoal(s, key, { evaluation: gs.evaluation() });
-    });
-    if (!goal) {
+    const r = act.claim(key);
+    if (!r.ok) {
       renderUI();
-      return { ok: false, reason: '아직 다 못 했어요' };
+      return r;
     }
-    moneyEvent(before);
     play('goal');
-    const up = gs.rankUpInfo(rankBefore, gs.rank().rank);
-    if (up) {
-      rankQueue.push(up);
+    if (r.rankUp) {
+      rankQueue.push(r.rankUp);
       setTimeout(() => flushRanks(), GOAL_THEN_RANK); // 목표 축하 카드가 먼저 보이게
     }
     refresh();
-    return { ok: true, goal };
+    return r;
   }
 
   // 시설이 바뀐 뒤: 3D · 화면 다시 그리기 + 처음 켜진 계책 알리기 → 처음 켜진 계책 키 목록
@@ -367,12 +305,7 @@ export function createLairController(options) {
   }
 
   function announceSchemes() {
-    let fresh = [];
-    const ev = gs.evaluation();
-    if (!(ev?.schemes ?? []).some((x) => !save().schemesSeen.includes(x.key))) return fresh;
-    saveStore.update((s) => {
-      fresh = markSchemesSeen(s, ev);
-    });
+    const fresh = act.markSchemes();
     if (!fresh.length) return fresh;
     toast(TEXT.newScheme(fresh.map((k) => SCHEMES[k]?.name ?? k)), { kind: 'good' });
     for (const key of fresh) view.pulseScheme(key);
@@ -449,7 +382,7 @@ export function createLairController(options) {
       sell,
       claim,
       spot: (type, near) => sim.findSpot(save().lair, type, near ? { near } : {}),
-      check: buildCheck,
+      check: (type) => act.check(type),
     },
   };
 }

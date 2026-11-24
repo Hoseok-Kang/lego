@@ -680,8 +680,10 @@ body.capture .vd-editor {
 /* 녹화 중 소굴 화면: 3D 소굴만 화면 가득 (머리줄 · 목표 · 단추 · 판은 숨김) */
 body.capture .lair.vt-screen:not([hidden]) {
   display: grid !important;
-  grid-template-rows: minmax(0, 1fr);
-  grid-template-areas: "view";
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  grid-template-areas: "view" !important;
+  padding: 0 !important;
 }
 
 body.capture .lair.vt-screen > :not(.lair-viewcell),

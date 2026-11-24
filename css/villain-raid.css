@@ -1369,6 +1369,27 @@ body.screen-result .hud-edge {
     margin-top: 3px;
     padding-block: 3px 4px;
   }
+
+  /* 단계가 오른 판: 도움말은 빼고 괴수 얼굴은 작게, 새로 열린 것은 한 줄로 (카드가 한 화면에 들어오게) */
+  .result.has-rankup .result-tip {
+    display: none;
+  }
+
+  .result.has-rankup .result-face {
+    width: 44px;
+    height: 44px;
+  }
+
+  .result.has-rankup .result-title {
+    font-size: 32px;
+  }
+
+  .result-rankup small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* 아주 작은 휴대폰 가로 (예: 568×320) */
