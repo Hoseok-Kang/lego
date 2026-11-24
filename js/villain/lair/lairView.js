@@ -20,7 +20,7 @@
 //                                         (낀 시설이 아직 쌓이는 중이면 다 쌓인 뒤에 번쩍 — playBuild 바로 뒤에 불러도 됨)
 //   view.setInsets({ top, bottom, left, right })   3D 상자 위에 떠서 가리는 단추 · 띠 크기(px) → 그 사이에 땅판을 맞춤
 //   view.setTheme('auto' | 'light' | 'dark')       하늘 색 (기본 auto: 페이지 data-theme 또는 기기 설정)
-//   view.resetZoom()                      놀이하는 사람이 바꾼 확대 · 옮기기를 처음으로 (확대는 lairZoom.js: 두 손가락 · 휠 · +/− 단추)
+//   view.resetZoom() / view.zoom          놀이하는 사람이 바꾼 확대 · 옮기기를 처음으로 / 지금 확대 배율 (확대는 lairZoom.js: 두 손가락 · 휠 · +/− 단추)
 //   view.screenPoint(id) → { x, y } | null         시설 지붕 위의 화면(페이지) 좌표 (말풍선 자리)
 //   view.tileScreen(x, y) → { x, y }               칸 가운데의 화면(페이지) 좌표
 //   view.resize() / view.setVisible(보임?) / view.dispose()
@@ -368,6 +368,9 @@ export function createLairView(container, { onTap = null, onGhostMove = null, ma
     },
     setTheme: (mode = 'auto') => stage.setTheme(mode),
     resetZoom: () => zoom.reset(),
+    get zoom() {
+      return cam.zoom;
+    },
     tileScreen(x, y) {
       tmpV.set((x + 0.5 - landSize / 2) * TILE, 0, (y + 0.5 - landSize / 2) * TILE).add(world.position);
       const p = cam.worldToScreen(tmpV, screenOut);

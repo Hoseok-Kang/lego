@@ -53,6 +53,9 @@
 
   /* 화면 크기 배율 (js/villain/ui/uiScale.js 가 정함: 작게 · 보통 · 크게 × 화면 크기). #ui 전체가 이만큼 줄거나 커짐 */
   --ui-scale: 1;
+  /* #ui 안에서 쓰는 화면 너비 · 높이의 1% (배율로 줄어든 만큼 넓게 셈). 100vw 대신 calc(var(--vw) * 100) */
+  --vw: calc(1vw / var(--ui-scale));
+  --vh: calc(1vh / var(--ui-scale));
 
   /* 휴대폰 화면 가장자리(노치 등)를 피하는 여백. 가로로 들면 노치는 왼쪽이나 오른쪽에 있어요.
      #ui 가 --ui-scale 만큼 줄어도 진짜 노치를 피하도록 나눠 줌 */
@@ -187,7 +190,7 @@ dd {
   padding: 24px;
   color: rgb(255 255 255 / 0.85);
   font-family: var(--font-display);
-  font-size: clamp(18px, 3vw, 28px);
+  font-size: clamp(18px, calc(var(--vw) * 3), 28px);
   text-align: center;
   text-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
 }
@@ -496,7 +499,7 @@ dd {
   align-items: center;
   gap: 0.16em;
   font-family: var(--font-display);
-  font-size: clamp(27px, 4.2vw, 40px);
+  font-size: clamp(27px, calc(var(--vw) * 4.2), 40px);
   font-weight: 400;
   line-height: 1;
   white-space: nowrap;

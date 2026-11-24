@@ -181,7 +181,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 44px;
+  min-height: 46px;
   padding: 4px 13px 6px 10px;
   border: 2px solid rgb(255 255 255 / 0.18);
   border-bottom: 4px solid rgb(0 0 0 / 0.4);
@@ -567,7 +567,7 @@
 /* ── 부품 상점 ── */
 .shop {
   grid-template-rows: 56px minmax(0, 1fr) auto;
-  padding-inline: max(var(--edge-left), calc((100vw - 1180px) / 2)) max(var(--edge-right), calc((100vw - 1180px) / 2));
+  padding-inline: max(var(--edge-left), calc(50% - 590px)) max(var(--edge-right), calc(50% - 590px)); /* 넓은 화면에서는 1180px 가운데 */
 }
 
 .shop-head {
@@ -588,7 +588,7 @@
   gap: 8px;
   color: var(--gold);
   font-family: var(--font-display);
-  font-size: clamp(22px, 3.4vw, 30px);
+  font-size: clamp(22px, calc(var(--vw) * 3.4), 30px);
   font-weight: 400;
   line-height: 1.1;
 }
@@ -850,7 +850,7 @@
 /* ── 컴퓨터 (너비 900 이상 + 높이 521 이상): 왼쪽 목표 기둥, 판은 왼쪽 옆판, 아래 단추는 가운데 ── */
 @media (min-width: 900px) and (min-height: 521px) {
   .lair {
-    --rail: clamp(250px, 26vw, 304px); /* 960×540 처럼 좁은 창은 기둥을 조금 좁게 */
+    --rail: clamp(250px, calc(var(--vw) * 26), 304px); /* 960×540 처럼 좁은 창은 기둥을 조금 좁게 */
     grid-template-columns: var(--rail) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
@@ -1028,7 +1028,7 @@
 
   /* 오른쪽 단추 기둥: 화면 높이를 넷으로 나눔 (아주 높은 창이면 너무 길어지지 않게 가운데로 모음) */
   .lair-dock {
-    grid-template-columns: 104px;
+    grid-template-columns: 96px;
     grid-auto-rows: minmax(0, 1fr);
     gap: 7px;
     padding: var(--edge-top) var(--edge-right) var(--edge-bottom) 9px;
@@ -1065,7 +1065,7 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(410px, 54vw);
+    width: min(410px, calc(var(--vw) * 54));
     padding-left: max(0px, calc(var(--edge-left) - 10px));
     border-left: 0;
     border-radius: 0 24px 24px 0;
@@ -1085,8 +1085,13 @@
   }
 }
 
-/* ── 괴수 카드: 휴대폰 가로 · 작은 창 (괴수 도감 옆판이 좁음) ── */
+/* ── 괴수 카드: 휴대폰 가로 · 작은 창 (괴수 도감 옆판이 좁음 → 두 줄로 작게) ── */
 @media (max-width: 899px), (max-height: 520px) {
+  .lair-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
   .mcard {
     gap: 6px;
     padding: 8px 8px 9px;
@@ -1172,7 +1177,7 @@
     grid-auto-flow: column;
     grid-template-columns: none;
     grid-template-rows: minmax(0, 1fr);
-    grid-auto-columns: clamp(250px, 34vw, 310px);
+    grid-auto-columns: clamp(250px, calc(var(--vw) * 34), 310px);
     align-content: stretch;
     gap: 12px;
     margin: 8px calc(-1 * var(--edge-right)) 0 calc(-1 * var(--edge-left)); /* 화면 끝까지 밀리게 */

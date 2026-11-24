@@ -217,8 +217,9 @@ export function createLairScreen(root, options = {}) {
     let bottom = 0;
     let left = 0;
     if (!sheet.hidden) left = Math.max(0, sheet.offsetLeft + sheet.offsetWidth - cellLeft);
-    // 자리 고르기 띠가 3D 칸 아래쪽을 가로로 가리면 그만큼 (옆 기둥에 있을 때는 그대로)
-    if (!place.el.hidden && place.el.offsetWidth >= cell.offsetWidth * 0.6 && place.el.offsetTop < cellBottom) {
+    // 자리 고르기 띠가 3D 칸 아래쪽을 가리면 그만큼 (휴대폰 가로처럼 왼쪽 기둥에 있어 3D 칸과 겹치지 않으면 그대로)
+    const overlaps = place.el.offsetLeft < cellLeft + cell.offsetWidth - 1 && place.el.offsetLeft + place.el.offsetWidth > cellLeft + 1;
+    if (!place.el.hidden && overlaps && place.el.offsetTop < cellBottom) {
       bottom = Math.max(bottom, cellBottom - place.el.offsetTop);
     }
     const key = `${Math.round(bottom)}|${Math.round(left)}`;

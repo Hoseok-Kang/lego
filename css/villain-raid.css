@@ -357,7 +357,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(14px, 4vw, 44px);
+  gap: clamp(14px, calc(var(--vw) * 4), 44px);
   padding: 20px 0 22px;
   background: #e5262f;
   color: #ffffff;
@@ -409,7 +409,7 @@
 
 .hud-alert-text strong {
   font-family: var(--font-display);
-  font-size: clamp(38px, 8vw, 76px);
+  font-size: clamp(38px, calc(var(--vw) * 8), 76px);
   font-weight: 400;
   line-height: 1;
   -webkit-text-stroke: 0.12em var(--outline);
@@ -425,7 +425,7 @@
 }
 
 .hud-alert-text span {
-  font-size: clamp(13px, 2.2vw, 18px);
+  font-size: clamp(13px, calc(var(--vw) * 2.2), 18px);
   font-weight: 600;
 }
 
@@ -433,7 +433,7 @@
 .hud-siren {
   position: relative;
   flex: none;
-  width: clamp(36px, 7vw, 60px);
+  width: clamp(36px, calc(var(--vw) * 7), 60px);
   aspect-ratio: 1;
   border: 3px solid var(--outline);
   border-radius: 50% 50% 12% 12%;
@@ -676,7 +676,7 @@
   display: flex;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: clamp(40px, 11vw, 56px);
+  font-size: clamp(40px, calc(var(--vw) * 11), 56px);
   font-weight: 400;
   line-height: 1.05;
   color: var(--slime);
@@ -828,7 +828,7 @@
 }
 
 .result.has-rankup .result-title {
-  font-size: clamp(34px, 9vw, 46px);
+  font-size: clamp(34px, calc(var(--vw) * 9), 46px);
 }
 
 .result.has-rankup .result-profit {
@@ -1184,22 +1184,26 @@ body.screen-result .hud-edge {
     min-height: 50px;
   }
 
-  /* 결과: 왼쪽에 제목과 막대, 오른쪽에 돈과 단추 */
+  /* 결과: 왼쪽에 괴수 얼굴 · 제목 · 악명 (세로 한 기둥), 오른쪽에 부순 정도 · 번 돈 · 단추 */
   .result-card {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: auto auto auto auto auto;
     grid-template-areas:
+      "head meters"
       "head rows"
       "head total"
-      "meters note"
-      "meters actions";
+      "head note"
+      "head actions";
     align-items: center;
     gap: 6px 18px;
-    width: min(760px, 100%);
+    width: min(780px, 100%);
     padding: 14px 18px 12px;
   }
 
   .result-head {
     grid-area: head;
+    align-self: stretch;
+    align-content: center;
   }
 
   .result-face {
