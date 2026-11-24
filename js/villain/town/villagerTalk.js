@@ -16,7 +16,7 @@
 
 import { VILLAGER_LINES, LOCAL_SHARE } from '../data/villagerLines.js';
 
-const DEFAULT_RULES = { maxOnScreen: 3, seconds: 1.7, cooldown: 5, gap: 0.5, hush: 0.6 };
+const DEFAULT_RULES = { maxOnScreen: 3, seconds: 1.7, cooldown: 4, gap: 0.35, hush: 0.6 };
 const LONG_KINDS = { hero: 1.25, saved: 1.3, wail: 1.45, home: 1.2 }; // 이 상황 말풍선은 조금 더 오래 (배)
 const ABOVE_HEAD = 0.5; // 말풍선 꼬리 끝이 머리 위로 이만큼 (칸)
 const QUICK_FADE = 0.18; // 자리를 비켜 주는 말풍선이 사라지는 시간 (초)
@@ -41,6 +41,7 @@ export function createVillagerTalk({ events = null, rules = {}, rnd = Math.rando
   let clock = 0;
   let lastAt = -Infinity;
   let hushUntil = 0;
+  let lastText = '';
 
   function anchorOf(v, target) {
     target.x = v.x;
@@ -64,8 +65,10 @@ export function createVillagerTalk({ events = null, rules = {}, rnd = Math.rando
       victim.leaving = true;
       victim.life = Math.min(victim.life, victim.age + QUICK_FADE);
     }
-    const text = pickLine(kind, context, rnd);
+    let text = pickLine(kind, context, rnd);
+    if (text === lastText) text = pickLine(kind, context, rnd); // 바로 앞과 같은 말이면 한 번 더 고름
     if (!text) return false;
+    lastText = text;
     const bubble = { text, kind, age: 0, life: r.seconds * (LONG_KINDS[kind] ?? 1), anchor: anchorOf(v, { x: 0, y: 0, z: 0 }), priority, done: false, leaving: false, villager: v };
     bubbles.push(bubble);
     v.talkAt = clock + r.cooldown;
@@ -105,6 +108,7 @@ export function createVillagerTalk({ events = null, rules = {}, rnd = Math.rando
     clock = 0;
     lastAt = -Infinity;
     hushUntil = 0;
+    lastText = '';
   }
 
   return {

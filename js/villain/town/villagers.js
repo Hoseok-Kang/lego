@@ -54,12 +54,13 @@ const OUTFITS = [
 ];
 const VOICES = ['high', 'low']; // 어른 목소리 (꼬마는 'kid')
 const NO_DOOR = new Set(['wallX', 'wallZ', 'statue', 'fountain', 'well', 'fishingBoat', 'sailboat']); // 문이 없어 숨을 수 없는 것
+const ALARM_KINDS = new Set(['panic', 'burst', 'home']); // 이 말을 들으면 옆 사람도 놀람
 const BIG_HIT = 28; // 이 피해 이상 맞으면 잠깐 조용 (raidFeedback 의 '센 타격' 과 같음)
 const DEFAULTS = {
-  size: 0.72, kidChance: 0.3, kidSize: 0.75, walkSpeed: 1.6, runSpeed: 9, scareDistance: 16, calmSeconds: 1.6, zigzag: 0.75,
-  tripPerSecond: 0.1, tripSeconds: 1, hidePerSecond: 0.12, hideSearch: 18, edgePerSecond: 0.05,
-  insidePerBuilding: 2, insideTotal: 14, burst: [1, 3], burstBlocks: 3, cheerDistance: 14, braveDistance: 8,
-  shout: { maxOnScreen: 3, seconds: 1.7, cooldown: 5, gap: 0.5, perSecond: 0.45, hush: 0.6 },
+  size: 0.95, kidChance: 0.3, kidSize: 0.75, walkSpeed: 1.6, runSpeed: 9, scareDistance: 22, calmSeconds: 2.5, zigzag: 0.75,
+  tripPerSecond: 0.1, tripSeconds: 1, hidePerSecond: 0.07, hideSearch: 18, hideSeconds: 5, edgePerSecond: 0.05,
+  insidePerBuilding: 2, insideTotal: 14, burst: [1, 3], burstBlocks: 3, cheerDistance: 14, braveDistance: 8, alarmDistance: 14,
+  shout: { maxOnScreen: 3, seconds: 1.7, cooldown: 4, gap: 0.35, perSecond: 0.8, hush: 0.6 },
 };
 
 // 정해진 순서의 주사위 (같은 마을이면 매번 같은 순서 → 다시 찍어도 똑같음)
@@ -147,7 +148,7 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [], styl
         turn: 1 + (i % 3), pause: 0, panic: 0, timer: 0, safeUntil: 0, jumpWait: 0,
         state: inside ? 'inside' : 'idle', hidden: inside, shelter: v.shelterStart, home: v.shelterStart || nearestHome(x, z),
         target: null, appear: 1, lift: 0, hop: 0, vy: 0, vx: 0, vz: 0, spin: 0, partyAfter: false, talkAt: 0,
-        leg: 0, armL: 0.1, armR: 0.1, armSwing: 0, pitch: 0, roll: 0, armTogether: false,
+        leg: 0, armL: 0.1, armR: 0.1, armSwing: 0, pitch: 0, roll: 0, armTogether: false, hideLeft: 0,
       });
     });
     draw();
@@ -163,7 +164,22 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [], styl
     return best;
   }
 
-  const world = { threat: null, hero: null, buildings, bounds, walkable, rules, rnd: () => rnd(), say: (v, kind, opts) => talk.say(v, kind, opts), doorOf };
+  const world = { threat: null, hero: null, buildings, bounds, walkable, rules, rnd: () => rnd(), say, doorOf };
+
+  // 외치기. 놀란 비명은 옆 사람에게 옮아서, 가까이 서성이던 사람도 같이 뛰기 시작함
+  function say(v, kind, opts) {
+    const ok = talk.say(v, kind, opts);
+    if (ok && ALARM_KINDS.has(kind)) alarm(v);
+    return ok;
+  }
+
+  function alarm(from) {
+    if (mood !== 'normal') return;
+    for (const o of list) {
+      if (o === from || o.state !== 'idle') continue;
+      if (Math.hypot(o.x - from.x, o.z - from.z) < cfg.alarmDistance) o.panic = Math.max(o.panic, cfg.calmSeconds * 1.5);
+    }
+  }
 
   function update(dt, threat) {
     if (!(dt > 0)) return;
@@ -281,6 +297,16 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [], styl
   const offs = events
     ? [
         events.on('raidStarted', ({ town, heroKind, heroName } = {}) => talk.setContext({ town: town?.id ?? townId, heroKind, heroName })),
+        events.on('monsterBuilt', ({ monster } = {}) => {
+          // 괴수가 다 만들어지면 가장 가까운 사람이 먼저 비명 (그 비명에 옆 사람들도 놀람)
+          const p = monster?.position;
+          const first = p ? closest(list.filter((v) => !v.hidden), p) : null;
+          if (first) {
+            first.panic = cfg.calmSeconds;
+            talk.later(0.15, first, 'panic', { priority: 1 });
+            alarm(first);
+          }
+        }),
         events.on('blocksBroken', onBroken),
         events.on('buildingDestroyed', onDestroyed),
         events.on('hit', ({ amount = 0 } = {}) => {

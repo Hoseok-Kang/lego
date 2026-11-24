@@ -4,7 +4,7 @@
    외치는 말은 js/villain/data/villagerLines.js, 몇 개까지 뜨는지는 villainConfig.js 의 villagers.shout.
 
    바꾸고 싶을 때
-     글자 크기 → .vv-bubble 의 font-size (휴대폰 가로 844×390 에서 약 16px, 큰 화면에서 26px 까지)
+     글자 크기 → .vv-bubble 의 font-size (휴대폰 가로 844×390 에서 약 18px, 큰 화면에서 28px 까지)
      색       → 상황별 .vv-panic · .vv-home · .vv-hero … 의 --vv-fill (말풍선 바탕) · --vv-ink (글자·테두리)
    화면 크기 배율 --ui-scale 이 있으면 그만큼 같이 커지고 작아집니다.
    ───────────────────────────────────────────────────────────── */
@@ -32,7 +32,7 @@
   box-shadow: 0 0.16em 0 rgba(27, 42, 52, 0.45);
   color: var(--vv-ink);
   font-family: 'Jua', 'IBM Plex Sans KR', sans-serif;
-  font-size: calc(clamp(14px, 2.3vmin + 7px, 26px) * var(--ui-scale, 1));
+  font-size: calc(clamp(15px, 2.6vmin + 8px, 28px) * var(--ui-scale, 1));
   line-height: 1;
   white-space: nowrap;
   will-change: transform, opacity;
@@ -64,7 +64,7 @@
 .vv-home {
   --vv-fill: #FFD3DD;
   --vv-ink: #8A1538;
-  font-size: calc(clamp(16px, 2.7vmin + 8px, 30px) * var(--ui-scale, 1));
+  font-size: calc(clamp(17px, 3vmin + 9px, 32px) * var(--ui-scale, 1));
 }
 .vv-hero,
 .vv-saved {

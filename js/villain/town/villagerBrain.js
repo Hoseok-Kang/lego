@@ -20,19 +20,35 @@ const HIDDEN = new Set(['inside', 'gone']);
 
 export function stepVillager(v, dt, w) {
   if (v.state === 'burst') return flyOut(v, dt, w);
+  if (v.state === 'inside') return waitInside(v, dt, w);
   if (HIDDEN.has(v.state)) return;
   v.clock += dt;
   if (v.state === 'trip') return tripping(v, dt, w);
   if (v.state === 'getup') return gettingUp(v, dt, w);
-  if (v.state === 'enter') return entering(v, dt);
+  if (v.state === 'enter') return entering(v, dt, w);
   if (v.state === 'wail') return wailing(v, dt);
   if (v.state === 'party') return celebrate(v, dt, null);
   return roam(v, dt, w);
 }
 
+// 스스로 숨은 사람은 hideSeconds 뒤 괴수가 멀면 살금살금 다시 나옴 (원래 살던 사람은 건물이 흔들릴 때까지 안에 있음)
+function waitInside(v, dt, w) {
+  if (!(v.hideLeft > 0)) return;
+  v.hideLeft -= dt;
+  if (v.hideLeft > 0) return;
+  const door = v.shelter ? w.doorOf(v.shelter) : null;
+  if (!door || !v.shelter.alive) return;
+  if (w.threat && Math.hypot(door.x - w.threat.x, door.z - w.threat.z) < w.rules.scareDistance) {
+    v.hideLeft = 1; // 아직 무서움 — 1초 뒤 다시 살핌
+    return;
+  }
+  Object.assign(v, { state: 'idle', hidden: false, x: door.x, z: door.z, appear: 0.2, shelter: null, panic: 0, turn: 0, pause: 0 });
+}
+
 // ── 걸어 다니는 상태들 (서성임 · 도망 · 숨으러 감 · 달아남 · 응원) ──
 function roam(v, dt, w) {
   const R = w.rules;
+  if (v.appear < 1) v.appear = Math.min(1, v.appear + dt * 5); // 문에서 막 나온 사람은 뿅 커짐
   const far = w.threat ? Math.hypot(v.x - w.threat.x, v.z - w.threat.z) : Infinity;
   if (far < R.scareDistance) v.panic = R.calmSeconds;
   else v.panic = Math.max(0, v.panic - dt);
@@ -94,13 +110,12 @@ function wander(v, dt, w) {
 // 도망: 괴수 반대쪽으로 지그재그. 가끔 꽈당 · 숨으러 감 · 마을 밖으로
 function flee(v, dt, w, far) {
   const R = w.rules;
-  if (w.threat && far < R.scareDistance * 1.3) {
-    const len = far || 1;
-    const ax = (v.x - w.threat.x) / len;
-    const az = (v.z - w.threat.z) / len;
-    const wig = Math.sin(v.clock * v.zigRate + v.seed) * R.zigzag;
-    steer(v, ax - az * wig, az + ax * wig, dt);
-  }
+  // 괴수 반대쪽으로 (멀리 있으면 덜 급하게 틈). 괴수가 없으면 하던 쪽으로 지그재그
+  const wig = Math.sin(v.clock * v.zigRate + v.seed) * R.zigzag;
+  const len = far || 1;
+  const ax = w.threat ? (v.x - w.threat.x) / len : v.dirX;
+  const az = w.threat ? (v.z - w.threat.z) / len : v.dirZ;
+  steer(v, ax - az * wig, az + ax * wig, far < R.scareDistance * 1.3 ? dt : dt * 0.4);
   if (v.clock > v.safeUntil) {
     const roll = w.rnd();
     const trip = R.tripPerSecond * dt;

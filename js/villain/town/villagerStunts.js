@@ -2,7 +2,7 @@
 // 보통 움직임(서성임·도망·숨으러 가기)은 villagerBrain.js 에 있고, 상태가 바뀔 때 여기 함수를 부릅니다.
 // 사람은 절대 다치지 않아요: 넘어져도 바로 일어나고, 무너지는 건물에서는 밖으로 튀어나옵니다.
 //
-//   tripping / gettingUp / entering / flyOut / wailing (v, dt, world)   그 상태의 한 장면
+//   tripping / gettingUp / entering / flyOut / wailing (v, dt, world)   그 상태의 한 장면 (entering 이 끝나면 hideSeconds 동안 숨음)
 //   celebrate(v, dt, 영웅 위치 | null)   응원 (영웅을 봄) · 만세 (영웅이 없으면 카메라 쪽을 봄)
 //   startBurst(v, 건물, 문, rnd, delay)   건물에서 붕 뛰쳐나오기 (delay 초 뒤에)
 //   startWail(v, bounds)   가장자리에서 으앙~ ;  startParty(v)   만세 ;  toRun(v)  다시 도망 ;  still(v)  가만히 선 자세
@@ -87,7 +87,7 @@ export function gettingUp(v, dt, w) {
 }
 
 // 문으로 쏙: 건물 쪽으로 다이빙하듯 작아지며 사라짐
-export function entering(v, dt) {
+export function entering(v, dt, w) {
   v.timer += dt;
   const t = Math.min(1, v.timer / ENTER_SECONDS);
   const b = v.target?.building;
@@ -99,6 +99,7 @@ export function entering(v, dt) {
   Object.assign(v, { appear: 1 - t, pitch: 0.7 * t, hop: Math.sin(t * Math.PI) * 0.5, leg: 0.6, armL: 2.6, armR: 2.6, armSwing: -1, armTogether: true });
   if (t >= 1) {
     v.state = 'inside';
+    v.hideLeft = w.rules.hideSeconds; // 이만큼 숨어 있다가 괴수가 멀면 다시 나옴
     v.hidden = true;
     v.shelter = b || null;
     v.target = null;
