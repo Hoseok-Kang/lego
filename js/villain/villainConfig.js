@@ -77,6 +77,7 @@ export const VILLAIN = {
     cols: 16, // 가로 칸 수
     rows: 16, // 세로 칸 수
     minBlocks: 30, // 이보다 적게 칠하면 괴수를 만들 수 없음
+    maxThickness: 7, // (S) 두께 붓으로 정할 수 있는 가장 두꺼운 두께 (칸). 1 = 종이처럼 납작
     // 고를 수 있는 색 (글자 = 저장할 때 쓰는 기호, js/bricks/brickColors.js 의 색만)
     palette: [
       { ch: 'G', hex: '#4B9F4A', name: '초록' },
@@ -107,6 +108,9 @@ export const VILLAIN = {
     headbutt: { damage: 10, interval: 1.1, range: 2.5 }, // 부품이 없어도 쓰는 기본 공격 (몸통 박치기)
     // 큰 괴수일수록 건물을 더 잘 부숨: 건물에 주는 피해 × (base + 칸 수 × perBlock). 영웅에게 주는 피해는 그대로
     smashPower: { base: 0.35, perBlock: 0.009 }, // 30칸 → 0.6배, 130칸 → 1.5배, 256칸 → 2.65배
+    // (S) 두께 붓: 두께를 정한 칸은 '칸 수' 대신 (정한 두께 ÷ 자동 두께) 칸으로 셈 → 값 · 체력 · 빠르기 · 부수는 힘에 그대로 들어감
+    //     얇게 = 싸고 약하고 빠름, 두껍게 = 비싸고 튼튼하고 느림. 한 칸이 이 범위 밖으로 나가지 않게 자름
+    thickness: { minWeight: 0.4, maxWeight: 2.2 },
   },
 
   // 공격 부품 (상점에서 사서 괴수 그림에 붙임)
@@ -117,6 +121,12 @@ export const VILLAIN = {
       claw: { name: '집게발', price: 0, cost: 15, damage: 16, interval: 0.9, range: 4, desc: '가까운 것을 세게 휘둘러 쳐요' },
       fireMouth: { name: '불 뿜는 입', price: 120, cost: 25, damage: 10, interval: 0.25, range: 14, burstSeconds: 1.6, restSeconds: 1.4, desc: '멀리까지 불을 뿜어요' },
       horn: { name: '돌진 뿔', price: 200, cost: 20, damage: 60, interval: 3.2, range: 16, dashSpeed: 30, desc: '멀리서 달려와 쿵 들이받아요' },
+      // (P) 꼬리 철퇴: 빙글 한 바퀴 돌며 range 안의 모든 것(건물·영웅)을 치고 영웅을 knockback 칸만큼 밀쳐 냄. 둘러싸였을 때 좋음
+      //     knockMul: 영웅마다 밀려나는 배율 (무거운 황금 수호자는 덜 밀림)
+      tailMace: { name: '꼬리 철퇴', price: 160, cost: 20, damage: 22, interval: 2.4, range: 5.5, knockback: 5, knockMul: { guardian: 0.45 }, desc: '빙글 한 바퀴! 둘레를 다 치고 영웅을 밀쳐요' },
+      // (P) 레이저 눈: chargeSeconds 동안 눈빛을 모았다가 beamSeconds 동안 곧은 빛줄기. tick 초마다 줄 위의 모든 것에 damage
+      //     width: 빛줄기가 닿는 반쪽 너비 (칸). 황금 수호자의 방패는 레이저도 반 막음 (방패 깨기는 못 함)
+      laserEye: { name: '레이저 눈', price: 450, cost: 30, damage: 14, interval: 5, range: 22, chargeSeconds: 0.8, beamSeconds: 1.0, tick: 0.1, width: 1.1, desc: '눈빛을 모아 쏘면 한 줄을 다 꿰뚫어요' },
     },
   },
 
@@ -184,6 +194,15 @@ export const VILLAIN = {
     veteranPerRaid: 10, // (E 조정: 8 → 10, 1단계 단계 문턱이 200 으로 올라서)
     veteranPerWin: 12,
     veteranCapRank: 2,
+  },
+
+  // (S) 3D 블록 작업대 (고수용): 블록을 하나하나 쌓아 괴수를 만듦. 화면 글자는 js/villain/sculpt/*.js 의 TEXT
+  sculpt: {
+    unlockRank: 2, // 이 악명 단계부터 열림 (2 = '마을의 공포', 이름은 data/ranks.js)
+    size: { w: 16, h: 16, d: 8 }, // 쌓을 수 있는 공간: 가로 × 세로 × 앞뒤 (가로·세로는 그림판과 같아야 부품 자리가 맞음)
+    minBlocks: 60, // 이보다 적게 쌓으면 괴수를 만들 수 없음
+    maxBlocks: 1600, // 이보다 많이 쌓을 수 없음 (휴대폰에서도 습격이 부드럽게)
+    refDepth: 3, // 블록 수 ÷ 이 값 = 몸집 점수 (자동 그림 한 칸이 평균 3블록 → 같은 부피면 그림과 값이 비슷)
   },
 
   camera: { fov: 32, pitchDeg: 48 },

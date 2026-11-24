@@ -12,15 +12,18 @@
 //   siren 영웅 출동 사이렌 · heroLand 영웅 착지(번쩍-쿵) · sword 칼(챙) · leap 영웅 뛰어오름 · partLost 부품 떨어짐
 //   pop 펑! (가장 신나는 소리) · win 승리 · lose 패배 · click 단추 · open 화면 넘김 · buy 샀어요 · nope 안 돼요 · launch 출동!
 //   ── 2단계 소리 (영웅 셋의 공격 · 방패 · 얼음, 소굴의 짓기 · 강화 · 계책 · 목표 · 악명 단계) 는 villainSoundBank2.js ──
+//   ── 3단계 소리 (새 부품 꼬리 철퇴 · 레이저 눈) 는 villainSoundBank3.js ──
 //
 // 소리를 바꾸고 싶으면: volume(크기)부터 바꿔 보세요. freq 는 높낮이(Hz), decay 는 사라지는 시간(초)입니다.
 // ─────────────────────────────────────────────────────────────
 
 import { tone, noise, melody, clatter, bounce } from '../../fight/audio/synthKit.js';
 import { STAGE2_SOUNDS } from './villainSoundBank2.js';
+import { STAGE3_SOUNDS } from './villainSoundBank3.js';
 
 export const VILLAIN_SOUNDS = {
   ...STAGE2_SOUNDS, // 2단계 소리 (영웅 셋 · 소굴) → villainSoundBank2.js
+  ...STAGE3_SOUNDS, // 3단계 소리 (꼬리 철퇴 · 레이저 눈) → villainSoundBank3.js
   // 블록 하나가 딸깍 쌓임 (괴수가 조립될 때 촤르륵 이어짐)
   stack: {
     volume: 0.5,

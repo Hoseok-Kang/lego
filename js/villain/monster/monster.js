@@ -1,6 +1,7 @@
 // 괴수 한 마리 (그림 → 블록 괴수가 되어 걷고, 부수고, 맞고, 터짐)
 // 그림은 늘 카메라를 보고 서 있고(종이 인형처럼), 어느 쪽으로든 뒤뚱뒤뚱 걸어갑니다.
-// 상대를 정해 주면(command) 알아서 다가가 쓸 수 있는 공격을 골라 씁니다: 뿔 돌진 → 불 뿜기 → 집게발 → 박치기.
+// 상대를 정해 주면(command) 알아서 다가가 쓸 수 있는 공격을 골라 씁니다: 뿔 돌진 → 레이저 눈 → 꼬리 철퇴 → 불 뿜기 → 집게발 → 박치기.
+// (공격마다 쓰기 알맞은 때는 monsterAttacks.js 의 attackFits: 레이저는 멀거나 한 줄일 때, 꼬리는 둘러싸였거나 영웅일 때)
 //
 //   const monster = createMonster(scene, design, { debris, fx, events, getTargets?, bounds?, start?, hpMul?, dmgMul?, partDmgMul?, smashMul? })
 //       getTargets: () => 상대 목록 (건물·영웅). 주면 불·돌진·집게가 주변 것도 같이 때리고, 길을 막는 건물부터 부숨
@@ -28,24 +29,23 @@ import { VILLAIN } from '../villainConfig.js';
 import { createMonsterFigure } from './monsterFigure.js';
 import { createMonsterMotion } from './monsterMotion.js';
 import { createBuildRain } from './monsterBuild.js';
-import { startAttack, attackCooldown, HORN_MIN_DISTANCE } from './monsterAttacks.js';
+import { designStats } from './monsterPower.js';
+import { startAttack, attackCooldown, attackFits, idlePart } from './monsterAttacks.js';
 
 const POP_SHARE = 0.6; // 체력이 0 이 될 때까지 떨어져 나가는 블록 비율 (나머지는 '펑' 할 때 한꺼번에)
 const PART_HOLD = 0.85; // 부품이 붙은 칸은 맨 나중에 떨어짐: 떨어질 블록의 이만큼이 사라질 때까지 버팀 (체력이 약 15% 남을 때 부품이 떨어짐)
 const CLOSE_GAP = 0.5; // 상대에게 이만큼 가까워지면 더 다가가지 않음 (칸)
 const FLASH_SECONDS = 0.16; // 맞았을 때 하얗게 번쩍이는 시간
-const PRIORITY = ['horn', 'fireMouth', 'claw']; // 쓸 수 있으면 먼저 쓰는 순서 (마지막은 박치기)
+const PRIORITY = ['horn', 'laserEye', 'tailMace', 'fireMouth', 'claw']; // 쓸 수 있으면 먼저 쓰는 순서 (마지막은 박치기)
 const TICK_GAP = 0.055; // 쌓이는 딸깍 소식 간격 (초)
 const CHILL_HEX = '#9FC3E9'; // 느려졌을 때 물드는 색 (연하늘)
 const CHILL_TINT = 0.36; // 느려졌을 때 물드는 정도
 const CHILL_COOLDOWN = 0.75; // 느려진 동안 공격 준비가 덜 느려지게 (factor 와 1 사이, 0 = factor 그대로)
 
+// (S) 칸 수 대신 '몸집 점수' (두께 · 3D 블록까지 셈, monsterPower.js). 두께를 안 건드린 그림은 예전과 같은 숫자
 export function monsterStats(design) {
-  let blocks = 0;
-  const cols = design?.cols || 0;
-  for (const line of (design?.cells || []).slice(0, design?.rows || 0)) for (const ch of String(line ?? '').slice(0, cols)) if (ch !== '.' && ch !== ' ') blocks++;
-  const m = VILLAIN.monster;
-  return { blocks, hp: Math.max(1, blocks * m.hpPerBlock), speed: Math.max(m.minSpeed, m.baseSpeed / (1 + blocks * m.slowPerBlock)) };
+  const { power, hp, speed } = designStats(design);
+  return { blocks: power, hp, speed };
 }
 
 export function createMonster(scene, design, options = {}) {
@@ -202,6 +202,7 @@ export function createMonster(scene, design, options = {}) {
   // '펑!' 남은 블록이 전부 흩어짐
   function pop(from) {
     alive = false;
+    action?.cancel?.(); // 레이저 빛 · 바닥 원 같은 남은 효과 지우기
     action = null;
     hp = 0;
     fig.root.updateMatrixWorld(true);
@@ -244,7 +245,7 @@ export function createMonster(scene, design, options = {}) {
       const foe = pickFoe();
       if (foe) {
         const gap = gapTo(foe);
-        const ready = attacks.find((attack) => attack.cd <= 0 && gap <= attack.range && (attack.type !== 'horn' || gap >= HORN_MIN_DISTANCE));
+        const ready = attacks.find((attack) => attack.cd <= 0 && gap <= attack.range && attackFits(attack.type, ctx, foe, gap, attacks));
         if (ready) {
           ready.cd = attackCooldown(ready.type);
           action = startAttack(ready.type, ctx, foe, ready.mount);
@@ -304,7 +305,7 @@ export function createMonster(scene, design, options = {}) {
         const rest = mount.art.rest;
         if (mount.type === 'claw') mount.node.rotation.z = rest.z + Math.sin(clock * 3.1 + i * 2) * 0.16 * mount.side;
         else if (mount.type === 'fireMouth') mount.node.scale.setScalar(1 + Math.sin(clock * 4 + i) * 0.04);
-        else mount.node.scale.setScalar(1);
+        else idlePart(mount, clock, i);
       }
     });
   }
@@ -331,6 +332,8 @@ export function createMonster(scene, design, options = {}) {
     dispose() {
       if (disposed) return;
       disposed = true;
+      action?.cancel?.();
+      action = null;
       rain?.dispose();
       figure.dispose();
     },

@@ -59,7 +59,7 @@ export function createGameState({ saveStore, bestiary }) {
 
   const costOf = (design) => raidCost(fitDesign(design), mods());
   const baseCostOf = (design) => bestiary.designCost(fitDesign(design));
-  const hpOf = (design) => Math.round(bestiary.countBlocks(design) * VILLAIN.monster.hpPerBlock * mods().hpMul);
+  const hpOf = (design) => Math.round((bestiary.designHp ? bestiary.designHp(design) : bestiary.countBlocks(design) * VILLAIN.monster.hpPerBlock) * mods().hpMul); // (S) 두께 · 3D 블록까지 센 체력
 
   function towns() {
     const save = fresh();

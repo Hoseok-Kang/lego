@@ -6,6 +6,7 @@
 // 쓰는 법
 //   const ui = createPaintUi(rootEl, { palette, onTool, onColor, onToggle, onAction })
 //   ui.stage (도화지가 들어갈 자리), ui.extra (그림판 옆 빈 자리: 미리보기 · 다음 단추를 끼워 넣는 곳)
+//   ui.depthSlot (두께 붓 판이 들어갈 자리: 두께 붓을 든 동안 색 물감 대신 보임)
 //   ui.showTool(name, rectFilled) / ui.showColor(ch) / ui.showMirror(on) / ui.showHistory(canUndo, canRedo)
 //   ui.showCounts(blocks, cost, minBlocks)
 // ─────────────────────────────────────────────────────────────
@@ -20,6 +21,7 @@ export const TOOLS = [
   { id: 'line', label: '선', icon: 'line', key: 'L', hint: '끌어서 곧은 선을 그어요' },
   { id: 'rect', label: '네모', icon: 'rect', key: 'R', hint: '끌어서 네모를 그려요. 한 번 더 누르면 속까지 채워요' },
   { id: 'move', label: '옮기기', icon: 'move', key: 'M', hint: '그림을 통째로 끌어 옮겨요' },
+  { id: 'thick', label: '두께', icon: 'thick', key: 'T', hint: '칠한 칸을 문질러 두껍게 · 얇게 해요' },
 ];
 
 export const ACTIONS = [
@@ -57,6 +59,7 @@ export function createPaintUi(root, { palette, onTool, onColor, onToggle, onActi
         </div>
       </div>
       <div class="pb-palette" role="radiogroup" aria-label="색 고르기"></div>
+      <div class="pb-depth-slot"></div>
       <div class="pb-extra"></div>
     </div>`;
 
@@ -127,13 +130,16 @@ export function createPaintUi(root, { palette, onTool, onColor, onToggle, onActi
     chip.classList.toggle('is-eraser', erasing);
     chip.style.setProperty('--swatch', shownColor.hex);
     toolText.textContent = TOOLS.find((t) => t.id === shownTool)?.label ?? '';
-    colorText.textContent = erasing || shownTool === 'move' ? '' : shownColor.name;
+    colorText.textContent = erasing || shownTool === 'move' || shownTool === 'thick' ? '' : shownColor.name;
+    chip.classList.toggle('is-thick', shownTool === 'thick');
+    root.classList.toggle('is-thick', shownTool === 'thick');
   }
 
   return {
     stage: root.querySelector('.pb-stage'),
     side: root.querySelector('.pb-side'),
     extra: root.querySelector('.pb-extra'),
+    depthSlot: root.querySelector('.pb-depth-slot'),
     showTool(name, rectFilled) {
       shownTool = name;
       for (const [id, el] of toolButtons) {

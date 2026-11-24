@@ -1,16 +1,25 @@
-// 괴수 공격 동작 (박치기, 집게발 휘두르기, 불 뿜기, 뿔 돌진)
+// 괴수 공격 동작 (박치기, 집게발 휘두르기, 불 뿜기, 뿔 돌진 + 꼬리 철퇴, 레이저 눈)
 // 공격마다 '준비 → 한 방 → 돌아오기' 를 몸짓으로 보여 주고, 한 방 순간에 상대에게 피해를 줍니다.
 // monster.js 가 "지금 이 공격을 써" 하고 고르면 여기 동작이 매 장면 조금씩 진행됩니다.
+// 꼬리 철퇴는 tailMaceAttack.js, 레이저 눈은 laserEyeAttack.js (빛 모양은 laserBeam.js) 에 따로 있습니다.
 //
-//   startAttack(type, ctx, target, mount) → { type, update(dt) → 끝났으면 true }
-//       type: 'headbutt' | 'claw' | 'fireMouth' | 'horn'   mount: 그 부품 (박치기는 null)
+//   startAttack(type, ctx, target, mount) → { type, update(dt) → 끝났으면 true, cancel?() }
+//       type: 'headbutt' | 'claw' | 'fireMouth' | 'horn' | 'tailMace' | 'laserEye'   mount: 그 부품 (박치기는 null)
 //       ctx: monster.js 가 주는 도구 모음 (위치, 몸짓, 효과, 피해 주기 등)
+//       cancel(): 괴수가 터지거나 치워질 때 남은 효과(레이저 빛, 바닥 원)를 지움
 //   attackCooldown(type) → 다음에 또 쓸 수 있을 때까지 시간(초)
+//   attackFits(type, ctx, foe, gap, attacks) → 지금 이 공격을 쓰기 알맞은지 (쓸 수 있는 거리 안일 때 monster.js 가 물어봄)
+//       뿔: 멀 때만 · 레이저: 멀거나, 한 줄에 둘 이상이거나, 영웅이면 · 꼬리 철퇴: 둘레에 둘 이상이거나, 영웅이면
+//       (그 부품 하나만 달린 괴수는 늘 씀)
+//   idlePart(mount, clock, i)  공격하지 않을 때 부품의 작은 몸짓 (꼬리 살랑살랑, 눈 깜빡 빛남)
 //
 // 피해량·거리·간격은 villainConfig.js, 동작 시간·크기는 아래 상수에서 바꿉니다.
 
 import * as THREE from '../../lib/three.js';
 import { VILLAIN } from '../villainConfig.js';
+import { smooth, clamp01, setAct, hitPoint, isHero, countNear, countInLine } from './attackKit.js';
+import { tailMace } from './tailMaceAttack.js';
+import { laserEye, laserReach } from './laserEyeAttack.js';
 
 const PARTS = VILLAIN.parts.types;
 const FIRE_HEXES = ['#FFF03A', '#F2CD37', '#FE8A18', '#FE8A18', '#C91A09'];
@@ -20,9 +29,10 @@ const FIRE_SPEED = 30; // 불 블록 빠르기 (초당 칸)
 const FIRE_CONE = 0.38; // 불이 닿는 부채꼴 반쪽 각도 (라디안)
 const HORN_WINDUP = 0.55; // 뿔 돌진 전 웅크리는 시간 (바닥에 빨간 원이 차오름)
 const HORN_MIN_GAP = 3; // 이보다 가까우면 돌진하지 않음
+const LASER_FAR = 5; // 이보다 멀면 레이저를 쏨 (가까우면 한 줄에 둘 이상 있거나 영웅일 때만)
+const TAIL_CROWD = 2; // 꼬리 철퇴 거리 안에 이만큼 넘게 있으면 빙글
+const TAIL_SWAY = 0.22; // 가만히 있을 때 꼬리가 살랑이는 각도
 
-const smooth = (t) => t * t * (3 - 2 * t);
-const clamp01 = (t) => Math.min(1, Math.max(0, t));
 const tmp = new THREE.Vector3();
 const tmp2 = new THREE.Vector3();
 const velocity = new THREE.Vector3();
@@ -40,14 +50,33 @@ export function startAttack(type, ctx, target, mount) {
   if (type === 'claw') return claw(ctx, target, mount);
   if (type === 'fireMouth') return fire(ctx, target, mount);
   if (type === 'horn') return horn(ctx, target, mount);
+  if (type === 'tailMace') return tailMace(ctx, target, mount);
+  if (type === 'laserEye') return laserEye(ctx, target, mount);
   return headbutt(ctx, target);
 }
 
-// 상대 몸에서 맞는 자리 (괴수 쪽 겉면, 적당한 높이)
-function hitPoint(ctx, target, out) {
-  const dir = ctx.dirTo(target);
-  const y = Math.min(Math.max(1, (target.height || 4) * 0.5), ctx.model.height * 0.6 + 1);
-  return out.set(target.position.x - dir.x * (target.radius || 1) * 0.7, y, target.position.z - dir.z * (target.radius || 1) * 0.7);
+// 지금 이 공격을 쓰기 알맞은지 (거리 안인지는 monster.js 가 먼저 봄)
+export function attackFits(type, ctx, foe, gap, attacks = []) {
+  if (type === 'horn') return gap >= HORN_MIN_GAP;
+  const only = !attacks.some((attack) => attack.type !== type && attack.type !== 'headbutt'); // 이 부품 하나뿐
+  if (type === 'laserEye') {
+    if (only || gap >= LASER_FAR || isHero(foe)) return true;
+    const dir = ctx.dirTo(foe);
+    return countInLine(ctx, { x: dir.x, z: dir.z }, laserReach(ctx, dir), PARTS.laserEye.width) >= 2;
+  }
+  if (type === 'tailMace') return only || isHero(foe) || countNear(ctx, PARTS.tailMace.range) >= TAIL_CROWD;
+  return true;
+}
+
+// 공격하지 않을 때 부품의 작은 몸짓 (집게발·불 입은 monster.js 가 직접 함)
+export function idlePart(mount, clock, i) {
+  const node = mount.node;
+  if (mount.type === 'tailMace') {
+    node.rotation.z = mount.art.rest.z + Math.sin(clock * 2.4 + i * 1.7) * TAIL_SWAY * mount.side;
+    node.scale.setScalar(1);
+  } else if (mount.type === 'laserEye') {
+    node.scale.setScalar(1 + Math.max(0, Math.sin(clock * 1.7 + i)) * 0.06);
+  } else node.scale.setScalar(1);
 }
 
 // ── 박치기: 몸을 뒤로 뺐다가 쿵 ──
@@ -83,13 +112,6 @@ function headbutt(ctx, target) {
   };
 }
 
-function setAct(act, dir, offset, tilt, squash) {
-  act.x = dir.x * offset;
-  act.z = dir.z * offset;
-  act.tiltX = dir.x * tilt;
-  act.tiltZ = dir.z * tilt;
-  act.squash = squash;
-}
 
 // ── 집게발: 번쩍 들었다가 크게 휘둘러 내려침 ──
 function claw(ctx, target, mount) {

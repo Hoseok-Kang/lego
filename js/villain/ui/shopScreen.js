@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // 악당 타이쿤: 부품 상점
-// 괴수에 붙일 공격 부품(집게발 · 불 뿜는 입 · 돌진 뿔)을 돈으로 삽니다. 한 번 사면 모든 괴수에 붙일 수 있어요.
+// 괴수에 붙일 공격 부품 다섯 가지(집게발 · 불 뿜는 입 · 돌진 뿔 · 꼬리 철퇴 · 레이저 눈)를 돈으로 삽니다.
+// 한 번 사면 모든 괴수에 붙일 수 있어요. 카드 순서는 villainConfig.js 의 parts.types 순서 그대로입니다.
 // 이 화면은 보여 주기와 '사기' 누름 알리기만 합니다. 돈을 빼고 저장하는 일은 부른 쪽(game.js)이 합니다.
 //
 // 쓰는 법
@@ -9,12 +10,13 @@
 //     onBack(),                                       소굴로
 //   })
 //   shop.render({ money, ownedParts, available?, locks?, slots? })   내용 새로 그리기
-//       available: 지금 살 수 있는 부품 목록 (없으면 모두). 못 사는 부품은 잠긴 카드 + locks[부품] 글자 ('연구실 1단계에 열려요')
+//       available: 지금 살 수 있는 부품 목록 (없으면 모두). 못 사는 부품은 잠긴 카드 + locks[부품] 글자 ('훈련장 1단계에 열려요')
 //       slots: 괴수 한 마리에 붙일 수 있는 부품 수 (소굴 효과 반영, 없으면 villainConfig 의 parts.slots)
 //   shop.show(state?) / shop.hide() / shop.el
 //
 // 부품 이름 · 값 · 설명 · 세기는 js/villain/villainConfig.js 의 parts.types 에서 바꿉니다.
-// 글자는 아래 TEXT, 모양은 css/villain-lair.css (상점 부분) 에서 바꿉니다.
+// 글자는 아래 TEXT, 모양은 css/villain-lair.css (상점 부분) 에서 바꿉니다. 세기 막대 계산은 아래 powerOf · speedOf.
+// 카드마다 data-type="부품 이름" 이 붙어 있어서 CSS 로 부품별 꾸밈을 할 수 있어요.
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from '../villainConfig.js';
@@ -33,10 +35,8 @@ const TEXT = {
   attach: '붙일 때마다',
   poor: (n) => `돈이 ${money(n)} 모자라요. 마을을 부숴서 벌어 와요`,
   slots: (n) => `괴수 한 마리에 부품을 ${n}개까지 붙일 수 있어요`,
-  soon: '새 부품 준비 중',
-  soonHint: '악당 연구소가 열심히 만들고 있어요',
   locked: '아직 못 사요',
-  lockedHint: '연구실을 지으면 열려요',
+  lockedHint: '소굴에 시설을 지으면 열려요',
   power: '힘',
   speed: '빠르기',
   reach: '거리',
@@ -44,10 +44,17 @@ const TEXT = {
 
 const PIPS = 5; // 세기 막대 칸 수
 
-// 1초 동안 주는 피해 (쉬는 시간까지 넣어서)
+// 상대 하나에게 1초 동안 주는 피해 (쉬는 시간까지 넣어서)
+//   불: 뿜는 동안만 interval 마다 · 레이저: 한 번 쏠 때 (beamSeconds ÷ tick) 번 지짐, interval 마다 한 번
 function powerOf(part) {
+  if (part.beamSeconds && part.tick) return (part.damage * Math.round(part.beamSeconds / part.tick)) / part.interval;
   const duty = part.burstSeconds ? part.burstSeconds / (part.burstSeconds + (part.restSeconds ?? 0)) : 1;
   return (part.damage / part.interval) * duty;
+}
+
+// 얼마나 자주 쓰는지 (불은 뿜고 쉬는 한 바퀴를 한 번으로 셈 → 불만 막대가 가득 차지 않게)
+function speedOf(part) {
+  return 1 / (part.burstSeconds ? part.burstSeconds + (part.restSeconds ?? 0) : part.interval);
 }
 
 function pips(value, max) {
@@ -79,7 +86,7 @@ export function createShopScreen(root, { onBuy, onBack } = {}) {
     const locked = isLocked(type);
     const poor = !owned && !locked && part.price > state.money;
     const maxPower = Math.max(...all.map(([, p]) => powerOf(p)));
-    const maxSpeed = Math.max(...all.map(([, p]) => 1 / p.interval));
+    const maxSpeed = Math.max(...all.map(([, p]) => speedOf(p)));
     const maxRange = Math.max(...all.map(([, p]) => p.range));
     const action = owned
       ? `<div class="shop-owned">${icon('check')}<span>${part.price > 0 ? TEXT.owned : TEXT.free}</span></div>`
@@ -94,7 +101,7 @@ export function createShopScreen(root, { onBuy, onBack } = {}) {
           <p class="pcard-desc">${escapeHTML(part.desc)}</p>
           <dl class="pcard-stats">
             <div><dt>${TEXT.power}</dt><dd>${pips(powerOf(part), maxPower)}</dd></div>
-            <div><dt>${TEXT.speed}</dt><dd>${pips(1 / part.interval, maxSpeed)}</dd></div>
+            <div><dt>${TEXT.speed}</dt><dd>${pips(speedOf(part), maxSpeed)}</dd></div>
             <div><dt>${TEXT.reach}</dt><dd>${pips(part.range, maxRange)}</dd></div>
           </dl>
           <p class="pcard-attach">${TEXT.attach} ${coin(part.cost, { sign: true })}</p>
@@ -110,9 +117,8 @@ export function createShopScreen(root, { onBuy, onBack } = {}) {
     countTo(moneyEl, state.money, { from: firstRender ? state.money : null });
     const entries = Object.entries(VILLAIN.parts.types);
     const scroll = list.scrollTop;
-    list.innerHTML =
-      entries.map(cardHTML).join('') +
-      `<article class="pcard pcard--soon" style="--i:${entries.length}"><div class="pcard-pic">${icon('lock')}</div><div class="pcard-body"><h2 class="pcard-name">${TEXT.soon}</h2><p class="pcard-desc">${TEXT.soonHint}</p></div></article>`;
+    list.innerHTML = entries.map(cardHTML).join('');
+    list.dataset.count = String(entries.length);
     list.scrollTop = scroll;
     firstRender = false;
   }

@@ -10,7 +10,8 @@
 //   effect: 한 단계당 효과 (단계 L 이면 × L). 키 뜻은 lair/modifiers.js 의 MOD_INFO
 //       cost 출동 값, hp 괴수 체력, dmg 괴수 공격, partDmg 부품 공격, smash 부수는 힘, pay 습격 수입,
 //       notoriety 악명, heroHp 영웅 체력(-가 좋음), heroDelay 영웅 늦게 오기, raidBonus 습격마다 덤 돈(원)
-//   unlocks?: { parts: { 단계: [부품] }, partSlots: { 단계: +칸 } }   (연구실만)
+//   unlocks?: { parts: { 단계: [부품] }, partSlots: { 단계: +칸 } }   (연구실 · 훈련장 · 악마 대장간)
+//       그 시설을 그 단계까지 지어 두면 부품 상점에서 그 부품을 살 수 있음 (lair/lairSim.js 가 셈, 상점 잠금 글자는 gameState.js)
 //   desc: 한 줄 설명 }
 //
 // 쓰는 법
@@ -124,7 +125,8 @@ const LIST = [
     unlockRank: 1,
     maxCount: 2,
     effect: { hp: 0.06 },
-    desc: '괴수들이 줄넘기를 천 번 해요. 체력이 쑥쑥 늘어요.',
+    unlocks: { parts: { 1: ['tailMace'] } },
+    desc: '괴수들이 줄넘기를 천 번 해요. 체력이 쑥쑥 늘고, 꼬리 철퇴 돌리기를 배워요.',
   },
   {
     key: 'watchtower',
@@ -172,7 +174,8 @@ const LIST = [
     unlockRank: 3,
     maxCount: 1,
     effect: { dmg: 0.08 },
-    desc: '용암 불로 괴수 이빨을 쓱쓱 갈아요. 공격이 세지고 용암 노릇도 해요.',
+    unlocks: { parts: { 1: ['laserEye'] } },
+    desc: '용암 불로 괴수 이빨을 쓱쓱 갈아요. 공격이 세지고 용암 노릇도 하고, 레이저 눈을 벼려 내요.',
   },
 ];
 

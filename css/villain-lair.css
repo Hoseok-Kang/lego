@@ -2,27 +2,21 @@
    js/villain/ui/lairScreen.js, bestiaryPanel.js, shopScreen.js 가 만드는 화면의 모양입니다. 색은 css/villain.css 맨 위에서 정합니다.
    소굴 위에 뜨는 판들(짓기 메뉴 · 시설 판 · 계책 도감 · 목표 · 악명 휘장 · 마을 지도)은 css/villain-lair2.css 에 있어요.
 
-   소굴 틀 (3D 소굴이 화면 대부분):
-     휴대폰 세로   머리줄 / 목표 띠 / 3D 소굴 / 아래 단추          판은 아래에서 올라옴
-     컴퓨터       머리줄 / [목표 기둥 | 3D 소굴] / 아래 단추       판은 왼쪽 옆판
-     휴대폰 가로   [머리줄+목표 기둥 | 3D 소굴 | 단추 기둥]         판은 왼쪽 옆판
-   --sheet-side 값(bottom · left)은 lairScreen.js 가 읽어서 3D 칸을 가려진 만큼 줄입니다.
+   가로 화면 전용입니다 (세로로 든 휴대폰은 js/core/landscapeGuard.js 가 "가로로 돌려 주세요" 로 막음).
+   소굴 틀 (3D 소굴이 화면 대부분), 판(짓기 메뉴 등)은 언제나 왼쪽 옆판:
+     컴퓨터 (너비 900 이상 + 높이 521 이상)   머리줄 / [목표 기둥 | 3D 소굴] / 아래 단추
+     휴대폰 가로 · 작은 창 (그 밖의 모두)     [머리줄+목표 기둥 | 3D 소굴 | 단추 기둥]
+       → 미디어 조건  (max-width: 899px), (max-height: 520px)   (villain-lair2.css 도 같은 조건)
+     큰 모니터 (너비 1600 이상 + 높이 900 이상)  컴퓨터 틀 그대로, 글자 · 단추 · 기둥만 조금 크게
+   부품 상점은 화면이 낮으면(높이 520 이하) 카드가 한 줄로 늘어서 옆으로 밀어 봅니다.
 
    차례: 소굴 틀 → 밤하늘 → 머리줄 → 목표 자리 → 3D 칸 · 계책 단추 · 인사 → 아래 단추 → 판(시트) 자리 → 자리 고르기 띠 자리
-        → 괴수 카드 → 부품 상점 → 컴퓨터 · 휴대폰 가로 · 휴대폰 세로 */
+        → 괴수 카드 → 부품 상점 → 컴퓨터 → 휴대폰 가로 · 작은 창 → 큰 모니터 → 상점 (낮은 화면) */
 
 /* ── 소굴 틀 ── */
 .lair {
-  --sheet-side: bottom; /* 판이 나오는 쪽 (lairScreen.js 가 읽음) */
-  --rail: 0px; /* 왼쪽 기둥 너비 */
+  --rail: 232px; /* 왼쪽 기둥 너비 (칸 나눔은 아래 '컴퓨터' · '휴대폰 가로' 묶음) */
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  grid-template-areas:
-    "top"
-    "goals"
-    "view"
-    "dock";
   padding: 0;
   overflow: hidden;
   isolation: isolate;
@@ -151,12 +145,6 @@
   z-index: 5; /* 머리줄의 슬라임 방울보다 앞 */
   min-width: 0;
   min-height: 0;
-  padding: 16px var(--edge-right) 4px var(--edge-left);
-}
-
-/* 목표 목록이 없으면(숨김) 빈자리도 줄임 */
-.lair-goals:has(> .goals[hidden]) {
-  padding-block: 0 4px;
 }
 
 /* ── 3D 칸: game.js 가 3D 소굴을 .lair-view 에 붙임. 판이 가리면 lairScreen.js 가 bottom/left 를 줄임 ── */
@@ -275,10 +263,6 @@
   position: relative;
   z-index: 4;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.3fr;
-  gap: 8px;
-  padding: 10px var(--edge-right) var(--edge-bottom) var(--edge-left);
-  border-radius: 22px 22px 0 0;
   background: var(--panel);
   box-shadow: 0 -6px 22px rgb(0 0 0 / 0.3);
 }
@@ -287,10 +271,8 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  min-height: 62px;
   padding: 6px 4px 7px;
   font-family: var(--font-display);
-  font-size: 15px;
   font-weight: 400;
 }
 
@@ -305,9 +287,7 @@
 }
 
 .dock-raid {
-  flex-direction: row;
   gap: 6px;
-  font-size: 22px;
 }
 
 .dock-raid .ico {
@@ -328,40 +308,20 @@
   visibility: hidden;
 }
 
-/* ── 판(시트) 자리: 휴대폰은 아래에서 올라옴 (안의 모양은 villain-lair2.css) ── */
+/* ── 판(시트) 자리: 언제나 왼쪽 옆판 (자리 · 크기는 아래 '컴퓨터' · '휴대폰 가로' 묶음, 안의 모양은 villain-lair2.css) ── */
 .lair-sheet {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   z-index: 6;
   display: flex;
   flex-direction: column;
-  max-height: 74%;
-  padding-bottom: var(--edge-bottom);
   border: 2px solid var(--line);
-  border-bottom: 0;
-  border-radius: 24px 24px 0 0;
   background: var(--paper);
   color: var(--ink);
-  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.45);
-}
-
-.lair-sheet[data-panel="build"] {
-  height: 62%;
-}
-
-.lair-sheet[data-panel="schemes"],
-.lair-sheet[data-panel="bestiary"] {
-  height: 76%;
-}
-
-.lair-sheet[data-panel="facility"] {
-  max-height: 60%;
+  box-shadow: 12px 0 40px rgb(0 0 0 / 0.45);
 }
 
 .lair-sheet.is-enter {
-  animation: sheet-up 0.32s cubic-bezier(0.2, 1.2, 0.4, 1);
+  animation: sheet-side 0.32s cubic-bezier(0.2, 1.2, 0.4, 1);
 }
 
 @keyframes sheet-up {
@@ -870,20 +830,16 @@
 }
 
 
-/* ── 자리 고르기 띠 자리 (안의 모양은 villain-lair2.css 의 .placebar): 휴대폰 세로는 아래 단추 자리를 덮음 ── */
+/* ── 자리 고르기 띠 자리 (안의 모양은 villain-lair2.css 의 .placebar): 컴퓨터는 아래 단추 자리, 휴대폰 가로는 왼쪽 기둥을 덮음 ── */
 .lair .placebar {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   z-index: 5;
 }
 
-/* ── 컴퓨터 (넓고 높은 화면): 왼쪽 목표 기둥, 판은 왼쪽 옆판, 아래 단추는 가운데 ── */
+/* ── 컴퓨터 (너비 900 이상 + 높이 521 이상): 왼쪽 목표 기둥, 판은 왼쪽 옆판, 아래 단추는 가운데 ── */
 @media (min-width: 900px) and (min-height: 521px) {
   .lair {
-    --sheet-side: left;
-    --rail: 304px;
+    --rail: clamp(250px, 26vw, 304px); /* 960×540 처럼 좁은 창은 기둥을 조금 좁게 */
     grid-template-columns: var(--rail) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
@@ -910,29 +866,32 @@
     left: 18px;
   }
 
+  /* 아래 단추 줄: 자리가 좁으면 단추가 함께 줄고, 아주 좁으면(옆판이 열림 등) 아이콘 위 · 글자 아래로 */
   .lair-dock {
+    container-type: inline-size;
     display: flex;
     justify-content: center;
     gap: 12px;
     margin-left: var(--cover-left, 0px); /* 옆판이 열리면 그만큼 비켜 섬 */
     padding: 8px 18px var(--edge-bottom);
-    border-radius: 0;
     background: none;
     box-shadow: none;
   }
 
   .dock-btn {
+    flex: 1 1 0;
     flex-direction: row;
     gap: 8px;
-    min-width: 150px;
+    max-width: 190px;
     min-height: 60px;
-    padding: 6px 20px 8px;
+    padding: 6px 14px 8px;
     border-bottom-width: 6px;
     font-size: 19px;
   }
 
   .dock-raid {
-    min-width: 200px;
+    flex-grow: 1.35;
+    max-width: 250px;
     font-size: 25px;
   }
 
@@ -941,13 +900,8 @@
     grid-column: 1 / 3;
     top: 14px;
     left: var(--edge-left);
-    right: auto;
     bottom: var(--edge-bottom);
-    width: 440px;
-    height: auto !important;
-    max-height: none;
-    padding-bottom: 0;
-    border: 2px solid var(--line);
+    width: min(440px, calc(100% - var(--edge-left) - 150px));
     border-bottom: 6px solid var(--edge);
     border-radius: 24px;
     box-shadow: var(--shadow-big);
@@ -958,17 +912,25 @@
     max-height: calc(100% - 14px - var(--edge-bottom));
   }
 
-  .lair-sheet.is-enter {
-    animation-name: sheet-side;
-  }
-
   .lair .placebar {
     grid-area: dock;
     left: 50%;
-    right: auto;
     bottom: var(--edge-bottom);
     width: min(920px, calc(100% - 32px));
     translate: -50% 0;
+  }
+}
+
+@container (max-width: 600px) {
+  .lair-dock .dock-btn {
+    flex-direction: column;
+    gap: 2px;
+    padding-inline: 4px;
+    font-size: 15px;
+  }
+
+  .lair-dock .dock-raid {
+    font-size: 20px;
   }
 }
 
@@ -979,11 +941,9 @@
   }
 }
 
-/* ── 휴대폰 가로 (화면이 낮음): [머리줄+목표 기둥 | 3D | 단추 기둥], 판은 왼쪽 옆판 ── */
-@media (max-height: 520px) and (min-width: 560px) {
+/* ── 휴대폰 가로 · 작은 창 (컴퓨터 조건이 아닌 모두): [머리줄+목표 기둥 | 3D | 단추 기둥], 판은 왼쪽 옆판 ── */
+@media (max-width: 899px), (max-height: 520px) {
   .lair {
-    --sheet-side: left;
-    --rail: 232px;
     grid-template-columns: var(--rail) minmax(0, 1fr) auto;
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
@@ -1025,11 +985,15 @@
   .lair-wallet {
     flex: 1 1 100%;
     justify-content: space-between;
+    gap: 6px;
     margin: 0;
   }
 
   .lair-wallet .vt-money {
+    min-width: 0;
     min-height: 40px;
+    padding: 2px 12px 4px 7px;
+    border-bottom-width: 4px;
     font-size: 21px;
   }
 
@@ -1048,6 +1012,7 @@
     padding: 6px 14px var(--edge-bottom) var(--edge-left); /* 목표 말풍선이 3D 쪽으로 나오게 잘라 내지 않음 */
   }
 
+  /* 오른쪽 단추 기둥: 화면 높이를 넷으로 나눔 (아주 높은 창이면 너무 길어지지 않게 가운데로 모음) */
   .lair-dock {
     grid-template-columns: 104px;
     grid-auto-rows: minmax(0, 1fr);
@@ -1057,13 +1022,21 @@
   }
 
   .dock-btn {
-    min-height: 0;
+    max-height: 130px;
     font-size: 14px;
   }
 
+  .dock-btn:active,
+  .dock-btn.is-on {
+    margin-top: 0; /* 기둥 안에서는 눌려도 칸 높이가 그대로 */
+  }
+
   .dock-raid {
-    flex-direction: column;
     font-size: 19px;
+  }
+
+  .lair.is-enter .lair-dock {
+    animation-name: dock-side;
   }
 
   .lair.is-placing .lair-dock {
@@ -1077,67 +1050,24 @@
     grid-column: 1 / 3;
     top: 0;
     left: 0;
-    right: auto;
     bottom: 0;
     width: min(410px, 54vw);
-    height: auto !important;
-    max-height: none;
-    padding: 0 0 0 calc(var(--edge-left) - 10px);
-    border: 2px solid var(--line);
+    padding-left: max(0px, calc(var(--edge-left) - 10px));
     border-left: 0;
     border-radius: 0 24px 24px 0;
-  }
-
-  .lair-sheet.is-enter {
-    animation-name: sheet-side;
-  }
-
-  .lair-sheet[data-panel] {
-    max-height: none;
   }
 
   .lair .placebar {
     grid-row: 1 / 3;
     grid-column: 1 / 2; /* 끝 줄을 꼭 적어야 함 (안 적으면 화면 끝까지 늘어남) */
     inset: 0;
-    z-index: 5;
   }
 }
 
-/* ── 휴대폰 세로 · 좁은 화면: 로고 대신 악명 휘장이 머리줄을 채움 ── */
-@media (max-width: 899px) and (min-height: 521px), (max-width: 559px) {
-  .lair-top {
-    gap: 8px;
-  }
-
-  .lair-top .vt-logo {
-    display: none;
-  }
-
-  .lair-badge {
-    flex: 1 1 auto;
-  }
-
-  .lair-wallet {
-    gap: 6px;
-  }
-
-  .lair-wallet .vt-money {
-    min-height: 42px;
-    padding: 2px 12px 4px 7px;
-    border-bottom-width: 4px;
-    font-size: 21px;
-  }
-
-  .lair-wallet .vt-money .ico {
-    width: 25px;
-    height: 25px;
-  }
-
-  .lair-wallet .vt-btn--icon {
-    width: 44px;
-    min-height: 44px;
-    border-bottom-width: 4px;
+@keyframes dock-side {
+  from {
+    transform: translateX(40%);
+    opacity: 0;
   }
 }
 

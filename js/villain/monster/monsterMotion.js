@@ -5,7 +5,9 @@
 //   const motion = createMonsterMotion(model)
 //   motion.step(dt, move) → 발이 땅에 닿았으면 -1(왼발) / +1(오른발), 아니면 0
 //       move: 걷는 중이면 { x, z, speed } (방향은 길이 1), 서 있으면 null
-//   motion.act                  공격 동작이 직접 쓰는 값 { x, y, z, tiltX, tiltZ, squash, shake } (매 장면 0 으로 스르르 돌아감)
+//   motion.act                  공격 동작이 직접 쓰는 값 { x, y, z, tiltX, tiltZ, squash, shake, spin, charge } (매 장면 0 으로 스르르 돌아감)
+//       spin: 몸을 세로축으로 돌리는 각도 (라디안, 꼬리 철퇴 한 바퀴. 다 돌면 0 으로 되돌려 놓을 것)
+//       charge: 0~1 힘 모으기 (레이저 눈: 살짝 떠오르고 길쭉해지며 부르르)
 //   motion.bounce(세기)          몸이 꾹 눌렸다 튕김 (착지, 맞았을 때)
 //   motion.flinch(dx, dz, 세기)  (dx, dz) 쪽으로 휘청
 //   motion.apply(bodyNode)      계산한 자세를 몸 손잡이에 적용
@@ -22,10 +24,13 @@ const LAND_SQUASH = 2.6; // 발이 닿을 때 눌리는 세기
 const SPRING = 260; // 눌렸다 펴지는 탄성 (클수록 빨리 튕김)
 const DAMPING = 13; // 출렁임이 잦아드는 빠르기
 const BREATHE = 0.022; // 숨쉬기 크기
+const CHARGE_LIFT = 0.6; // 힘을 다 모았을 때 떠오르는 높이 (칸)
+const CHARGE_STRETCH = 0.1; // 힘을 다 모았을 때 길쭉해지는 정도
+const CHARGE_BUZZ = 0.07; // 힘을 모을 때 부르르 떨리는 크기 (칸)
 
 export function createMonsterMotion(model) {
   const footHalf = Math.max(0.5, Math.min(model.width * 0.5, 3.4) * 0.8);
-  const act = { x: 0, y: 0, z: 0, tiltX: 0, tiltZ: 0, squash: 0, shake: 0 };
+  const act = { x: 0, y: 0, z: 0, tiltX: 0, tiltZ: 0, squash: 0, shake: 0, spin: 0, charge: 0 };
   let time = Math.random() * 10;
   let phase = 0;
   let walk = 0; // 0 서 있음 ~ 1 걷는 중 (부드럽게 바뀜)
@@ -64,21 +69,22 @@ export function createMonsterMotion(model) {
   function apply(body) {
     const rock = Math.sin(phase) * ROCK_ANGLE * walk;
     const hop = Math.abs(Math.sin(phase)) * HOP_HEIGHT * walk;
-    const jitter = act.shake ? Math.sin(time * 97) * act.shake : 0;
+    const charge = Math.max(0, Math.min(1, act.charge || 0));
+    const jitter = (act.shake ? Math.sin(time * 97) * act.shake : 0) + (charge ? Math.sin(time * 131) * CHARGE_BUZZ * charge : 0);
     // 기우는 쪽 반대 발 가장자리를 축으로 돌림 → 한쪽 발이 들림
     const pivotX = rock > 0 ? -footHalf : footHalf;
     body.position.set(
       act.x + pivotX * (1 - Math.cos(rock)) + jitter,
-      act.y + hop + footHalf * Math.abs(Math.sin(rock)),
-      act.z,
+      act.y + hop + footHalf * Math.abs(Math.sin(rock)) + CHARGE_LIFT * charge * charge,
+      act.z + (charge ? Math.cos(time * 113) * CHARGE_BUZZ * 0.6 * charge : 0),
     );
     // 위쪽을 (dx, dz) 쪽으로 기울이려면: z축 회전 = -dx, x축 회전 = +dz
     body.rotation.set(
       (leanZ * LEAN * walk + flinchZ + act.tiltZ),
-      0,
+      act.spin || 0,
       rock - (leanX * LEAN * walk + flinchX + act.tiltX),
     );
-    const tall = Math.max(0.55, 1 + squash + act.squash + Math.sin(time * 2.3) * BREATHE);
+    const tall = Math.max(0.55, 1 + squash + act.squash + CHARGE_STRETCH * charge + Math.sin(time * 2.3) * BREATHE);
     const wide = 1 / Math.sqrt(tall);
     body.scale.set(wide, tall, wide);
   }

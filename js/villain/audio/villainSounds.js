@@ -37,7 +37,9 @@ export const SOUND_NAMES = Object.keys(VILLAIN_SOUNDS);
 const ATTACK_SOUNDS = {
   headbutt: 'headbutt', claw: 'claw', fire: 'fire', horn: 'charge', hornDash: 'dash', sword: 'sword', leap: 'leap',
   ice: 'ice', hammer: 'hammer', slam: 'slamWind', // 얼음 마법사 · 황금 수호자
+  tailWind: 'maceWind', tailSpin: 'maceSpin', laserCharge: 'laserCharge', laser: 'laserBeam', // 꼬리 철퇴 · 레이저 눈
 };
+const HIT_SOUNDS = { fire: null, laser: 'sizzle', tailMace: 'maceHit' }; // 괴수 공격 종류 → 맞는 소리 (그 밖: 'thud')
 const LAND_SOUNDS = { leap: 'headbutt', slam: 'slam' }; // 영웅 착지 종류 → 소리 (그 밖: 하늘에서 등장 'heroLand')
 const EVENT_SOUNDS = {
   raidStarted: 'launch',
@@ -45,7 +47,7 @@ const EVENT_SOUNDS = {
   monsterBuilt: 'built',
   monsterStep: 'step',
   attack: ({ kind }) => ATTACK_SOUNDS[kind] ?? null,
-  hit: ({ target, kind }) => (target?.team === 'villain' ? ['thud', 'ouch'] : kind === 'fire' ? null : 'thud'), // target = 맞은 쪽
+  hit: ({ target, kind }) => (target?.team === 'villain' ? ['thud', 'ouch'] : kind in HIT_SOUNDS ? HIT_SOUNDS[kind] : 'thud'), // target = 맞은 쪽
   blocksBroken: ({ count = 1, source }) => (source === 'building' || source === 'decor' ? (count >= BIG_BREAK ? ['crumble', ['crumble', 0.1], 'coin'] : ['crumble', 'coin']) : null),
   buildingDestroyed: 'collapse',
   partLost: 'partLost',

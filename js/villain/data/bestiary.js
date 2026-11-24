@@ -9,18 +9,23 @@
 //                        처음부터 있는 괴수를 고쳐서 저장하면 '내 괴수'로 복사됩니다 (원본은 그대로)
 //   remove(id)           내가 그린 괴수 지우기 (처음부터 있는 괴수는 못 지움 → false)
 //   duplicate(id)        복사해서 새 괴수로 저장 → 새 괴수
-//   countBlocks(design)  칠한 칸 수
-//   designCost(design)   출동 값 = 칸 수 × 칸당 값 + 붙인 부품 값
+//   countBlocks(design)  칠한 칸 수 (3D 블록 괴수는 블록 수)
+//   designCost(design)   출동 값 = 몸집 점수 × 칸당 값 (올림) + 붙인 부품 값
+//   designHp(design) / designSpeed(design) / designStats(design)   체력 · 빠르기 · 전부 (monster/monsterPower.js)
+//   isVoxel(design)      3D 블록 괴수인지
 //   validate(design)     { ok, message } 괴수로 만들 수 있는 그림인지
-//   blankDesign()        빈 그림 한 장
+//   blankDesign(kind?)   빈 그림 한 장 (kind 'voxel' 이면 빈 3D 작업대)
 //   bestiary             위 함수들을 한 묶음으로 (다른 모듈에 넘겨줄 때)
 //
-// 값과 최소 칸 수는 js/villain/villainConfig.js (monster.costPerBlock, draw.minBlocks, parts) 에서 바꿉니다.
+// 두께(depths) · 3D 블록(kind 'voxel', voxels) 모양은 data/voxelDesign.js, 몸집 점수는 monster/monsterPower.js 에 설명이 있어요.
+// 값과 최소 칸 수는 js/villain/villainConfig.js (monster.costPerBlock, draw.minBlocks, sculpt, parts) 에서 바꿉니다.
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from '../villainConfig.js';
 import { DEFAULT_MONSTERS } from './defaultMonsters.js';
 import { getSave, update } from './saveStore.js';
+import { cleanDepths, cleanVoxels, emptyVoxels, frontCells, voxelBlocks } from './voxelDesign.js';
+import { designStats, isVoxelDesign } from '../monster/monsterPower.js';
 
 const EMPTY = '.';
 const NAME_MAX = 12;
@@ -67,7 +72,9 @@ function cleanName(name) {
 export function normalizeDesign(design) {
   const cols = VILLAIN.draw.cols;
   const rows = VILLAIN.draw.rows;
-  const cells = cleanCells(design?.cells, cols, rows);
+  const voxel = isVoxelDesign(design);
+  const voxels = voxel ? cleanVoxels(design.voxels) : null;
+  const cells = voxel ? frontCells(voxels) : cleanCells(design?.cells, cols, rows); // 3D 괴수는 앞에서 본 모습
   const out = {
     id: design?.id ?? null,
     name: cleanName(design?.name),
@@ -77,12 +84,22 @@ export function normalizeDesign(design) {
     parts: cleanParts(design?.parts, cells),
     updatedAt: design?.updatedAt ?? 0,
   };
+  if (voxel) {
+    out.kind = 'voxel';
+    out.voxels = voxels;
+  } else {
+    const depths = cleanDepths(design?.depths, cells); // 모두 자동이면 넣지 않음 (옛 그림과 똑같이)
+    if (depths) out.depths = depths;
+  }
   if (design?.builtIn) out.builtIn = true;
   return out;
 }
 
 function clone(design) {
-  return { ...design, cells: [...design.cells], parts: design.parts.map((p) => ({ ...p })) };
+  const copy = { ...design, cells: [...design.cells], parts: design.parts.map((p) => ({ ...p })) };
+  if (design.depths) copy.depths = [...design.depths];
+  if (design.voxels) copy.voxels = { ...design.voxels, layers: design.voxels.layers.map((layer) => [...layer]) };
+  return copy;
 }
 
 function newId() {
@@ -97,9 +114,12 @@ function userDesigns() {
   return getSave().designs.map(normalizeDesign);
 }
 
-export function blankDesign() {
+export function blankDesign(kind) {
+  if (kind === 'voxel') return normalizeDesign({ id: null, name: '내 괴수', kind: 'voxel', voxels: emptyVoxels(), cells: [], parts: [] });
   return normalizeDesign({ id: null, name: '내 괴수', cells: [], parts: [] });
 }
+
+export const isVoxel = isVoxelDesign;
 
 export function list() {
   const mine = userDesigns().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
@@ -115,6 +135,7 @@ export function get(id) {
 }
 
 export function countBlocks(design) {
+  if (isVoxelDesign(design)) return voxelBlocks(design.voxels);
   let count = 0;
   for (const line of design?.cells ?? []) for (const ch of line) if (ch !== EMPTY) count += 1;
   return count;
@@ -126,12 +147,25 @@ export function partsCost(parts) {
   return cost;
 }
 
+// 몸값 = 몸집 점수 × 칸당 값 (반 칸 값은 올림). 두께를 안 건드린 그림은 몸집 점수 = 칸 수 (예전과 같음)
 export function designCost(design) {
-  return Math.ceil(countBlocks(design) * VILLAIN.monster.costPerBlock) + partsCost(design?.parts); // 반 칸 값은 올림
+  return Math.ceil(designStats(design).bodyCost - 1e-9) + partsCost(design?.parts);
 }
+
+export const designHp = (design) => designStats(design).hp;
+export const designSpeed = (design) => designStats(design).speed;
+export { designStats };
 
 export function validate(design) {
   if (!design || !Array.isArray(design.cells)) return { ok: false, message: '그림이 없어요.' };
+  if (isVoxelDesign(design)) {
+    const count = voxelBlocks(cleanVoxels(design.voxels));
+    const { minBlocks = 60, maxBlocks = 1600 } = VILLAIN.sculpt ?? {};
+    if (count === 0) return { ok: false, message: '먼저 블록을 쌓아 주세요.' };
+    if (count < minBlocks) return { ok: false, message: `블록을 ${minBlocks}개 이상 쌓아 주세요. (지금 ${count}개)` };
+    if (count > maxBlocks) return { ok: false, message: `블록은 ${maxBlocks}개까지예요. (지금 ${count}개)` };
+    return { ok: true, message: '' };
+  }
   const blocks = countBlocks(normalizeDesign(design));
   const need = VILLAIN.draw.minBlocks;
   if (blocks === 0) return { ok: false, message: '먼저 괴수를 그려 주세요.' };
@@ -174,5 +208,5 @@ export function duplicate(id) {
   return saveDesign({ ...clone(source), id: null, builtIn: false, name: `${base} ${n}` });
 }
 
-export const bestiary = { list, get, saveDesign, remove, duplicate, countBlocks, partsCost, designCost, validate, blankDesign, normalizeDesign };
+export const bestiary = { list, get, saveDesign, remove, duplicate, countBlocks, partsCost, designCost, designHp, designSpeed, designStats, isVoxel, validate, blankDesign, normalizeDesign };
 export default bestiary;

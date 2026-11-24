@@ -6,7 +6,7 @@
 //
 // 쓰는 법
 //   const paper = createPaintCanvas(stageEl, { cols, rows, colorOf })   // colorOf(기호) → '#RRGGBB'
-//   paper.draw(grid, { mirror, hover:{x,y}, dimEmpty, flash:[{cells:[칸 번호], alpha}] })
+//   paper.draw(grid, { mirror, hover:{x,y}, dimEmpty, flash:[{cells:[칸 번호], alpha}], overlay(ctx, 칸 픽셀) })
 //   paper.cellAt(clientX, clientY) → { x, y, inside }   화면 좌표 → 칸
 //   paper.cellBox(x, y) → { left, top, size }           칸의 자리 (frame 기준 CSS 픽셀)
 //   paper.onLayout(fn)  크기가 바뀌면 호출 / paper.layout() 지금 다시 맞추기 / paper.destroy()
@@ -146,6 +146,7 @@ export function createPaintCanvas(stageEl, { cols, rows, colorOf, maxCell = 46 }
       for (const index of flash.cells) ctx.fillRect((index % cols) * cellDev, Math.floor(index / cols) * cellDev, cellDev, cellDev);
     }
     drawGridLines();
+    options.overlay?.(ctx, cellDev); // 두께 숫자 같은 덧그림
     if (options.mirror) drawGuide();
     if (options.hover) drawHover(options.hover);
   }
