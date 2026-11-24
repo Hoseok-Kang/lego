@@ -73,7 +73,7 @@ export const TOWN_LAYOUT = {
     { kind: 'fenceX', x: -19, z: -19, length: 7 },
     { kind: 'fenceX', x: 22, z: -19, length: 7 },
   ],
-  villagers: 7,
+  villagers: 12, // (V) 밖에 나와 있는 사람 수 (건물 안에도 몇 명씩 숨어 있음 → villainConfig.js 의 villagers)
   villagerStyle: 'village',
   street: [1, 8],
   monsterStart: [-27, 4],

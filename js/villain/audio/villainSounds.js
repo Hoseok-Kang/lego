@@ -23,8 +23,9 @@
 
 import { VILLAIN_SOUNDS as BANK_SOUNDS } from './villainSoundBank.js';
 import { VILLAGER_SOUNDS, villagerVoiceFor } from './villagerVoices.js'; // (V) 마을 사람 '으악!' · '와아!' · '으앙~'
-const VILLAIN_SOUNDS = { ...BANK_SOUNDS, ...VILLAGER_SOUNDS };
 import { createNoiseBuffer, createMasterChain } from '../../fight/audio/synthKit.js';
+
+const VILLAIN_SOUNDS = { ...BANK_SOUNDS, ...VILLAGER_SOUNDS }; // 효과음 모음 + 마을 사람 목소리
 
 const MASTER_VOLUME = 0.5; // 전체 소리 크기 (0 ~ 1)
 const MAX_VOICES = 26; // 동시에 울리는 소리 최대 개수 (넘으면 작은 효과음은 생략)

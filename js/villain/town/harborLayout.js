@@ -84,7 +84,7 @@ export const HARBOR_LAYOUT = {
     { kind: 'rock', x: 23, z: 16 },
     { kind: 'rock', x: 30, z: 16 },
   ],
-  villagers: 7,
+  villagers: 11, // (V) 밖에 나와 있는 사람 수 (건물 안 사람은 villainConfig.js 의 villagers)
   villagerStyle: 'harbor',
   street: [1, 8],
   monsterStart: [-28, 4],

@@ -75,7 +75,7 @@ export const CASTLE_LAYOUT = {
     { kind: 'banner', x: 8, z: -3 },
     { kind: 'torch', x: 20, z: -6 },
   ],
-  villagers: 6,
+  villagers: 11, // (V) 밖에 나와 있는 사람 수 (건물 안 사람은 villainConfig.js 의 villagers)
   villagerStyle: 'castle',
   street: [1, 8],
   monsterStart: [-29, 4],
