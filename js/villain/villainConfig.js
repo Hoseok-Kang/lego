@@ -28,7 +28,7 @@ const KNIGHT = {
 // 얼음 마법사 (바닷가 마을): 멀찍이 서서 얼음을 던져 괴수를 느리게 하고, 가까이 오면 휙 사라져요
 const ICE_MAGE = {
   name: L({ ko: '얼음 마법사', en: 'Ice Mage' }),
-  hint: L({ ko: '멀리서 얼음을 던져 느리게 해요. 돌진 뿔로 확 들이받으면 좋아요', en: 'Throws ice from afar to slow you down. Ram the mage with the Charge Horn!' }),
+  hint: L({ ko: '멀리서 얼음을 던져 느리게 해요. 돌진 뿔로 확 들이받으면 좋아요', en: 'Throws ice from afar to slow you down. Ram the mage with the Ram Horn!' }),
   appearAtDestroyed: 0.25, // 항구는 25% 부서지면 출동
   appearLatestSeconds: 28,
   alertSeconds: 2,
@@ -123,7 +123,7 @@ export const VILLAIN = {
     types: {
       claw: { name: L({ ko: '집게발', en: 'Pincer Claw' }), price: 0, cost: 15, damage: 16, interval: 0.9, range: 4, desc: L({ ko: '가까운 것을 세게 휘둘러 쳐요', en: 'Swings hard at anything close' }) },
       fireMouth: { name: L({ ko: '불 뿜는 입', en: 'Fire Breath' }), price: 120, cost: 25, damage: 10, interval: 0.25, range: 14, burstSeconds: 1.6, restSeconds: 1.4, desc: L({ ko: '멀리까지 불을 뿜어요', en: 'Breathes fire a long way' }) },
-      horn: { name: L({ ko: '돌진 뿔', en: 'Charge Horn' }), price: 200, cost: 20, damage: 60, interval: 3.2, range: 16, dashSpeed: 30, desc: L({ ko: '멀리서 달려와 쿵 들이받아요', en: 'Runs in from far away and rams. BONK!' }) },
+      horn: { name: L({ ko: '돌진 뿔', en: 'Ram Horn' }), price: 200, cost: 20, damage: 60, interval: 3.2, range: 16, dashSpeed: 30, desc: L({ ko: '멀리서 달려와 쿵 들이받아요', en: 'Runs in from far away and rams. BONK!' }) },
       // (P) 꼬리 철퇴: 빙글 한 바퀴 돌며 range 안의 모든 것(건물·영웅)을 치고 영웅을 knockback 칸만큼 밀쳐 냄. 둘러싸였을 때 좋음
       //     knockMul: 영웅마다 밀려나는 배율 (무거운 황금 수호자는 덜 밀림, 멀리 서는 얼음 마법사는 너무 멀어지지 않게)
       //     (P 조정: 시험 습격 결과 피해 22 → 30, 간격 2.4 → 2.2, 거리 5.5 → 6 — 집게발보다 조금 나은 값 · 싼 범위 공격이 되게)

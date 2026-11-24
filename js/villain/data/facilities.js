@@ -83,7 +83,7 @@ const LIST = [
     maxCount: 1,
     effect: { partDmg: 0.06 },
     unlocks: { parts: { 1: ['fireMouth'], 2: ['horn'] }, partSlots: { 3: 1 } },
-    desc: L({ ko: '수상한 거품이 부글부글. 불 뿜는 입, 돌진 뿔을 발명해요.', en: 'Suspicious bubbles everywhere. Invents Fire Breath and the Charge Horn.' }),
+    desc: L({ ko: '수상한 거품이 부글부글. 불 뿜는 입, 돌진 뿔을 발명해요.', en: 'Suspicious bubbles everywhere. Invents Fire Breath and the Ram Horn.' }),
   },
   {
     key: 'vault',

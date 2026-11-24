@@ -20,7 +20,7 @@ import { createRaidHud } from './raidHud.js';
 import { createResultScreen } from './resultScreen.js';
 import { bindSoundButtons } from './soundToggle.js';
 import { toast } from './uiKit.js';
-import { L } from '../lang/lang.js';
+import { L, plural } from '../lang/lang.js';
 
 // 화면에 보이는 글자 (화면 미리보기에서만 씀)
 const TEXT = L({
@@ -33,7 +33,7 @@ const TEXT = L({
   },
   en: {
     copied: (name) => `Copied the monster "${name}"`,
-    blocks: (n) => (n === 1 ? '1 block smashed' : `${n} blocks smashed`),
+    blocks: (n) => `${plural(n, 'block')} smashed`,
     hero: (name) => `Beat ${name}`,
     clear: 'Town wiped out',
     minPay: 'Effort pay',

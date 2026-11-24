@@ -26,7 +26,7 @@ import { sheetHead, makeThumbs, partIcons, signature } from './lairKit.js';
 import { RANKS, rankFor } from '../data/ranks.js';
 import { getSave } from '../data/saveStore.js';
 import { designSpeed, isVoxel } from '../data/bestiary.js';
-import { L } from '../lang/lang.js';
+import { L, plural } from '../lang/lang.js';
 
 const TEXT = L({
   ko: {
@@ -54,7 +54,7 @@ const TEXT = L({
   },
   en: {
     title: 'Monster Book',
-    count: (n) => (n === 1 ? '1 monster' : `${n} monsters`),
+    count: (n) => plural(n, 'monster'),
     newMonster: 'Make a new monster',
     newHint: 'Draw it yourself, block by block',
     draw: 'Draw in 2D',

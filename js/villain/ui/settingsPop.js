@@ -70,7 +70,9 @@ export function createSettingsPop({ host, button }) {
     // 단추가 화면 오른쪽 절반이면 단추 오른쪽 끝에, 왼쪽 절반(휴대폰의 왼쪽 기둥)이면 단추 왼쪽 끝에 맞춤
     const want = bl > host.clientWidth / 2 ? br - width : bl;
     pop.style.left = `${Math.round(Math.max(8, Math.min(host.clientWidth - width - 8, want)))}px`;
-    pop.style.top = `${Math.round((b.bottom - h.top) / k + 8)}px`;
+    const top = Math.round((b.bottom - h.top) / k + 8);
+    pop.style.top = `${top}px`;
+    pop.style.maxHeight = `${Math.max(140, host.clientHeight - top - 8)}px`; // 낮은 화면에서는 창 안을 밀어 보게 (말 고르기 줄이 늘어서)
   }
 
   function open() {

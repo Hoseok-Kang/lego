@@ -23,7 +23,7 @@ import { VILLAIN } from '../villainConfig.js';
 import { partIconURL } from '../draw/partIcons.js';
 import { el, escapeHTML, money, coin, countTo, bump, toast } from './uiKit.js';
 import { icon } from './uiIcons.js';
-import { L } from '../lang/lang.js';
+import { L, plural } from '../lang/lang.js';
 
 const TEXT = L({
   ko: {
@@ -56,7 +56,7 @@ const TEXT = L({
     boughtHint: (name) => `${name} bought! Edit a monster to stick it on`,
     attach: 'Adds to cost',
     poor: (n) => `You need ${money(n)} more coins. Go smash a town!`,
-    slots: (n) => (n === 1 ? 'Each monster can carry 1 part' : `Each monster can carry up to ${n} parts`),
+    slots: (n) => `Each monster can carry up to ${plural(n, 'part')}`,
     locked: "Can't buy yet",
     lockedHint: 'Build in your lair to unlock',
     power: 'Power',

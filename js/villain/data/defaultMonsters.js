@@ -48,7 +48,7 @@ export const DEFAULT_MONSTERS = Object.freeze([
   ),
   monster(
     'builtin-octopus',
-    L({ ko: '보라 문어', en: 'Purple Octopus' }),
+    L({ ko: '보라 문어', en: 'Purple Octo' }),
     [
       '................',
       '......PPPP......',

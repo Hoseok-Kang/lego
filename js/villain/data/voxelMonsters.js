@@ -67,5 +67,5 @@ function voxelMonster(id, name, voxels, parts) {
 }
 
 export const VOXEL_MONSTERS = Object.freeze([
-  voxelMonster('builtin-penguin', L({ ko: '통통 펭귄', en: 'Chubby Penguin' }), makePenguin(), [{ type: 'claw', col: 13, row: 11 }]),
+  voxelMonster('builtin-penguin', L({ ko: '통통 펭귄', en: 'Puffy Penguin' }), makePenguin(), [{ type: 'claw', col: 13, row: 11 }]),
 ]);

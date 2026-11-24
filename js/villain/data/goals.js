@@ -57,7 +57,7 @@ export const GOALS = [
   },
   {
     key: 'assembly',
-    name: L({ ko: '첫 계책: 조립 라인', en: 'First Combo: Assembly Line' }),
+    name: L({ ko: '첫 계책: 조립 라인', en: 'Assembly Line Combo' }),
     emoji: '⚙️',
     desc: L({ ko: '물감 창고를 괴수 공장 바로 옆에 지어요. 붙여 지으면 계책이 켜져요!', en: 'Build a Paint Shed right next to the Monster Factory for a combo!' }),
     need: 1,
@@ -67,7 +67,7 @@ export const GOALS = [
   },
   {
     key: 'beatKnight',
-    name: L({ ko: '번개 기사 혼내 주기', en: 'Zap the Thunder Knight' }),
+    name: L({ ko: '번개 기사 혼내 주기', en: 'Zap the Knight' }),
     emoji: '⚡',
     desc: L({ ko: '꼬마 마을의 번개 기사를 이겨요. 크게 그리고 부품을 붙이면 쉬워요.', en: 'Beat the Thunder Knight in Tiny Town. Draw big and add parts!' }),
     need: 1,
@@ -89,7 +89,7 @@ export const GOALS = [
   },
   {
     key: 'rank1',
-    name: L({ ko: '골목 악당 되기', en: 'Become an Alley Nuisance' }),
+    name: L({ ko: '골목 악당 되기', en: 'Reach Alley Nuisance' }),
     emoji: '😈',
     desc: L({ ko: '습격해서 악명을 모아요. 골목 악당이 되면 바닷가 마을이 열려요.', en: 'Raid towns for infamy. As an Alley Nuisance, Harbor Town opens.' }),
     need: RANKS[1].at,
@@ -113,7 +113,7 @@ export const GOALS = [
     key: 'beatIceMage',
     name: L({ ko: '얼음 마법사 녹이기', en: 'Melt the Ice Mage' }),
     emoji: '❄️',
-    desc: L({ ko: '바닷가 마을의 얼음 마법사를 이겨요. 돌진 뿔로 확 들이받아요!', en: 'Beat the Ice Mage in Harbor Town. Ram hard with the Charge Horn!' }),
+    desc: L({ ko: '바닷가 마을의 얼음 마법사를 이겨요. 돌진 뿔로 확 들이받아요!', en: 'Beat the Ice Mage in Harbor Town. Ram hard with the Ram Horn!' }),
     need: 1,
     after: ['rank1'],
     progress: (s) => wins(s, 'harbor'),
@@ -124,7 +124,7 @@ export const GOALS = [
     key: 'labLv2',
     name: L({ ko: '뿔 연구', en: 'Horn Research' }),
     emoji: '🦏',
-    desc: L({ ko: '연구실을 2단계로 강화하면 돌진 뿔을 살 수 있어요.', en: 'Upgrade the Lab to level 2 to unlock the Charge Horn.' }),
+    desc: L({ ko: '연구실을 2단계로 강화하면 돌진 뿔을 살 수 있어요.', en: 'Upgrade the Lab to level 2 to unlock the Ram Horn.' }),
     need: 2,
     after: ['buildLab'],
     progress: (s) => maxLevel(s, 'lab'),
@@ -144,7 +144,7 @@ export const GOALS = [
   },
   {
     key: 'rank2',
-    name: L({ ko: '마을의 공포 되기', en: 'Become a Town Terror' }),
+    name: L({ ko: '마을의 공포 되기', en: 'Reach Town Terror' }),
     emoji: '👹',
     desc: L({ ko: '악명을 더 모아요. 땅이 넓어지고 부품 칸이 하나 늘어요.', en: 'Gain more infamy. Your land grows and you get a part slot.' }),
     need: RANKS[2].at,
@@ -189,7 +189,7 @@ export const GOALS = [
   },
   {
     key: 'rank3',
-    name: L({ ko: '왕국의 골칫거리 되기', en: 'Become a Kingdom Menace' }),
+    name: L({ ko: '왕국의 골칫거리 되기', en: 'Reach Kingdom Menace' }),
     emoji: '👺',
     desc: L({ ko: '악명을 더 모으면 왕궁 성곽으로 쳐들어갈 수 있어요.', en: 'Gain more infamy to storm the Royal Castle.' }),
     need: RANKS[3].at,
@@ -200,7 +200,7 @@ export const GOALS = [
   },
   {
     key: 'beatGuardian',
-    name: L({ ko: '왕궁 성곽 정복', en: 'Conquer the Royal Castle' }),
+    name: L({ ko: '왕궁 성곽 정복', en: 'Conquer the Castle' }),
     emoji: '🏆',
     desc: L({ ko: '왕궁의 황금 수호자를 이겨요. 방패 옆이나 멀리서 공격해요!', en: "Beat the castle's Golden Guardian. Hit beside the shield or from afar!" }),
     need: 1,
@@ -211,7 +211,7 @@ export const GOALS = [
   },
   {
     key: 'allSchemes',
-    name: L({ ko: '계책 도감 완성', en: 'Complete the Combo Book' }),
+    name: L({ ko: '계책 도감 완성', en: 'Fill the Combo Book' }),
     emoji: '📖',
     desc: L({ ko: `계책 ${SCHEME_LIST.length}개를 모두 찾아요.`, en: `Find all ${SCHEME_LIST.length} combos.` }),
     need: SCHEME_LIST.length,

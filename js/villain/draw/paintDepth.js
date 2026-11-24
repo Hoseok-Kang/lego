@@ -17,7 +17,7 @@
 import { VILLAIN } from '../villainConfig.js';
 import { readCells } from '../monster/monsterDepth.js';
 import { EMPTY, toCells } from './paintOps.js';
-import { L } from '../lang/lang.js';
+import { L, plural } from '../lang/lang.js';
 
 const TEXT = L({
   ko: {
@@ -35,7 +35,7 @@ const TEXT = L({
     hint: 'Rub over painted blocks',
     auto: 'Auto',
     autoHint: 'Chubby by itself (thin edges, thick middle)',
-    pickHint: (n) => (n === 1 ? '1 block thick' : `${n} blocks thick`),
+    pickHint: (n) => `${plural(n, 'block')} thick`,
     allAuto: 'All auto',
     allFlat: 'Flat (1)',
     legend: 'Dark number = set by you · Light number = auto',

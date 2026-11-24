@@ -40,7 +40,7 @@ const TEXT = L({
     land: (n) => `땅 ${n}×${n}`,
   },
   en: {
-    partLock: (name, level) => `Unlocks with ${name} level ${level}`,
+    partLock: (name, level) => `Needs ${name} Lv ${level}`,
     notYet: "Can't buy yet",
     partSlots: (n) => `Part slots +${n}`,
     pay: (p) => `Raid coins +${p}%`,

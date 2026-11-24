@@ -16,7 +16,7 @@
 
 import { VILLAIN } from '../villainConfig.js';
 import { notorietyOf } from './raidRules.js';
-import { L } from '../lang/lang.js';
+import { L, plural } from '../lang/lang.js';
 
 // 결과 화면의 돈 줄 이름 (화면에 보이는 글자)
 const LABEL = L({
@@ -28,7 +28,7 @@ const LABEL = L({
     raidBonus: '소굴 금고 보너스',
   },
   en: {
-    blocks: (n) => (n === 1 ? '1 block smashed' : `${n} blocks smashed`),
+    blocks: (n) => `${plural(n, 'block')} smashed`,
     hero: (name) => `Beat ${name}`,
     clear: 'Town wiped out',
     minPay: 'Effort pay',

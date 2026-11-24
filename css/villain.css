@@ -664,6 +664,9 @@ dd {
   box-shadow: var(--shadow-big);
   animation: pop-in 0.22s cubic-bezier(0.3, 1.5, 0.5, 1);
   transform-origin: 50% 0;
+  overflow-y: auto; /* 아주 낮은 화면 + 크게: 창 안을 밀어서 봄 (높이는 settingsPop.js 가 정함) */
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .vt-settings-title {
