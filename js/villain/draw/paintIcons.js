@@ -3,7 +3,7 @@
 // 단추마다 들어가는 작은 선 그림(SVG)입니다. 색은 단추 글자색을 그대로 따라갑니다.
 //
 // 쓰는 법: icon('pencil') → SVG 글자. 이름: pencil eraser fill picker line rect rectFilled move
-//          mirror undo redo flip trash check back next coin thick cube heart speed lock
+//          mirror undo redo flip trash check back next coin thick addBlock cube heart speed lock
 // ─────────────────────────────────────────────────────────────
 
 const PATHS = {
@@ -24,6 +24,7 @@ const PATHS = {
   back: '<path d="M14.500 5.500L8 12l6.500 6.500"/>',
   next: '<path d="M9.500 5.500L16 12l-6.500 6.500"/>',
   thick: '<path d="M4 8.5l8-4 8 4-8 4z"/><path d="M4 12.5l8 4 8-4"/><path d="M4 16.5l8 4 8-4"/>',
+  addBlock: '<path d="M10 4l6.500 3.600v7.200L10 18.400l-6.500-3.600V7.600z"/><path d="M3.500 7.600L10 11.200l6.500-3.600M10 11.200v7.200"/><path d="M19.500 13.500v7M16 17h7"/>',
   cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
   heart: '<path d="M12 20s-7.500-4.600-7.500-10A4.300 4.300 0 0 1 12 7.200 4.300 4.300 0 0 1 19.500 10c0 5.400-7.500 10-7.500 10z" fill="#E4405F" stroke="#9E1B32"/>',
   speed: '<path d="M4 15a8 8 0 0 1 16 0"/><path d="M12 15l4-5"/><path d="M3 19h18"/>',

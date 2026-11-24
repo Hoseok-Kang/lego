@@ -6,8 +6,12 @@
 // 그림을 고치려면 아래 글자를 바꾸면 됩니다. (줄마다 꼭 16글자, 맨 아랫줄에 발이 닿게)
 // parts 는 붙어 있는 공격 부품: { type: 부품 이름, col: 왼쪽에서 몇째 칸(0부터), row: 위에서 몇째 칸(0부터) }
 //
+// 맨 끝에는 3D 작업대로 쌓은 기본 괴수(data/voxelMonsters.js)도 붙습니다.
+//
 // 쓰는 법: DEFAULT_MONSTERS (괴수 그림 목록). 도감(bestiary.js)이 가져다 씁니다.
 // ─────────────────────────────────────────────────────────────
+
+import { VOXEL_MONSTERS } from './voxelMonsters.js';
 
 const COLS = 16;
 const ROWS = 16;
@@ -86,4 +90,5 @@ export const DEFAULT_MONSTERS = Object.freeze([
     ],
     [{ type: 'claw', col: 13, row: 12 }],
   ),
+  ...VOXEL_MONSTERS,
 ]);

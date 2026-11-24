@@ -1,0 +1,77 @@
+/* ─────────────────────────────────────────────────────────────
+   악당 타이쿤: 마을 사람 말풍선 ('으악!' '살려줘!' '영웅이다!')
+   js/villain/town/villagerShouts.js 가 습격 화면 위(떠오르는 글자 상자 안)에 만화 말풍선을 띄웁니다.
+   외치는 말은 js/villain/data/villagerLines.js, 몇 개까지 뜨는지는 villainConfig.js 의 villagers.shout.
+
+   바꾸고 싶을 때
+     글자 크기 → .vv-bubble 의 font-size (휴대폰 가로 844×390 에서 약 16px, 큰 화면에서 26px 까지)
+     색       → 상황별 .vv-panic · .vv-home · .vv-hero … 의 --vv-fill (말풍선 바탕) · --vv-ink (글자·테두리)
+   화면 크기 배율 --ui-scale 이 있으면 그만큼 같이 커지고 작아집니다.
+   ───────────────────────────────────────────────────────────── */
+
+.vv-shouts {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.vv-bubble {
+  --vv-fill: #ffffff;
+  --vv-ink: #1B2A34;
+  --vv-line: calc(2.5px * var(--ui-scale, 1));
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 100%;
+  padding: 0.34em 0.66em 0.28em;
+  border: var(--vv-line) solid var(--vv-ink);
+  border-radius: 1em;
+  background: var(--vv-fill);
+  box-shadow: 0 0.16em 0 rgba(27, 42, 52, 0.45);
+  color: var(--vv-ink);
+  font-family: 'Jua', 'IBM Plex Sans KR', sans-serif;
+  font-size: calc(clamp(14px, 2.3vmin + 7px, 26px) * var(--ui-scale, 1));
+  line-height: 1;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+/* 말풍선 꼬리 (머리 쪽을 가리키는 뾰족한 삼각형) */
+.vv-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.36em;
+  width: 0.56em;
+  height: 0.56em;
+  border-right: var(--vv-line) solid var(--vv-ink);
+  border-bottom: var(--vv-line) solid var(--vv-ink);
+  background: var(--vv-fill);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* 상황별 색 */
+.vv-panic,
+.vv-trip,
+.vv-hide {
+  --vv-fill: #ffffff;
+}
+.vv-burst {
+  --vv-fill: #FFF3B0;
+}
+.vv-home {
+  --vv-fill: #FFD3DD;
+  --vv-ink: #8A1538;
+  font-size: calc(clamp(16px, 2.7vmin + 8px, 30px) * var(--ui-scale, 1));
+}
+.vv-hero,
+.vv-saved {
+  --vv-fill: #E4F7A0;
+  --vv-ink: #1F4D12;
+}
+.vv-wail {
+  --vv-fill: #D6E8FA;
+  --vv-ink: #0A3463;
+}

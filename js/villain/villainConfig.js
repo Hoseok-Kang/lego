@@ -207,6 +207,38 @@ export const VILLAIN = {
     refDepth: 3, // 블록 수 ÷ 이 값 = 몸집 점수 (자동 그림 한 칸이 평균 3블록 → 같은 부피면 그림과 값이 비슷)
   },
 
+  // (V) 마을 사람: 습격 때 '으악!' 하며 도망치는 꼬마 블록 사람들. 사람은 절대 다치지 않아요 (뛰고, 넘어지고, 숨고, 응원만 함)
+  //     밖에 나와 있는 사람 수 = town/*Layout.js 의 villagers, 외치는 말 = data/villagerLines.js, 옷 색 = town/villagers.js
+  villagers: {
+    size: 0.72, // 블록 사람 크기 (건물 블록 = 1. 2단계까지는 0.5)
+    kidChance: 0.3, // 이 비율만큼은 꼬마 (작고 목소리가 높음)
+    kidSize: 0.75, // 꼬마 크기 배율
+    walkSpeed: 1.6, // 평소 걷는 빠르기 (초당 칸)
+    runSpeed: 9, // 도망치는 빠르기 (사람마다 ±15%, 꼬마는 조금 느림)
+    scareDistance: 16, // 괴수가 이만큼(칸) 가까우면 도망
+    calmSeconds: 1.6, // 괴수가 멀어진 뒤에도 이만큼(초)은 더 뜀
+    zigzag: 0.75, // 도망칠 때 지그재그 세기 (0 = 곧장)
+    tripPerSecond: 0.1, // 뛰는 동안 1초마다 꽈당 넘어질 확률
+    tripSeconds: 1.0, // 엎어져 버둥대는 시간 (그다음 허둥지둥 일어남)
+    hidePerSecond: 0.12, // 뛰는 동안 1초마다 멀쩡한 건물 문으로 숨으러 갈 확률
+    hideSearch: 18, // 이만큼(칸) 안의 건물 문만 찾음
+    edgePerSecond: 0.05, // 뛰는 동안 1초마다 마을 밖으로 달아날 확률
+    insidePerBuilding: 2, // 큰 건물 안에 숨어 있는 사람 (작은 건물은 1명, 벽·분수·배는 0명)
+    insideTotal: 14, // 건물 안 사람은 모두 합쳐 이만큼까지
+    burst: [1, 3], // 건물이 세게 맞으면 안에서 이만큼 (가장 적게, 가장 많이) 뛰쳐나옴
+    burstBlocks: 3, // 건물 블록이 이만큼 떨어져 나가면 '세게 맞음'
+    cheerDistance: 14, // 영웅이 이만큼 가깝고
+    braveDistance: 8, //   괴수는 이만큼보다 멀면 진정하고 폴짝폴짝 응원
+    shout: {
+      maxOnScreen: 3, // 화면에 한 번에 떠 있는 말풍선 수
+      seconds: 1.7, // 말풍선이 떠 있는 시간 (초)
+      cooldown: 5, // 한 사람이 다시 외치기까지 (초)
+      gap: 0.5, // 아무나 다시 외치기까지 (초)
+      perSecond: 0.45, // 도망치는 사람이 1초마다 외칠 확률
+      hush: 0.6, // 건물이 와르르 무너진 뒤 이만큼(초)은 보통 말 쉬기 (큰 장면에 말이 쏟아지지 않게)
+    },
+  },
+
   camera: { fov: 32, pitchDeg: 48 },
   debris: { capacity: 3000, rubbleCapacity: 2600, gravity: 52, lifeSeconds: 5, stack: true },
   speedOptions: [1, 2],

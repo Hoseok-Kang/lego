@@ -18,6 +18,7 @@
 
 import * as THREE from '../../lib/three.js';
 import { VILLAIN } from '../villainConfig.js';
+import { createVillagerShouts } from '../town/villagerShouts.js'; // (V) 마을 사람 말풍선 '으악!' (같은 글자 상자에 띄움)
 
 const MONEY_GAP = 0.32; // '+돈' 글자를 모아서 띄우는 간격 (초)
 const FLOAT_SECONDS = 1.15; // 글자가 떠 있는 시간
@@ -60,6 +61,7 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
     layer.appendChild(root);
   }
 
+  const shouts = createVillagerShouts({ events, view, layer }); // (V) 마을 사람 말풍선
   const floats = []; // { el, anchor, age, life, lift, pop, drift }
   const pool = [];
   let stopLeft = 0;
@@ -202,6 +204,7 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
         floats.splice(i, 1);
       } else place(item);
     }
+    shouts.update();
   }
 
   function clear() {

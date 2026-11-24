@@ -768,12 +768,19 @@
     width: 8px;
   }
 
-  .vd-bill dt {
+  .vd-bill dt,
+  .pb-depth-title {
     display: none;
+  }
+
+  .vd-bill,
+  .pp .vd-bill {
+    grid-template-columns: 1fr 1fr;
   }
 
   .vd-bill > div {
     justify-content: flex-start;
+    padding: 1px 4px;
   }
 
   .pb-current-text {

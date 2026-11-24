@@ -9,7 +9,7 @@
 //   game.update(dt)   한 장면 움직이기 (습격·결과 화면이면 3D 마을, 녹화 모드의 소굴 화면이면 3D 소굴)
 //   game.render()     한 장면 그리기
 //   game.debug        시험·디버그용 → main.js 가 window.villain 으로 내놓음
-//       { state, saveStore, bestiary, raid, town (늘 지금 마을), world, screens, events, stage, hud, editor, sounds,
+//       { state, saveStore, bestiary, raid, town (늘 지금 마을), world, screens, events, stage, hud, editor, sculpt, sounds,
 //         lair: { place(type, x, y), upgrade(id), move(id, x, y), sell(id), claim(key), spot(type), evaluate(), view, screen },
 //         mods(), setNotoriety(n), setMoney(n), startRaid(designId, townId), openEditor(designId?), showLair() }
 //       state: { screen, speed, paused, designId, townId }
@@ -26,6 +26,7 @@ import { getTown } from './data/towns.js';
 import { RANKS, nextRank } from './data/ranks.js';
 import { recordRaid } from './lair/goalTracker.js';
 import { createEditorScreen } from './draw/editorScreen.js';
+import { createSculptScreen } from './sculpt/sculptScreen.js';
 import { designThumbURL } from './draw/pixelThumb.js';
 import { createMonsterPreview, renderThumb } from './monster/monsterPreview.js';
 import { createVillainSounds, connectVillainSounds } from './audio/villainSounds.js';
@@ -155,11 +156,29 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
     root: uiRoot,
     preview3d: (box) => createMonsterPreview(box),
     partSlots: () => gs.mods().partSlots, // 연구실 3단계 · 악명 단계 덤으로 늘어남
+    statsOf: (d) => ({ cost: gs.costOf(d), hp: gs.hpOf(d), speed: bestiary.designSpeed(d) }), // (S) 소굴 효과를 넣은 숫자
+    sculptLock: () => sculptLock(), // (S) '' 이면 [3D 작업대로] 단추가 보임
+    onSculpt: (design) => screens.show('sculpt', design), // (S) 그림 → 3D 작업대
     onDone: (saved) => {
       showLair();
       if (saved) toast(TEXT.saved(saved.name), { kind: 'good' });
     },
   });
+
+  // (S) 3D 블록 작업대 (악명 단계로 열림, sculpt/sculptScreen.js)
+  const sculpt = createSculptScreen({
+    bestiary,
+    saveStore,
+    root: uiRoot,
+    preview3d: (box) => createMonsterPreview(box),
+    partSlots: () => gs.mods().partSlots,
+    statsOf: (d) => ({ cost: gs.costOf(d), hp: gs.hpOf(d), speed: bestiary.designSpeed(d) }),
+    onDone: (saved) => {
+      showLair();
+      if (saved) toast(TEXT.saved(saved.name), { kind: 'good' });
+    },
+  });
+  const sculptLock = () => (gs.rank().rank >= (VILLAIN.sculpt?.unlockRank ?? 0) ? '' : lockText(VILLAIN.sculpt.unlockRank, RANKS));
 
   // ── 3D 세상 (떠오르는 글자는 정보판 안의 상자에 띄움) ──
   const world = createGameWorld({ container, events, saveStore, floatLayer: hud.floatLayer });
@@ -172,6 +191,7 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
     .add('shop', shop)
     .add('raid', hud)
     .add('editor', { show: (design) => editor.open(design ?? null), hide: () => editor.close() })
+    .add('sculpt', { show: (design) => sculpt.open(design ?? null), hide: () => sculpt.close() }) // (S)
     .add('result', { el: result.el, overlay: true, show: (args) => result.show(...(args ?? [])), hide: result.hide });
   screens.onChange((name, previous) => {
     state.screen = name;
@@ -229,6 +249,17 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
   }
 
   function openEditor(design) {
+    // (S) 3D 괴수 · '3D로 쌓기' 는 3D 작업대로 (악명 단계가 모자라면 안내만)
+    if (design?.kind === 'voxel') {
+      const lock = sculptLock();
+      if (lock) {
+        toast(lock, { kind: 'bad' });
+        sounds.play('nope');
+        return;
+      }
+      screens.show('sculpt', design.voxels ? design : null);
+      return;
+    }
     screens.show('editor', design ?? null);
   }
 
@@ -343,6 +374,7 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
       world,
       hud,
       editor,
+      sculpt, // (S) 3D 블록 작업대
       sounds,
       gameState: gs,
       lair: {

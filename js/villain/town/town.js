@@ -50,6 +50,9 @@ export function createTown(scene, { debris = null, events = null, fx = null, lay
     style: layout.villagerStyle,
     street: layout.street,
     walkable: (x, z) => !ground.isWet(x, z),
+    events, // (V) 건물이 흔들리면 튀어나오기 · 영웅 응원 · 말풍선
+    townId: id,
+    road: layout.road,
   });
 
   // 괴수가 어디 있는지 (마을 사람이 도망칠 때 씀)
