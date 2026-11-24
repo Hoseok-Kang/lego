@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // 악당 타이쿤: 게임 본체 (모든 부품을 이어 붙이는 곳)
 // 화면 흐름:  소굴 ⇄ 괴수 그리기,  소굴 ⇄ 부품 상점,  소굴 → 마을 지도 → 습격 → 결과 → 소굴 (또는 다시 출동)
+// 처음 온 사람만:  환영 카드 → 괴수 그리기 → 저장하면 바로 시골 마을로 공짜 첫 출동 → 마무리 카드 → 소굴 (intro/*.js)
 // 3D 마을·괴수·영웅은 gameWorld.js, 소굴(화면 + 3D 소굴 + 짓기)은 lairController.js, 저장에서 값 뽑기는 gameState.js,
 // 다른 화면들은 ui/*.js, 그리기는 draw/*.js 가 만들고, 여기서는 서로 연결만 합니다.
 //
@@ -41,6 +42,8 @@ import { toast } from './ui/uiKit.js';
 import { createGameWorld } from './gameWorld.js';
 import { createGameState } from './gameState.js';
 import { createLairController } from './lairController.js';
+import { createFirstRun } from './intro/firstRun.js';
+import { showWelcome, showEnding } from './intro/introCards.js';
 
 const TEXT = {
   copied: (name) => `'${name}' 괴수를 복사했어요`,
@@ -57,6 +60,7 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
   const events = createEvents();
   const sounds = createVillainSounds();
   const screens = createScreens();
+  const intro = createFirstRun({ saveStore, capture }); // 처음 온 사람: 괴수 그리기 → 공짜 첫 출동 → 소굴
   const gs = createGameState({ saveStore, bestiary });
   const state = { screen: 'boot', speed: 1, paused: false, designId: null, townId: 'village' };
   let resultDue = false; // 판이 끝나서 결과 화면을 띄울 차례
@@ -160,6 +164,10 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
     sculptLock: () => sculptLock(), // (S) '' 이면 [3D 작업대로] 단추가 보임
     onSculpt: (design) => screens.show('sculpt', design), // (S) 그림 → 3D 작업대
     onDone: (saved) => {
+      if (intro.active) {
+        startIntroRaid(saved); // 처음 온 사람: 저장하면 바로 첫 출동
+        return;
+      }
       showLair();
       if (saved) toast(TEXT.saved(saved.name), { kind: 'good' });
     },
@@ -241,11 +249,48 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
 
   // ── 화면 바꾸기 ──
   function showLair() {
+    if (intro.active) intro.finish(); // 첫 출전 안내는 소굴에 들어오면 끝
     if (raid.state.phase !== 'idle') raid.clear(); // 괴수·영웅 치우기 (마을은 다음 출동 때 새로 지음)
     resultDue = false;
     state.paused = false;
     rescueIfBroke();
     screens.show('lair');
+  }
+
+  // ── 처음 온 사람 안내 (intro/firstRun.js): 괴수 그리기 → 공짜 첫 출동 → 마무리 카드 → 소굴 ──
+  function startIntro() {
+    intro.begin();
+    screens.show('editor', null);
+    const sample = bestiary.get('builtin-dino');
+    showWelcome(uiRoot, { thumb: sample ? thumbOf(sample) : '' });
+  }
+
+  function startIntroRaid(saved) {
+    if (!saved) {
+      showLair(); // 그리다가 나가면 평소처럼 소굴로
+      return;
+    }
+    const cost = gs.costOf(saved);
+    saveStore.update((s) => {
+      s.money += cost; // 첫 출동은 공짜: 출동 값만큼 미리 채워 줌
+    });
+    intro.startRaid();
+    if (!startRaid(saved, 'village')) {
+      saveStore.update((s) => {
+        s.money = Math.max(0, s.money - cost);
+      });
+      showLair();
+    }
+  }
+
+  function showIntroEnding() {
+    const design = raid.design || bestiary.get(state.designId);
+    showEnding(uiRoot, {
+      result: raid.result ?? {},
+      name: design?.name ?? '',
+      thumb: design ? thumbOf(design) : '',
+      onGo: () => showLair(),
+    });
   }
 
   function openEditor(design) {
@@ -314,6 +359,11 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
 
   function showResult() {
     resultDue = false;
+    if (intro.inRaid) {
+      hud.sync(raid);
+      showIntroEnding(); // 첫 출동은 결과 화면 대신 마무리 카드 → 소굴
+      return;
+    }
     const design = raid.design || bestiary.get(state.designId);
     const fresh = bestiary.get(state.designId); // 다시 보낼 때의 값 (그 사이 지워졌으면 이번 값)
     const res = raid.result;
@@ -348,7 +398,8 @@ export function createVillainGame({ container, uiRoot, capture = false }) {
     else if (state.screen === 'lair') lair.render();
   }
 
-  showLair();
+  if (intro.shouldStart()) startIntro();
+  else showLair();
 
   // ── 시험 · 디버그 도구 ──
   const pickDesign = (designId) => (typeof designId === 'string' ? bestiary.get(designId) : designId ?? bestiary.list()[0]);

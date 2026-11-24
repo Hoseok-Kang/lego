@@ -1,0 +1,200 @@
+/* ─────────────────────────────────────────────────────────────
+   악당 타이쿤: 첫 출전 안내 카드 (js/villain/intro/introCards.js)
+   환영 카드 · 마무리 카드 모양입니다. 색과 글꼴은 css/villain.css 맨 위 값을 그대로 씁니다.
+   가로 화면 전용: 왼쪽에 괴수 그림, 오른쪽에 글과 단추.
+   ───────────────────────────────────────────────────────────── */
+
+.intro-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--veil);
+  animation: intro-fade 0.25s ease-out;
+}
+
+.intro-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: min(620px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 20px 24px;
+  border: 3px solid var(--line);
+  border-bottom-width: 7px;
+  border-radius: 24px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--shadow-big);
+  animation: intro-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.intro-card--lose,
+.intro-card--quit {
+  border-color: var(--hero-soft);
+}
+
+.intro-card--win {
+  border-color: var(--slime-edge);
+}
+
+.intro-face {
+  flex: none;
+  width: 128px;
+  height: 128px;
+  padding: 8px;
+  border-radius: 20px;
+  background: var(--soft);
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+.intro-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.intro-title {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.intro-card--lose .intro-title,
+.intro-card--quit .intro-title {
+  color: var(--hero);
+}
+
+.intro-card--win .intro-title {
+  color: var(--slime-text);
+}
+
+.intro-name {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 17px;
+}
+
+.intro-text,
+.intro-more {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.intro-more {
+  font-weight: 600;
+}
+
+.intro-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.intro-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: var(--soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.intro-steps b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12px;
+}
+
+.intro-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.intro-chip {
+  margin-right: auto;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.intro-go {
+  min-width: 200px;
+  min-height: 54px;
+}
+
+/* 작은 휴대폰 가로 화면 (높이가 낮음) */
+@media (max-height: 420px) {
+  .intro-card {
+    gap: 14px;
+    padding: 12px 16px;
+  }
+
+  .intro-face {
+    width: 88px;
+    height: 88px;
+  }
+
+  .intro-title {
+    font-size: 24px;
+  }
+
+  .intro-text,
+  .intro-more {
+    font-size: 13px;
+  }
+
+  .intro-body {
+    gap: 5px;
+  }
+
+  .intro-go {
+    min-height: 46px;
+  }
+}
+
+@keyframes intro-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes intro-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-veil,
+  .intro-card {
+    animation: none;
+  }
+}
