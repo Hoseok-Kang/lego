@@ -1177,9 +1177,9 @@
   .shop-list {
     grid-auto-flow: column;
     grid-template-columns: none;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(0, max-content); /* 카드 높이는 내용만큼 (모두 같은 높이), 남는 높이에서는 줄이 가운데로 */
     grid-auto-columns: clamp(250px, calc(var(--vw) * 34), 310px);
-    align-content: stretch;
+    align-content: center;
     gap: 12px;
     margin: 8px calc(-1 * var(--edge-right)) 0 calc(-1 * var(--edge-left)); /* 화면 끝까지 밀리게 */
     padding: 4px var(--edge-right) max(8px, var(--edge-bottom)) var(--edge-left);
