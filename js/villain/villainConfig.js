@@ -9,7 +9,7 @@
 const KNIGHT = {
   name: '번개 기사',
   hint: '칼이 빨라요. 멀리서 불을 뿜으면 유리해요',
-  appearAtDestroyed: 0.55, // 마을이 이만큼(비율) 부서지면 출동
+  appearAtDestroyed: 0.3, // 마을이 이만큼(비율) 부서지면 출동 (주인 요청: 영웅은 20~30% 부쉈을 때. 시골 마을 30%)
   appearLatestSeconds: 30, // 마을이 덜 부서졌어도 부수기 시작한 지 이 시간(초)이 지나면 출동 (판이 늘어지지 않게)
   alertSeconds: 2, // '영웅 출동!' 경보 뒤 나타날 때까지
   maxHp: 420,
@@ -26,7 +26,7 @@ const KNIGHT = {
 const ICE_MAGE = {
   name: '얼음 마법사',
   hint: '멀리서 얼음을 던져 느리게 해요. 돌진 뿔로 확 들이받으면 좋아요',
-  appearAtDestroyed: 0.5,
+  appearAtDestroyed: 0.25, // 항구는 25% 부서지면 출동
   appearLatestSeconds: 28,
   alertSeconds: 2,
   maxHp: 650, // (D 조정: 380 → 320, E 조정: → 650 — 소굴 효과를 받은 괴수와 맞추려고)
@@ -51,7 +51,7 @@ const ICE_MAGE = {
 const GUARDIAN = {
   name: '황금 수호자',
   hint: '방패로 앞을 막아요. 멀리서 불을 뿜거나 크게 부수면 이겨요',
-  appearAtDestroyed: 0.5,
+  appearAtDestroyed: 0.2, // 왕궁 성곽은 20% 부서지면 출동 (큰 마을일수록 영웅이 빨리 옴)
   appearLatestSeconds: 32,
   alertSeconds: 2.5,
   maxHp: 1700, // (E 조정: 900 → 1700 — 소굴을 잘 지어야 이길 수 있게)
