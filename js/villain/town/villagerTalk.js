@@ -67,8 +67,9 @@ export function createVillagerTalk({ events = null, rules = {}, rnd = Math.rando
       victim.leaving = true;
       victim.life = Math.min(victim.life, victim.age + QUICK_FADE);
     }
+    // 바로 앞이나 지금 떠 있는 말과 같으면 몇 번 더 고름 (같은 말풍선이 나란히 뜨지 않게)
     let text = pickLine(kind, context, rnd);
-    if (text === lastText) text = pickLine(kind, context, rnd); // 바로 앞과 같은 말이면 한 번 더 고름
+    for (let k = 0; k < 3 && (text === lastText || bubbles.some((b) => b.text === text)); k++) text = pickLine(kind, context, rnd);
     if (!text) return false;
     lastText = text;
     const bubble = { text, kind, age: 0, life: r.seconds * (LONG_KINDS[kind] ?? 1), anchor: anchorOf(v, { x: 0, y: 0, z: 0 }), priority, done: false, leaving: false, villager: v };
