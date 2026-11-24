@@ -1071,45 +1071,17 @@
   }
 }
 
-@media (max-width: 370px) {
-  .dock-btn {
-    font-size: 13.5px;
-  }
-
-  .dock-raid {
-    font-size: 19px;
-  }
-
-  .lair-wallet .vt-money {
-    font-size: 19px;
-  }
-}
-
-/* ── 상점 · 괴수 카드: 휴대폰 세로 ── */
-@media (max-width: 700px) {
-  .shop {
-    --band: calc(var(--edge-top) + 60px);
-    grid-template-rows: 48px minmax(0, 1fr) auto;
-    gap: 10px;
-  }
-
-  .shop .vt-money {
-    min-height: 40px;
-    padding: 2px 13px 4px 7px;
-    border-bottom-width: 4px;
-    font-size: 21px;
-  }
-
-  .shop .vt-money .ico {
-    width: 26px;
-    height: 26px;
-  }
-
+/* ── 괴수 카드: 휴대폰 가로 · 작은 창 (괴수 도감 옆판이 좁음) ── */
+@media (max-width: 899px), (max-height: 520px) {
   .mcard {
     gap: 6px;
     padding: 8px 8px 9px;
     border-bottom-width: 5px;
     border-radius: 17px;
+  }
+
+  .mcard-pic {
+    aspect-ratio: 5 / 3.2;
   }
 
   .mcard-name {
@@ -1129,46 +1101,11 @@
     padding: 2px 7px 3px 5px;
     font-size: 12.5px;
   }
-
-  .shop-head {
-    gap: 8px;
-  }
-
-  .shop-head > .vt-btn {
-    min-height: 42px;
-    padding-inline: 8px 12px;
-    border-bottom-width: 4px;
-  }
-
-  .shop-title p {
-    display: none;
-  }
-
-  .shop-list {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 11px;
-    margin-top: 14px;
-  }
-
-  .pcard {
-    grid-template-columns: 88px minmax(0, 1fr);
-    padding: 12px;
-    border-radius: 19px;
-  }
-
-  .pcard-name {
-    font-size: 20px;
-  }
 }
 
-@media (max-width: 360px) {
-  .mcard-tools .vt-btn--mini span {
-    font-size: 11px;
-  }
-}
-
-/* ── 상점 · 괴수 카드: 휴대폰 가로 ── */
-@media (max-height: 520px) and (min-width: 560px) {
+/* ── 부품 상점: 낮은 화면 (휴대폰 가로 · 낮은 창) → 카드가 한 줄로 늘어서고 옆으로 밀어 봄 ──
+   다음 카드가 오른쪽 끝에 살짝 보여서 '더 있다' 는 것을 알 수 있어요. 카드는 밀면 칸에 착 붙어 멈춤(스냅). */
+@media (max-height: 520px) {
   .shop {
     --band: calc(var(--edge-top) + 52px);
     grid-template-rows: 42px minmax(0, 1fr);
@@ -1177,9 +1114,9 @@
   }
 
   .shop .vt-money {
-    min-height: 36px;
+    min-height: 40px;
     padding: 1px 11px 3px 6px;
-    border-bottom-width: 3px;
+    border-bottom-width: 4px;
     font-size: 19px;
   }
 
@@ -1188,13 +1125,14 @@
     height: 23px;
   }
 
-  .mcard-pic {
-    aspect-ratio: 5 / 3.2;
+  .shop-head {
+    gap: 10px;
   }
 
   .shop-head > .vt-btn {
-    min-height: 38px;
-    border-bottom-width: 3px;
+    min-height: 40px;
+    padding-inline: 10px 14px;
+    border-bottom-width: 4px;
   }
 
   .shop-title {
@@ -1204,7 +1142,12 @@
   }
 
   .shop-title h1 {
+    flex: none;
     font-size: 22px;
+  }
+
+  .shop-title p {
+    min-width: 0;
   }
 
   .shop-foot {
@@ -1212,26 +1155,91 @@
   }
 
   .shop-list {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 10px;
-    margin-top: 12px;
-    padding-bottom: calc(var(--edge-bottom) + 6px);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    grid-template-rows: minmax(0, 1fr);
+    grid-auto-columns: clamp(250px, 34vw, 310px);
+    align-content: stretch;
+    gap: 12px;
+    margin: 8px calc(-1 * var(--edge-right)) 0 calc(-1 * var(--edge-left)); /* 화면 끝까지 밀리게 */
+    padding: 4px var(--edge-right) max(8px, var(--edge-bottom)) var(--edge-left);
+    overflow: auto hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--edge-left) var(--edge-right);
+    touch-action: pan-x;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
   }
 
   .pcard {
-    grid-template-columns: 76px minmax(0, 1fr);
-    gap: 9px 11px;
+    grid-template-columns: 66px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    min-height: 0;
     padding: 10px;
     border-radius: 18px;
+    scroll-snap-align: start;
+  }
+
+  .pcard-body {
+    gap: 4px;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .pcard-name {
     font-size: 19px;
   }
 
+  .pcard-desc {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .pcard-stats > div {
+    grid-template-columns: 42px 1fr;
+  }
+
+  .pips i {
+    width: 16px;
+    height: 9px;
+  }
+
   .shop-buy,
-  .shop-owned {
+  .shop-owned,
+  .shop-locked {
     min-height: 46px;
+  }
+
+  .shop-locked {
+    padding-inline: 8px;
+    font-size: 15px;
+    white-space: normal;
+  }
+}
+
+/* 아주 낮은 화면 (568×320 · 740×360 등): 카드 안을 더 촘촘히 */
+@media (max-height: 370px) {
+  .pcard-pic img {
+    width: 80%;
+  }
+
+  .pcard-stats {
+    gap: 1px;
+  }
+
+  .pcard-attach {
+    font-size: 12px;
+  }
+
+  .shop-buy,
+  .shop-owned,
+  .shop-locked {
+    min-height: 44px;
+    border-bottom-width: 4px;
   }
 }
 
