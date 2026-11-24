@@ -827,7 +827,10 @@ body.capture .lair.vt-screen:not([hidden]) {
 }
 
 body.capture .lair.vt-screen > :not(.lair-viewcell),
-body.capture .lair-viewcell > :not(.lair-view) {
+body.capture .lair-viewcell > :not(.lair-view),
+body.capture .lair::before,
+body.capture .lair-zoom,
+body.capture .lscape-guard {
   display: none !important;
 }
 
