@@ -12,9 +12,9 @@ import * as THREE from '../../lib/three.js';
 import { VILLAIN } from '../villainConfig.js';
 import { smooth, clamp01, setAct, hitPoint, isHero, clampToTown } from './attackKit.js';
 
-const WINDUP = 0.42; // 웅크리고 꼬리를 감아올리는 시간 (바닥에 빨간 원이 차오름)
-const SPIN = 0.46; // 한 바퀴 도는 시간
-const RECOVER = 0.34; // 다 돌고 비틀비틀 제자리로
+const WINDUP = 0.34; // 웅크리고 꼬리를 감아올리는 시간 (바닥에 빨간 원이 차오름)
+const SPIN = 0.42; // 한 바퀴 도는 시간
+const RECOVER = 0.26; // 다 돌고 비틀비틀 제자리로
 const BACKSWING = 0.55; // 돌기 전에 반대쪽으로 비트는 각도 (라디안)
 const TAIL_UP = 0.95; // 감아올릴 때 꼬리 각도
 const MACE_GROW = 1.75; // 돌 때 철퇴가 커 보이는 배율 (멀리까지 닿는 느낌)

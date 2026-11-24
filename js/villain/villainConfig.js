@@ -122,11 +122,13 @@ export const VILLAIN = {
       fireMouth: { name: '불 뿜는 입', price: 120, cost: 25, damage: 10, interval: 0.25, range: 14, burstSeconds: 1.6, restSeconds: 1.4, desc: '멀리까지 불을 뿜어요' },
       horn: { name: '돌진 뿔', price: 200, cost: 20, damage: 60, interval: 3.2, range: 16, dashSpeed: 30, desc: '멀리서 달려와 쿵 들이받아요' },
       // (P) 꼬리 철퇴: 빙글 한 바퀴 돌며 range 안의 모든 것(건물·영웅)을 치고 영웅을 knockback 칸만큼 밀쳐 냄. 둘러싸였을 때 좋음
-      //     knockMul: 영웅마다 밀려나는 배율 (무거운 황금 수호자는 덜 밀림)
-      tailMace: { name: '꼬리 철퇴', price: 160, cost: 20, damage: 22, interval: 2.4, range: 5.5, knockback: 5, knockMul: { guardian: 0.45 }, desc: '빙글 한 바퀴! 둘레를 다 치고 영웅을 밀쳐요' },
+      //     knockMul: 영웅마다 밀려나는 배율 (무거운 황금 수호자는 덜 밀림, 멀리 서는 얼음 마법사는 너무 멀어지지 않게)
+      //     (P 조정: 시험 습격 결과 피해 22 → 30, 간격 2.4 → 2.2, 거리 5.5 → 6 — 집게발보다 조금 나은 값 · 싼 범위 공격이 되게)
+      tailMace: { name: '꼬리 철퇴', price: 160, cost: 20, damage: 30, interval: 2.2, range: 6, knockback: 5, knockMul: { guardian: 0.45, iceMage: 0.6 }, desc: '빙글 한 바퀴! 둘레를 다 치고 영웅을 밀쳐요' },
       // (P) 레이저 눈: chargeSeconds 동안 눈빛을 모았다가 beamSeconds 동안 곧은 빛줄기. tick 초마다 줄 위의 모든 것에 damage
       //     width: 빛줄기가 닿는 반쪽 너비 (칸). 황금 수호자의 방패는 레이저도 반 막음 (방패 깨기는 못 함)
-      laserEye: { name: '레이저 눈', price: 450, cost: 30, damage: 14, interval: 5, range: 22, chargeSeconds: 0.8, beamSeconds: 1.0, tick: 0.1, width: 1.1, desc: '눈빛을 모아 쏘면 한 줄을 다 꿰뚫어요' },
+      //     (P 조정: 한 번 지짐 14 → 10, 간격 5 → 5.5 — 14 일 때는 레이저 혼자 왕궁 성곽 영웅을 이겨서 다른 부품을 다 눌렀음)
+      laserEye: { name: '레이저 눈', price: 450, cost: 30, damage: 10, interval: 5.5, range: 22, chargeSeconds: 0.8, beamSeconds: 1.0, tick: 0.1, width: 1.1, desc: '눈빛을 모아 쏘면 한 줄을 다 꿰뚫어요' },
     },
   },
 

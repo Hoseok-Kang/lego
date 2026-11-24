@@ -9,7 +9,8 @@
 //       cancel(): 괴수가 터지거나 치워질 때 남은 효과(레이저 빛, 바닥 원)를 지움
 //   attackCooldown(type) → 다음에 또 쓸 수 있을 때까지 시간(초)
 //   attackFits(type, ctx, foe, gap, attacks) → 지금 이 공격을 쓰기 알맞은지 (쓸 수 있는 거리 안일 때 monster.js 가 물어봄)
-//       뿔: 멀 때만 · 레이저: 멀거나, 한 줄에 둘 이상이거나, 영웅이면 · 꼬리 철퇴: 둘레에 둘 이상이거나, 영웅이면
+//       뿔: 멀 때만 · 레이저: 멀거나, 한 줄에 둘 이상이거나, 영웅이면
+//       꼬리 철퇴: 둘레에 둘 이상이거나, 영웅이면 먼저 씀. 아니면 다른 부품 공격이 다 쉬는 중일 때 박치기 대신 씀
 //       (그 부품 하나만 달린 괴수는 늘 씀)
 //   idlePart(mount, clock, i)  공격하지 않을 때 부품의 작은 몸짓 (꼬리 살랑살랑, 눈 깜빡 빛남)
 //
@@ -64,8 +65,13 @@ export function attackFits(type, ctx, foe, gap, attacks = []) {
     const dir = ctx.dirTo(foe);
     return countInLine(ctx, { x: dir.x, z: dir.z }, laserReach(ctx, dir), PARTS.laserEye.width) >= 2;
   }
-  if (type === 'tailMace') return only || isHero(foe) || countNear(ctx, PARTS.tailMace.range) >= TAIL_CROWD;
+  if (type === 'tailMace') return only || isHero(foe) || countNear(ctx, PARTS.tailMace.range) >= TAIL_CROWD || !otherReady(type, ctx, foe, gap, attacks);
   return true;
+}
+
+// 이 공격 말고 지금 바로 쓸 수 있는 부품 공격이 있는지 (없으면 꼬리 철퇴가 박치기 대신 빙글)
+function otherReady(type, ctx, foe, gap, attacks) {
+  return attacks.some((attack) => attack.type !== type && attack.type !== 'headbutt' && attack.type !== 'tailMace' && attack.cd <= 0 && gap <= attack.range && attackFits(attack.type, ctx, foe, gap, attacks));
 }
 
 // 공격하지 않을 때 부품의 작은 몸짓 (집게발·불 입은 monster.js 가 직접 함)
