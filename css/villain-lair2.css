@@ -2588,7 +2588,8 @@
   }
 
   .townmap-head .vt-btn {
-    min-height: 40px;
+    min-height: 46px;
+    border-bottom-width: 4px;
   }
 
   .townmap-head .vt-money {
@@ -2715,5 +2716,52 @@
   .pick-go {
     min-height: 52px;
     font-size: 23px;
+  }
+}
+
+/* ── 낮은 화면 (높이 520 이하): 괴수 고르기 카드를 옆으로 납작하게 (그림 왼쪽, 이름 · 값 오른쪽) → 한 화면에 두 줄 ── */
+@media (max-height: 520px) {
+  .pick-grid {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 8px;
+  }
+
+  .pick {
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-areas:
+      "pic name"
+      "pic cost";
+    align-items: center;
+    gap: 2px 10px;
+    padding: 6px 10px 7px 6px;
+    border-bottom-width: 5px;
+  }
+
+  .pick-pic {
+    grid-area: pic;
+    aspect-ratio: 1;
+    border-radius: 11px;
+  }
+
+  .pick-name {
+    grid-area: name;
+    align-self: end;
+  }
+
+  .pick-cost {
+    grid-area: cost;
+    align-self: start;
+  }
+
+  .pick-check {
+    top: 3px;
+    right: 3px;
+    width: 26px;
+    height: 26px;
+  }
+
+  .pick-check .ico {
+    width: 16px;
+    height: 16px;
   }
 }
