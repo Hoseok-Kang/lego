@@ -15,6 +15,7 @@
 import { el } from './uiKit.js';
 
 const TEXT = {
+  group: '확대',
   in: '가까이 보기',
   out: '멀리 보기',
   reset: '처음 보기로',
@@ -29,7 +30,7 @@ const ICON = {
 
 export function createZoomButtons({ onZoom, onReset, className = '', min = 0.85, max = 2.8 } = {}) {
   const box = el(`
-    <div class="vt-zoom ${className}" role="group" aria-label="확대">
+    <div class="vt-zoom ${className}" role="group" aria-label="${TEXT.group}">
       <button type="button" class="vt-zoom-btn" data-zoom="reset" aria-label="${TEXT.reset}" title="${TEXT.reset}" hidden>${ICON.reset}</button>
       <button type="button" class="vt-zoom-btn" data-zoom="out" aria-label="${TEXT.out}" title="${TEXT.out}">${ICON.out}</button>
       <button type="button" class="vt-zoom-btn" data-zoom="in" aria-label="${TEXT.in}" title="${TEXT.in}">${ICON.in}</button>

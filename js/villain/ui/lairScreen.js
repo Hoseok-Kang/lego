@@ -52,6 +52,7 @@ const TEXT = {
   bestiary: '괴수 도감',
   shop: '부품 상점',
   raid: '출동!',
+  settings: '화면 설정',
   schemes: '계책',
   mods: '지금 소굴 효과',
   noMods: '시설을 지으면 여기에 효과가 모여요',
@@ -79,7 +80,7 @@ export function createLairScreen(root, options = {}) {
           <div class="vt-money" title="가진 돈">${icon('coin')}<b data-money>0</b></div>
           <button type="button" class="vt-btn vt-btn--icon" data-sound-toggle aria-label="소리">${icon('soundOn')}</button>
         </div>
-        <button type="button" class="vt-btn vt-btn--icon lair-gear" data-settings aria-label="화면 설정" title="화면 설정">${icon('gear')}</button>
+        <button type="button" class="vt-btn vt-btn--icon lair-gear" data-settings aria-label="${TEXT.settings}" title="${TEXT.settings}">${icon('gear')}</button>
         <i class="lair-drip d1" aria-hidden="true"></i><i class="lair-drip d2" aria-hidden="true"></i><i class="lair-drip d3" aria-hidden="true"></i>
       </header>
       <div class="lair-goals" data-goals><div class="lair-mods" data-mods></div></div>
