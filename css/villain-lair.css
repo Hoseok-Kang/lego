@@ -26,20 +26,31 @@
   padding: 0;
   overflow: hidden;
   isolation: isolate;
-  background: #1c1236;
+  background: #180d38;
   color: var(--ink);
 }
 
-/* ── 밤하늘 (밝은 화면에서도 언제나 밤. 3D 소굴 뒤가 비쳐 보여도 어울리게) ── */
+/* ── 밤하늘 (밝은 화면에서도 언제나 밤). 3D 소굴(lairSky.js)의 하늘색과 맞춰서 3D 칸 둘레와 이어져 보이게 ── */
+:root {
+  --lair-sky: linear-gradient(180deg, #3b2978 0%, #55419f 50%, #c7aded 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --lair-sky: linear-gradient(180deg, #14042d 0%, #180d38 50%, #442673 100%);
+  }
+}
+
+:root[data-theme="dark"] {
+  --lair-sky: linear-gradient(180deg, #14042d 0%, #180d38 50%, #442673 100%);
+}
+
 .lair-sky {
   position: absolute;
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background:
-    radial-gradient(70% 45% at 50% 108%, rgb(187 233 11 / 0.16) 0%, transparent 70%),
-    radial-gradient(90% 60% at 50% 60%, #3b2470 0%, transparent 75%),
-    linear-gradient(180deg, #160d2c 0%, #24164a 50%, #2f1d5e 100%);
+  background: var(--lair-sky);
 }
 
 .lair-star {
