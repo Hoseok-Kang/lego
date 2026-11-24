@@ -807,6 +807,24 @@
   text-align: center;
 }
 
+/* 단계가 오른 판은 띠가 하나 늘어서, 카드가 한 화면에 들어오게 조금 촘촘히 */
+.result.has-rankup .result-card {
+  gap: 9px;
+}
+
+.result.has-rankup .result-face {
+  width: 64px;
+  height: 64px;
+}
+
+.result.has-rankup .result-title {
+  font-size: clamp(34px, 9vw, 46px);
+}
+
+.result.has-rankup .result-profit {
+  display: none;
+}
+
 @keyframes rankup-in {
   from {
     opacity: 0;
@@ -985,6 +1003,46 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
   gap: 10px;
   margin-top: 2px;
+}
+
+/* 카드가 화면보다 길어 스크롤되어도 [소굴로] [다시 출동] 은 늘 카드 아래에 보이게 */
+.result-actions {
+  position: sticky;
+  bottom: -18px;
+  z-index: 2;
+  margin-bottom: -18px;
+  padding: 8px 0 18px;
+  background: var(--sheet);
+}
+
+/* 낮은 가로 화면은 카드 아래 여백이 더 좁음 */
+@media (max-height: 400px) and (min-width: 560px) {
+  .result-actions {
+    bottom: -9px;
+    margin-bottom: -9px;
+    padding: 4px 0 9px;
+  }
+}
+
+/* 키가 작은 화면 (1280×720 · 360×740 …): 항목 줄을 조금 촘촘히 */
+@media (max-height: 780px) and (min-height: 401px) {
+  .result-card {
+    gap: 9px;
+    padding-top: 14px;
+  }
+
+  .result-face {
+    width: 72px;
+    height: 72px;
+  }
+
+  .result-row {
+    padding-block: 4px 5px;
+  }
+
+  .result-total {
+    padding-block: 6px 8px;
+  }
 }
 
 /* 좁은 휴대폰: 단추 글자를 조금 줄여 카드 안에 들어가게 */
