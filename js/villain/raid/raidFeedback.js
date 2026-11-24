@@ -215,6 +215,7 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
     money.has = false;
     money.timer = 0;
     noteAt.clear();
+    shouts.clear();
   }
 
   return {
@@ -232,6 +233,7 @@ export function createRaidFeedback({ events, view = null, layer = null, alertTex
     dispose() {
       clear();
       for (const off of offs) off();
+      shouts.dispose();
       root?.remove();
     },
   };
