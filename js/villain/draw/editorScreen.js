@@ -16,48 +16,16 @@
 //   editor.close()               화면을 닫음 (onDone 은 부르지 않음)
 //   editor.el / editor.isOpen / editor.board / editor.placer / editor.getDesign()
 //
-// 화면 모양은 css/villain-draw.css · villain-draw2.css, 글자는 아래 TEXT 를 고치면 됩니다.
+// 화면 모양은 css/villain-draw.css · villain-draw2.css, 글자는 editorText.js 의 TEXT 를 고치면 됩니다.
 // ─────────────────────────────────────────────────────────────
 
 import { VILLAIN } from '../villainConfig.js';
 import { askConfirm } from './confirmBox.js';
 import { createPaintBoard } from './paintBoard.js';
-import { icon } from './paintIcons.js';
 import { createPartPlacer } from './partPlacer.js';
 import { drawDesign } from './pixelThumb.js';
+import { editorMarkup, TEXT } from './editorText.js';
 
-const TEXT = {
-  title: '괴수 그리기',
-  back: '소굴로',
-  backHint: '저장하지 않고 소굴로 돌아가요',
-  steps: ['그리기', '부품 붙이기', '저장'],
-  name: '이름',
-  namePlaceholder: '내 괴수',
-  previewTag: '끌어서 돌려 봐요',
-  previewFlat: '내 괴수',
-  cost: '출동 값',
-  hp: '체력',
-  speed: '빠르기',
-  money: '내 돈',
-  toSculpt: '3D 작업대로',
-  toSculptHint: '이 그림을 3D 블록 작업대로 가져가 블록을 하나하나 쌓아요',
-  toSculptAsk: '이 그림을 3D 작업대로 가져갈까요? 그림판에서 고친 것은 저장되지 않아요.',
-  toSculptYes: '가져갈래요',
-  toSculptNo: '아니요',
-  prev: '그림 고치기',
-  nextDraw: '다음: 부품 붙이기',
-  nextParts: '저장하기',
-  nextSaved: '저장했어요!',
-  poor: (n) => `돈이 ${n} 모자라요. 저장은 할 수 있어요.`,
-  goodDraw: '멋져요! 이제 부품을 붙여요.',
-  goodParts: '준비 끝! 저장하고 출동해요.',
-  partsDropped: '그림이 바뀌어서 부품이 떨어졌어요. 다시 붙여 주세요.',
-  saved: (name) => `${name}, 도감에 넣었어요!`,
-  leaveAsk: '저장하지 않고 나갈까요? 그린 그림이 사라져요.',
-  leaveYes: '나갈래요',
-  leaveNo: '계속 그릴래요',
-  builtInCopy: '고쳐서 저장하면 내 괴수로 복사돼요.',
-};
 
 const FIRST_COLOR = 'P'; // 화면을 열 때 골라 두는 색 (보라). 초록은 마을 잔디와 같은 색이라 괴수가 안 보여서 피함
 const PREVIEW_DELAY = 140; // 그리는 동안 미리보기를 너무 자주 다시 만들지 않게 (1/1000초)
@@ -81,36 +49,7 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
   el.id = 'villainEditor';
   el.hidden = true;
   el.setAttribute('aria-label', TEXT.title);
-  el.innerHTML = `
-    <header class="vd-top">
-      <button type="button" class="pb-btn vd-back" title="${TEXT.backHint}">${icon('back')}<span>${TEXT.back}</span></button>
-      <ol class="vd-steps" aria-label="만드는 차례">
-        <li><button type="button" class="vd-step" data-step="draw"><i>1</i><span>${TEXT.steps[0]}</span></button></li>
-        <li><button type="button" class="vd-step" data-step="parts"><i>2</i><span>${TEXT.steps[1]}</span></button></li>
-        <li><span class="vd-step" data-step="save"><i>3</i><span>${TEXT.steps[2]}</span></span></li>
-      </ol>
-      <button type="button" class="pb-btn vd-sculpt" hidden title="${TEXT.toSculptHint}">${icon('cube')}<span>${TEXT.toSculpt}</span></button>
-      <label class="vd-name"><span>${TEXT.name}</span><input type="text" maxlength="12" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="${TEXT.namePlaceholder}"></label>
-    </header>
-    <div class="vd-main">
-      <div class="vd-pane vd-pane--draw"></div>
-      <div class="vd-pane vd-pane--parts" hidden></div>
-    </div>
-    <div class="vd-dock">
-      <div class="vd-preview"><div class="vd-preview-view"></div><span class="vd-preview-tag">${TEXT.previewTag}</span></div>
-      <dl class="vd-bill">
-        <div class="vd-bill-cost"><dt>${TEXT.cost}</dt><dd>${icon('coin')}<b class="vd-cost">0</b></dd></div>
-        <div class="vd-bill-hp"><dt>${TEXT.hp}</dt><dd>${icon('heart')}<b class="vd-hp">0</b></dd></div>
-        <div class="vd-bill-speed"><dt>${TEXT.speed}</dt><dd>${icon('speed')}<b class="vd-speed">0</b></dd></div>
-        <div class="vd-bill-money"><dt>${TEXT.money}</dt><dd>${icon('coin')}<b class="vd-money">0</b></dd></div>
-      </dl>
-      <p class="vd-note" aria-live="polite"></p>
-      <div class="vd-actions">
-        <button type="button" class="pb-btn vd-prev" hidden title="${TEXT.prev}">${icon('back')}<span>${TEXT.prev}</span></button>
-        <button type="button" class="pb-btn pb-btn--primary vd-next"><span class="vd-next-text">${TEXT.nextDraw}</span>${icon('next')}</button>
-      </div>
-    </div>
-    <div class="vd-toast" role="status" aria-live="polite" hidden></div>`;
+  el.innerHTML = editorMarkup();
   (root ?? document.body).append(el);
 
   const $ = (selector) => el.querySelector(selector);
@@ -125,18 +64,20 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
   const sculptBtn = $('.vd-sculpt');
   const toastEl = $('.vd-toast');
   const { cols, rows } = VILLAIN.draw;
+  let parts = [];
+  // 칠한 칸 위에 남아 있는 부품만
+  const livePartsOn = (cells) => parts.filter((p) => cells[p.row]?.[p.col] && cells[p.row][p.col] !== '.').map((p) => ({ ...p }));
 
   const board = createPaintBoard(drawPane, {
     cols,
     rows,
     palette: VILLAIN.draw.palette,
-    costOf: (cells, depths) => bestiary.designCost({ cols, rows, cells, depths, parts: [] }),
+    costOf: (cells, depths) => numbersOf({ cols, rows, cells, depths, parts: livePartsOn(cells) }).cost, // 아래 값 칸과 같은 숫자 (부품 · 소굴 효과 포함)
   });
   const placer = createPartPlacer(partsPane, { design: bestiary.blankDesign?.() ?? { cells: [], parts: [] }, ownedParts: [] });
   board.extra.append(dock);
 
   let design = null; // 지금 고치는 괴수 (id, builtIn 을 기억)
-  let parts = [];
   let step = 'draw';
   let dirty = false;
   let busy = false;
@@ -177,7 +118,7 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
       cols,
       rows,
       cells,
-      parts: parts.filter((p) => cells[p.row]?.[p.col] && cells[p.row][p.col] !== '.').map((p) => ({ ...p })),
+      parts: livePartsOn(cells),
       builtIn: design?.builtIn || undefined,
       updatedAt: design?.updatedAt ?? 0,
     };
@@ -225,7 +166,7 @@ export function createEditorScreen({ bestiary, saveStore, onDone, preview3d, roo
     $('.vd-hp').textContent = String(hp);
     $('.vd-speed').textContent = speed.toFixed(1);
     $('.vd-money').textContent = String(money);
-    board.setExtraCost(bestiary.partsCost ? bestiary.partsCost(now.parts) : 0);
+    board.setExtraCost(0); // 숫자판도 같은 값 (costOf 가 부품 · 소굴 효과까지 셈)
     el.classList.toggle('is-over', check.ok && cost > money);
     nextBtn.classList.toggle('is-waiting', !check.ok);
     if (!check.ok) noteEl.textContent = check.message;
