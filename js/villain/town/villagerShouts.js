@@ -21,6 +21,7 @@ const WOBBLE_DAMP = 3; // 흔들림이 잦아드는 빠르기
 const FADE_SECONDS = 0.28; // 끝에 흐려지는 시간
 const RISE_PX = 10; // 떠 있는 동안 위로 떠오르는 높이 (px)
 const GAP_PX = 4; // 겹친 말풍선끼리 띄우는 틈
+const EDGE_PX = 4; // 화면 가장자리와 말풍선 사이 여유
 const MAX_ELEMENTS = 8; // 안전장치: 이보다 많으면 가장 오래된 것부터 지움
 
 export function createVillagerShouts({ events = null, view = null, layer = null } = {}) {
@@ -32,6 +33,7 @@ export function createVillagerShouts({ events = null, view = null, layer = null 
   root.setAttribute('aria-hidden', 'true');
   layer.appendChild(root);
   const items = []; // { el, bubble, w, h, x, y }
+  const area = { w: 0, h: 0 }; // 상자 안 크기 (px, 화면 크기 배율 전)
   const pool = [];
 
   function add({ bubble } = {}) {
@@ -75,7 +77,18 @@ export function createVillagerShouts({ events = null, view = null, layer = null 
     item.el.style.opacity = screen.visible ? opacity.toFixed(3) : '0';
   }
 
+  // 화면 가장자리에 걸친 말풍선은 안쪽으로 밀어 넣어 글자가 잘리지 않게
+  function keepInside(item) {
+    const W = area.w;
+    const H = area.h;
+    if (!(W > 0 && H > 0)) return;
+    const half = (item.w * (item.scale || 1)) / 2 + EDGE_PX;
+    item.x = Math.min(W - half, Math.max(half, item.x));
+    item.y = Math.min(H - EDGE_PX, Math.max(item.h + EDGE_PX * 2, item.y));
+  }
+
   function write(item) {
+    keepInside(item);
     item.el.style.transform = `translate(${item.x.toFixed(1)}px,${item.y.toFixed(1)}px) translate(-50%,-100%) rotate(${item.tilt.toFixed(2)}deg) scale(${item.scale.toFixed(3)})`;
   }
 
@@ -92,8 +105,9 @@ export function createVillagerShouts({ events = null, view = null, layer = null 
 
   // 말풍선 상자는 화면 크기 배율(#ui 의 --ui-scale)만큼 통째로 줄거나 커져 있음 → 화면 px 을 상자 안 px 로 바꿀 때 나눔
   function scaleOf(box) {
-    const local = root.offsetWidth;
-    return local > 0 && box.width > 0 ? box.width / local : 1;
+    area.w = root.offsetWidth;
+    area.h = root.offsetHeight;
+    return area.w > 0 && box.width > 0 ? box.width / area.w : 1;
   }
 
   function update() {

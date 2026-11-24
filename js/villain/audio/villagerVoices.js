@@ -17,7 +17,7 @@
 
 import { tone, noise } from '../../fight/audio/synthKit.js';
 
-const VOLUME = 0.3; // 마을 사람 소리 크기 (부수는 소리 밑에 깔리게 작게)
+const VOLUME = 0.24; // 마을 사람 소리 크기 (부수는 소리 밑에 깔리게 작게)
 const GAP = 220; // 같은 목소리끼리 이만큼(1/1000초) 안에는 다시 안 냄
 const VARY = 0.14; // 부를 때마다 높낮이가 이만큼 흔들림 (같은 사람도 매번 조금씩 다르게)
 const SCREAM_SECONDS = [0.12, 0.32]; // '악' 을 끄는 길이 (가장 짧게, 가장 길게)

@@ -21,6 +21,7 @@ const HIDDEN = new Set(['inside', 'gone']);
 export function stepVillager(v, dt, w) {
   if (v.state === 'burst') return flyOut(v, dt, w);
   if (v.state === 'inside') return waitInside(v, dt, w);
+  if (v.state === 'gone') return waitOutside(v, dt, w);
   if (HIDDEN.has(v.state)) return;
   v.clock += dt;
   if (v.state === 'trip') return tripping(v, dt, w);
@@ -43,6 +44,22 @@ function waitInside(v, dt, w) {
     return;
   }
   Object.assign(v, { state: 'idle', hidden: false, x: door.x, z: door.z, appear: 0.2, shelter: null, panic: 0, turn: 0, pause: 0 });
+}
+
+// 마을 밖으로 달아난 사람은 returnSeconds 뒤 괴수가 멀면 떠난 자리로 슬금슬금 돌아옴 (구경하고 응원하려고)
+function waitOutside(v, dt, w) {
+  if (!(v.goneLeft > 0)) return;
+  v.goneLeft -= dt;
+  if (v.goneLeft > 0) return;
+  const b = w.bounds;
+  const pad = 2;
+  const x = Math.min(b.maxX - pad, Math.max(b.minX + pad, v.x));
+  const z = Math.min(b.maxZ - pad, Math.max(b.minZ + pad, v.z));
+  if ((w.walkable && !w.walkable(x, z)) || (w.threat && Math.hypot(x - w.threat.x, z - w.threat.z) < w.rules.scareDistance)) {
+    v.goneLeft = 1.5; // 아직 무서움 — 조금 뒤 다시 살핌
+    return;
+  }
+  Object.assign(v, { state: 'idle', hidden: false, x, z, dirX: x - v.x, dirZ: z - v.z, appear: 0.2, panic: 0, turn: 1, pause: 0, target: null });
 }
 
 // ── 걸어 다니는 상태들 (서성임 · 도망 · 숨으러 감 · 달아남 · 응원) ──
@@ -85,6 +102,7 @@ function roam(v, dt, w) {
   } else if (v.state === 'toEdge' && outside(v, w.bounds)) {
     v.state = 'gone';
     v.hidden = true;
+    v.goneLeft = R.returnSeconds;
   }
   animateMove(v, dt, speed);
 }

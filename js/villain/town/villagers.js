@@ -58,8 +58,8 @@ const ALARM_KINDS = new Set(['panic', 'burst', 'home']); // 이 말을 들으면
 const BIG_HIT = 28; // 이 피해 이상 맞으면 잠깐 조용 (raidFeedback 의 '센 타격' 과 같음)
 const DEFAULTS = {
   size: 0.95, kidChance: 0.3, kidSize: 0.75, walkSpeed: 1.6, runSpeed: 9, scareDistance: 22, calmSeconds: 2.5, zigzag: 0.75,
-  tripPerSecond: 0.1, tripSeconds: 1, hidePerSecond: 0.07, hideSearch: 18, hideSeconds: 5, edgePerSecond: 0.05,
-  insidePerBuilding: 2, insideTotal: 14, burst: [1, 3], burstBlocks: 3, cheerDistance: 14, braveDistance: 8, alarmDistance: 14,
+  tripPerSecond: 0.1, tripSeconds: 1, hidePerSecond: 0.07, hideSearch: 18, hideSeconds: 5, edgePerSecond: 0.05, returnSeconds: 8,
+  insidePerBuilding: 2, insideTotal: 14, burst: [1, 3], burstBlocks: 3, cheerDistance: 28, braveDistance: 10, alarmDistance: 14,
   shout: { maxOnScreen: 3, seconds: 1.7, cooldown: 4, gap: 0.35, perSecond: 0.8, hush: 0.6 },
 };
 
@@ -148,7 +148,7 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [], styl
         turn: 1 + (i % 3), pause: 0, panic: 0, timer: 0, safeUntil: 0, jumpWait: 0,
         state: inside ? 'inside' : 'idle', hidden: inside, shelter: v.shelterStart, home: v.shelterStart || nearestHome(x, z),
         target: null, appear: 1, lift: 0, hop: 0, vy: 0, vx: 0, vz: 0, spin: 0, partyAfter: false, talkAt: 0,
-        leg: 0, armL: 0.1, armR: 0.1, armSwing: 0, pitch: 0, roll: 0, armTogether: false, hideLeft: 0,
+        leg: 0, armL: 0.1, armR: 0.1, armSwing: 0, pitch: 0, roll: 0, armTogether: false, hideLeft: 0, goneLeft: 0,
       });
     });
     draw();
@@ -254,8 +254,8 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [], styl
     if (!h) return;
     hero = h;
     talk.setContext({ heroName: h.name });
-    // 영웅 가까운 사람 둘이 차례로 응원
-    const near = list.filter((v) => !v.hidden && Math.hypot(v.x - h.position.x, v.z - h.position.z) < cfg.cheerDistance * 1.6);
+    // 영웅에게 가장 가까운 사람 둘이 차례로 응원 (멀리 도망가 있어도)
+    const near = list.filter((v) => !v.hidden && v.state !== 'burst');
     near.sort((a, b) => Math.hypot(a.x - h.position.x, a.z - h.position.z) - Math.hypot(b.x - h.position.x, b.z - h.position.z));
     near.slice(0, 2).forEach((v, k) => talk.later(0.35 + k * 0.7, v, 'hero', { priority: 2 }));
   }
@@ -267,7 +267,8 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [], styl
     const seen = list.filter((v) => !v.hidden && v.state !== 'burst');
     for (const v of seen) startParty(v);
     seen.sort((a, b) => b.z - a.z); // 카메라 가까운 사람부터
-    seen.slice(0, 2).forEach((v, k) => talk.later(0.5 + k * 0.8, v, 'saved', { priority: 2 }));
+    talk.hush(5);
+    seen.slice(0, 2).forEach((v, k) => talk.later(0.5 + k * 0.8, v, 'saved', { priority: 3 }));
     let delay = 0.6;
     for (const b of doors.keys()) {
       if (!b.alive) continue;
@@ -288,9 +289,10 @@ export function createVillagers(scene, { count = 6, bounds, buildings = [], styl
     const edgeGap = (v) => Math.min(v.x - bounds.minX, bounds.maxX - v.x, v.z - bounds.minZ, bounds.maxZ - v.z);
     const gone = list.filter((v) => v.state === 'gone');
     const seen = list.filter((v) => !v.hidden && v.state !== 'burst').sort((a, b) => edgeGap(a) - edgeGap(b));
+    talk.hush(5); // 이제 비명은 그만, 마지막 울음만 들리게
     [...gone, ...seen].slice(0, 3).forEach((v, k) => {
       startWail(v, bounds);
-      talk.later(0.2 + k * 0.6, v, 'wail', { priority: 2 });
+      talk.later(0.2 + k * 0.6, v, 'wail', { priority: 3 });
     });
   }
 

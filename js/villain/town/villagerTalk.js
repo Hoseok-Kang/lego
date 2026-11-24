@@ -20,6 +20,8 @@ const DEFAULT_RULES = { maxOnScreen: 3, seconds: 1.7, cooldown: 4, gap: 0.35, hu
 const LONG_KINDS = { hero: 1.25, saved: 1.3, wail: 1.45, home: 1.2 }; // 이 상황 말풍선은 조금 더 오래 (배)
 const ABOVE_HEAD = 0.5; // 말풍선 꼬리 끝이 머리 위로 이만큼 (칸)
 const QUICK_FADE = 0.18; // 자리를 비켜 주는 말풍선이 사라지는 시간 (초)
+const RETRIES = 6; // later() 로 미룬 말이 자리가 없으면 다시 해 보는 횟수
+const RETRY_GAP = 0.2; // 다시 해 보는 간격 (초)
 
 // 상황 → 말 하나 고르기 ({hero} 는 영웅 이름으로)
 export function pickLine(kind, { town = null, heroKind = null, heroName = '' } = {}, rnd = Math.random) {
@@ -83,7 +85,8 @@ export function createVillagerTalk({ events = null, rules = {}, rnd = Math.rando
       const q = queue[i];
       if (q.at > clock) continue;
       queue.splice(i, 1);
-      say(q.v, q.kind, { priority: q.priority });
+      // 자리가 없어 못 외쳤으면 잠깐 뒤 다시 (몇 번까지만)
+      if (!say(q.v, q.kind, { priority: q.priority }) && (q.tries = (q.tries || 0) + 1) < RETRIES) queue.push({ ...q, at: clock + RETRY_GAP });
     }
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const b = bubbles[i];

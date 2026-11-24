@@ -225,12 +225,13 @@ export const VILLAIN = {
     hideSearch: 18, // 이만큼(칸) 안의 건물 문만 찾음
     hideSeconds: 5, // 숨은 사람은 이만큼(초) 뒤 괴수가 멀면 살금살금 다시 나옴 (건물이 흔들리면 바로 튀어나옴)
     edgePerSecond: 0.05, // 뛰는 동안 1초마다 마을 밖으로 달아날 확률
+    returnSeconds: 8, // 마을 밖으로 달아난 사람은 이만큼(초) 뒤 괴수가 멀면 돌아옴
     insidePerBuilding: 2, // 큰 건물 안에 숨어 있는 사람 (작은 건물은 1명, 벽·분수·배는 0명)
     insideTotal: 14, // 건물 안 사람은 모두 합쳐 이만큼까지
     burst: [1, 3], // 건물이 세게 맞으면 안에서 이만큼 (가장 적게, 가장 많이) 뛰쳐나옴
     burstBlocks: 3, // 건물 블록이 이만큼 떨어져 나가면 '세게 맞음'
-    cheerDistance: 14, // 영웅이 이만큼 가깝고
-    braveDistance: 8, //   괴수는 이만큼보다 멀면 진정하고 폴짝폴짝 응원
+    cheerDistance: 28, // 영웅이 이만큼(칸) 안에 있고
+    braveDistance: 10, //   괴수는 이만큼보다 멀면 진정하고 폴짝폴짝 응원 (영웅이 오면 구경꾼이 됨)
     shout: {
       maxOnScreen: 3, // 화면에 한 번에 떠 있는 말풍선 수
       seconds: 1.7, // 말풍선이 떠 있는 시간 (초)
