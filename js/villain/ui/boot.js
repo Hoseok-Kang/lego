@@ -8,8 +8,10 @@
 
 import { initUiScale } from './uiScale.js';
 import { installLandscapeGuard } from '../../core/landscapeGuard.js';
+import { enableWheelRows } from './wheelRows.js';
 
 initUiScale();
+enableWheelRows(); // 옆으로 미는 카드 줄(낮은 화면의 부품 상점)을 마우스 휠로도 넘기기
 installLandscapeGuard(); // 게임을 멈추는 일은 main.js 가 이 안내판을 한 번 더 불러 onChange 로 함
 // 아이폰 사파리는 user-scalable=no 를 무시하고 두 손가락으로 페이지를 확대함 → 막음 (3D 확대는 게임 안 기능으로)
 document.addEventListener('gesturestart', (event) => event.preventDefault());

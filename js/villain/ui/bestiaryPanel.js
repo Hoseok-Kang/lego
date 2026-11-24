@@ -37,6 +37,9 @@ const TEXT = {
   sculptLock: (rank, name) => `악명 ${rank}단계 '${name}'에 열려요`,
   badge3d: '3D',
   speed: '빠르기',
+  noName: '이름 없는 괴수',
+  blocks: '블록 수',
+  hp: '체력',
   empty: '아직 괴수가 없어요. 한 마리 그려 볼까요?',
   edit: '고치기',
   copy: '복사',
@@ -79,10 +82,10 @@ export function createBestiaryPanel(options = {}) {
           ${isVoxel(design) ? `<span class="vt-tag mcard-tag mcard-tag--3d">${TEXT.badge3d}</span>` : ''}
           <img class="mcard-img" src="${thumb(design)}" alt="" draggable="false">
         </div>
-        <h3 class="mcard-name">${escapeHTML(design.name || '이름 없는 괴수')}</h3>
+        <h3 class="mcard-name">${escapeHTML(design.name || TEXT.noName)}</h3>
         <p class="mcard-stats">
-          <span class="vt-chip" title="블록 수">${icon('block')}${money(blocksOf(design))}</span>
-          <span class="vt-chip vt-chip--hp" title="체력">${icon('heart')}${money(hpOf(design))}</span>
+          <span class="vt-chip" title="${TEXT.blocks}">${icon('block')}${money(blocksOf(design))}</span>
+          <span class="vt-chip vt-chip--hp" title="${TEXT.hp}">${icon('heart')}${money(hpOf(design))}</span>
           <span class="vt-chip mcard-speed" title="${TEXT.speed}">${icon('speed')}${speedOf(design).toFixed(1)}</span>
           <span class="mcard-parts">${partIcons(design)}</span>
         </p>

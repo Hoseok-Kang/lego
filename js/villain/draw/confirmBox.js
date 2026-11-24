@@ -8,7 +8,9 @@
 //   Esc 또는 바깥을 누르면 '아니요' 입니다.
 // ─────────────────────────────────────────────────────────────
 
-export function askConfirm(hostEl, { message, yes = '네', no = '아니요', danger = false } = {}) {
+const TEXT = { yes: '네', no: '아니요' }; // 단추 글자를 안 주면 쓰는 글자
+
+export function askConfirm(hostEl, { message, yes = TEXT.yes, no = TEXT.no, danger = false } = {}) {
   return new Promise((resolve) => {
     hostEl.querySelector(':scope > .pb-confirm')?.remove();
     const veil = document.createElement('div');

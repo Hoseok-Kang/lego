@@ -13,6 +13,9 @@ export const TEXT = {
   back: '소굴로',
   backHint: '저장하지 않고 소굴로 돌아가요',
   steps: ['쌓기', '부품 붙이기', '이름 · 저장'],
+  stepsLabel: '만드는 차례',
+  toolsLabel: '쌓기 도구',
+  colorsLabel: '색 고르기',
   blocks: '블록',
   cost: '출동 값',
   hp: '체력',
@@ -29,6 +32,7 @@ export const TEXT = {
   prevBuild: '블록 고치기',
   prevParts: '부품 고치기',
   previewTag: '끌어서 돌려 봐요',
+  previewEmpty: '여기에 괴수가 나타나요',
   poor: (n) => `돈이 ${n} 모자라요. 저장은 할 수 있어요.`,
   good: { build: '멋져요! 다 쌓았으면 부품을 붙여요.', parts: '부품을 붙이고 이름을 지어요.', save: '준비 끝! 저장하고 출동해요.' },
   full: (n) => `블록은 ${n}개까지 쌓을 수 있어요.`,
@@ -45,7 +49,7 @@ export function sculptMarkup(maxBlocks) {
   return `
     <header class="vd-top">
       <button type="button" class="pb-btn vd-back" title="${TEXT.backHint}">${icon('back')}<span>${TEXT.back}</span></button>
-      <ol class="vd-steps" aria-label="만드는 차례">
+      <ol class="vd-steps" aria-label="${TEXT.stepsLabel}">
         ${TEXT.steps.map((label, i) => `<li><button type="button" class="vd-step" data-step="${['build', 'parts', 'save'][i]}"><i>${i + 1}</i><span>${label}</span></button></li>`).join('')}
       </ol>
       <div class="vs-count" title="${TEXT.blocks} · ${TEXT.cost}">
@@ -55,8 +59,8 @@ export function sculptMarkup(maxBlocks) {
     </header>
     <div class="vd-main">
       <div class="vd-pane vs-build">
-        <div class="pb-tools vs-tools" role="toolbar" aria-label="쌓기 도구"></div>
-        <div class="pb-palette vs-palette" aria-label="색 고르기"></div>
+        <div class="pb-tools vs-tools" role="toolbar" aria-label="${TEXT.toolsLabel}"></div>
+        <div class="pb-palette vs-palette" aria-label="${TEXT.colorsLabel}"></div>
         <div class="vs-center">
           <div class="vs-view-host"></div>
           <div class="vs-bar">
@@ -77,7 +81,7 @@ export function sculptMarkup(maxBlocks) {
       </div>
     </div>
     <div class="vd-dock">
-      <div class="vd-preview"><div class="vd-preview-view"></div><span class="vd-preview-tag">${TEXT.previewTag}</span></div>
+      <div class="vd-preview" data-empty="${TEXT.previewEmpty}"><div class="vd-preview-view"></div><span class="vd-preview-tag">${TEXT.previewTag}</span></div>
       <dl class="vd-bill">
         <div><dt>${TEXT.cost}</dt><dd>${icon('coin')}<b class="vd-cost">0</b></dd></div>
         <div><dt>${TEXT.hp}</dt><dd>${icon('heart')}<b class="vd-hp">0</b></dd></div>

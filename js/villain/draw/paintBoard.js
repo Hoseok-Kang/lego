@@ -34,6 +34,12 @@ import { EMPTY, countBlocks, flippedH, fromCells, makeGrid } from './paintOps.js
 import { attachPaintStrokes } from './paintStroke.js';
 import { createPaintUi, TOOLS } from './paintToolbar.js';
 
+const TEXT = {
+  canvas: '괴수를 그리는 도화지',
+  clearAsk: '그림을 전부 지울까요?',
+  clearYes: '지울래요',
+  clearNo: '아니요',
+};
 const HISTORY_LIMIT = 100;
 const FLASH_MS = 170;
 const DEPTH_KEYS = new Set(DEPTH_CHOICES);
@@ -92,7 +98,7 @@ export function createPaintBoard(rootEl, { cols = VILLAIN.draw.cols, rows = VILL
   });
   const paper = createPaintCanvas(ui.stage, { cols, rows, colorOf: (ch) => hexByCh.get(ch) });
   const canvas = paper.canvas;
-  canvas.setAttribute('aria-label', '괴수를 그리는 도화지');
+  canvas.setAttribute('aria-label', TEXT.canvas);
 
   const strokes = attachPaintStrokes({
     canvas,
@@ -226,7 +232,7 @@ export function createPaintBoard(rootEl, { cols = VILLAIN.draw.cols, rows = VILL
 
   async function confirmClear() {
     if (countBlocks(doc.grid) === 0) return;
-    const yes = await askConfirm(rootEl, { message: '그림을 전부 지울까요?', yes: '지울래요', no: '아니요', danger: true });
+    const yes = await askConfirm(rootEl, { message: TEXT.clearAsk, yes: TEXT.clearYes, no: TEXT.clearNo, danger: true });
     if (yes && !destroyed) clear();
   }
 

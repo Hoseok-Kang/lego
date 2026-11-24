@@ -13,10 +13,12 @@ export const TEXT = {
   back: '소굴로',
   backHint: '저장하지 않고 소굴로 돌아가요',
   steps: ['그리기', '부품 붙이기', '저장'],
+  stepsLabel: '만드는 차례',
   name: '이름',
   namePlaceholder: '내 괴수',
   previewTag: '끌어서 돌려 봐요',
   previewFlat: '내 괴수',
+  previewEmpty: '여기에 괴수가 나타나요',
   cost: '출동 값',
   hp: '체력',
   speed: '빠르기',
@@ -45,7 +47,7 @@ export function editorMarkup() {
   return `
     <header class="vd-top">
       <button type="button" class="pb-btn vd-back" title="${TEXT.backHint}">${icon('back')}<span>${TEXT.back}</span></button>
-      <ol class="vd-steps" aria-label="만드는 차례">
+      <ol class="vd-steps" aria-label="${TEXT.stepsLabel}">
         <li><button type="button" class="vd-step" data-step="draw"><i>1</i><span>${TEXT.steps[0]}</span></button></li>
         <li><button type="button" class="vd-step" data-step="parts"><i>2</i><span>${TEXT.steps[1]}</span></button></li>
         <li><span class="vd-step" data-step="save"><i>3</i><span>${TEXT.steps[2]}</span></span></li>
@@ -58,7 +60,7 @@ export function editorMarkup() {
       <div class="vd-pane vd-pane--parts" hidden></div>
     </div>
     <div class="vd-dock">
-      <div class="vd-preview"><div class="vd-preview-view"></div><span class="vd-preview-tag">${TEXT.previewTag}</span></div>
+      <div class="vd-preview" data-empty="${TEXT.previewEmpty}"><div class="vd-preview-view"></div><span class="vd-preview-tag">${TEXT.previewTag}</span></div>
       <dl class="vd-bill">
         <div class="vd-bill-cost"><dt>${TEXT.cost}</dt><dd>${icon('coin')}<b class="vd-cost">0</b></dd></div>
         <div class="vd-bill-hp"><dt>${TEXT.hp}</dt><dd>${icon('heart')}<b class="vd-hp">0</b></dd></div>

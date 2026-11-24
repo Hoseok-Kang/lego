@@ -61,7 +61,7 @@
 }
 
 .vd-preview.is-empty::after {
-  content: "여기에 괴수가 나타나요";
+  content: attr(data-empty); /* 글자는 editorText.js · sculptText.js 의 TEXT.previewEmpty */
   position: absolute;
   inset: 0;
   display: grid;

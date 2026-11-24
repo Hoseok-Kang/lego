@@ -13,6 +13,19 @@
 
 import { icon } from './paintIcons.js';
 
+// 화면 글자 (도구 이름 · 설명은 아래 TOOLS / ACTIONS)
+const TEXT = {
+  tools: '그리기 도구',
+  colors: '색 고르기',
+  cells: '칠한 칸 수',
+  cellUnit: '칸',
+  cost: '괴수를 보낼 때 드는 돈',
+  mirror: '좌우 대칭',
+  mirrorHint: '좌우 대칭: 한쪽만 그려도 반대쪽이 똑같이 그려져요',
+  rect: '네모',
+  rectFilled: '채운 네모',
+};
+
 export const TOOLS = [
   { id: 'pencil', label: '연필', icon: 'pencil', key: 'B', hint: '끌어서 그려요' },
   { id: 'eraser', label: '지우개', icon: 'eraser', key: 'E', hint: '끌어서 지워요' },
@@ -45,7 +58,7 @@ function button(className, data, iconName, label, title) {
 export function createPaintUi(root, { palette, onTool, onColor, onToggle, onAction }) {
   root.classList.add('pb');
   root.innerHTML = `
-    <div class="pb-tools" role="toolbar" aria-label="그리기 도구"></div>
+    <div class="pb-tools" role="toolbar" aria-label="${TEXT.tools}"></div>
     <div class="pb-stage"></div>
     <div class="pb-side">
       <div class="pb-status">
@@ -54,11 +67,11 @@ export function createPaintUi(root, { palette, onTool, onColor, onToggle, onActi
           <span class="pb-current-text"><b class="pb-current-tool"></b><span class="pb-current-color"></span></span>
         </div>
         <div class="pb-counts">
-          <span class="pb-count" title="칠한 칸 수"><span class="pb-count-block" aria-hidden="true"></span><b class="pb-count-blocks">0</b><span class="pb-count-unit">칸</span></span>
-          <span class="pb-count" title="괴수를 보낼 때 드는 돈">${icon('coin')}<b class="pb-count-cost">0</b></span>
+          <span class="pb-count" title="${TEXT.cells}"><span class="pb-count-block" aria-hidden="true"></span><b class="pb-count-blocks">0</b><span class="pb-count-unit">${TEXT.cellUnit}</span></span>
+          <span class="pb-count" title="${TEXT.cost}">${icon('coin')}<b class="pb-count-cost">0</b></span>
         </div>
       </div>
-      <div class="pb-palette" role="radiogroup" aria-label="색 고르기"></div>
+      <div class="pb-palette" role="radiogroup" aria-label="${TEXT.colors}"></div>
       <div class="pb-depth-slot"></div>
       <div class="pb-extra"></div>
     </div>`;
@@ -75,7 +88,7 @@ export function createPaintUi(root, { palette, onTool, onColor, onToggle, onActi
     toolButtons.set(tool.id, el);
     toolsEl.append(el);
   }
-  const mirrorBtn = button('pb-tool pb-tool--toggle', { toggle: 'mirror' }, 'mirror', '좌우 대칭', '좌우 대칭: 한쪽만 그려도 반대쪽이 똑같이 그려져요');
+  const mirrorBtn = button('pb-tool pb-tool--toggle', { toggle: 'mirror' }, 'mirror', TEXT.mirror, TEXT.mirrorHint);
   mirrorBtn.setAttribute('aria-pressed', 'false');
   toolsEl.append(mirrorBtn);
   for (const action of ACTIONS) {
@@ -149,7 +162,7 @@ export function createPaintUi(root, { palette, onTool, onColor, onToggle, onActi
       }
       const rect = toolButtons.get('rect');
       rect.querySelector('.pb-icon').outerHTML = icon(rectFilled ? 'rectFilled' : 'rect');
-      rect.querySelector('.pb-tool-label').textContent = rectFilled ? '채운 네모' : '네모';
+      rect.querySelector('.pb-tool-label').textContent = rectFilled ? TEXT.rectFilled : TEXT.rect;
       refreshCurrent();
     },
     showColor(ch) {

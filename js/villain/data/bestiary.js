@@ -27,6 +27,16 @@ import { getSave, update } from './saveStore.js';
 import { cleanDepths, cleanVoxels, emptyVoxels, frontCells, voxelBlocks } from './voxelDesign.js';
 import { designStats, isVoxelDesign } from '../monster/monsterPower.js';
 
+// 화면에 보이는 글자 (검사 안내 · 기본 이름)
+const TEXT = {
+  defaultName: '내 괴수',
+  noDesign: '그림이 없어요.',
+  drawFirst: '먼저 괴수를 그려 주세요.',
+  needCells: (need, now) => `${need}칸 이상 칠해 주세요. (지금 ${now}칸)`,
+  stackFirst: '먼저 블록을 쌓아 주세요.',
+  needBlocks: (need, now) => `블록을 ${need}개 이상 쌓아 주세요. (지금 ${now}개)`,
+  tooMany: (max, now) => `블록은 ${max}개까지예요. (지금 ${now}개)`,
+};
 const EMPTY = '.';
 const NAME_MAX = 12;
 
@@ -66,7 +76,7 @@ function cleanParts(parts, cells) {
 
 function cleanName(name) {
   const text = String(name ?? '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX);
-  return text || '내 괴수';
+  return text || TEXT.defaultName;
 }
 
 export function normalizeDesign(design) {
@@ -115,8 +125,8 @@ function userDesigns() {
 }
 
 export function blankDesign(kind) {
-  if (kind === 'voxel') return normalizeDesign({ id: null, name: '내 괴수', kind: 'voxel', voxels: emptyVoxels(), cells: [], parts: [] });
-  return normalizeDesign({ id: null, name: '내 괴수', cells: [], parts: [] });
+  if (kind === 'voxel') return normalizeDesign({ id: null, name: TEXT.defaultName, kind: 'voxel', voxels: emptyVoxels(), cells: [], parts: [] });
+  return normalizeDesign({ id: null, name: TEXT.defaultName, cells: [], parts: [] });
 }
 
 export const isVoxel = isVoxelDesign;
@@ -157,19 +167,19 @@ export const designSpeed = (design) => designStats(design).speed;
 export { designStats };
 
 export function validate(design) {
-  if (!design || !Array.isArray(design.cells)) return { ok: false, message: '그림이 없어요.' };
+  if (!design || !Array.isArray(design.cells)) return { ok: false, message: TEXT.noDesign };
   if (isVoxelDesign(design)) {
     const count = voxelBlocks(cleanVoxels(design.voxels));
     const { minBlocks = 60, maxBlocks = 1600 } = VILLAIN.sculpt ?? {};
-    if (count === 0) return { ok: false, message: '먼저 블록을 쌓아 주세요.' };
-    if (count < minBlocks) return { ok: false, message: `블록을 ${minBlocks}개 이상 쌓아 주세요. (지금 ${count}개)` };
-    if (count > maxBlocks) return { ok: false, message: `블록은 ${maxBlocks}개까지예요. (지금 ${count}개)` };
+    if (count === 0) return { ok: false, message: TEXT.stackFirst };
+    if (count < minBlocks) return { ok: false, message: TEXT.needBlocks(minBlocks, count) };
+    if (count > maxBlocks) return { ok: false, message: TEXT.tooMany(maxBlocks, count) };
     return { ok: true, message: '' };
   }
   const blocks = countBlocks(normalizeDesign(design));
   const need = VILLAIN.draw.minBlocks;
-  if (blocks === 0) return { ok: false, message: '먼저 괴수를 그려 주세요.' };
-  if (blocks < need) return { ok: false, message: `${need}칸 이상 칠해 주세요. (지금 ${blocks}칸)` };
+  if (blocks === 0) return { ok: false, message: TEXT.drawFirst };
+  if (blocks < need) return { ok: false, message: TEXT.needCells(need, blocks) };
   return { ok: true, message: '' };
 }
 

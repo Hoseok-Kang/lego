@@ -21,8 +21,24 @@ import { icon } from './paintIcons.js';
 import { EMPTY, fromCells } from './paintOps.js';
 import { partIconURL } from './partIcons.js';
 
+// 화면 글자
+const TEXT = {
+  hint: '부품을 고르고 칠한 칸을 눌러요. 붙인 부품은 누르면 떼어져요.',
+  slots: '붙인 부품',
+  owned: '가진 부품',
+  canvas: '부품을 붙일 괴수 그림',
+  locked: '부품 상점에서 살 수 있어요',
+  badge: (name) => `${name}: 누르면 떼어져요`,
+  onlyPainted: '칠한 칸 위에만 붙일 수 있어요.',
+  taken: '그 칸에는 이미 부품이 있어요.',
+  full: (n) => `부품은 ${n}개까지 붙일 수 있어요. 붙인 부품을 눌러 떼어 보세요.`,
+  part: '부품',
+  placed: (name, josa) => `${name}${josa ? '을' : '를'} 붙였어요!`, // josa: 받침이 있는지
+  removed: (name, josa) => `${name}${josa ? '을' : '를'} 뗐어요.`,
+  pickFirst: '먼저 아래에서 부품을 골라 주세요.',
+};
 const DRAG_START = 8; // 이만큼(픽셀) 움직이면 '끌기'로 봄
-const HINT_DEFAULT = '부품을 고르고 칠한 칸을 눌러요. 붙인 부품은 누르면 떼어져요.';
+const HINT_DEFAULT = TEXT.hint;
 
 export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
   const types = VILLAIN.parts.types;
@@ -43,8 +59,8 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
     <div class="pp-stage"></div>
     <div class="pp-side">
       <p class="pp-hint" aria-live="polite"></p>
-      <div class="pp-slots" aria-label="붙인 부품"></div>
-      <div class="pp-chips" role="radiogroup" aria-label="가진 부품"></div>
+      <div class="pp-slots" aria-label="${TEXT.slots}"></div>
+      <div class="pp-chips" role="radiogroup" aria-label="${TEXT.owned}"></div>
       <div class="pp-extra"></div>
     </div>`;
   const stageEl = rootEl.querySelector('.pp-stage');
@@ -55,7 +71,7 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
   const badgeLayer = document.createElement('div');
   badgeLayer.className = 'pp-badges';
   paper.frame.append(badgeLayer);
-  paper.canvas.setAttribute('aria-label', '부품을 붙일 괴수 그림');
+  paper.canvas.setAttribute('aria-label', TEXT.canvas);
 
   const painted = (col, row) => col >= 0 && row >= 0 && col < cols && row < rows && grid[row * cols + col] !== EMPTY;
   const partAt = (col, row) => parts.find((p) => p.col === col && p.row === row) ?? null;
@@ -95,7 +111,7 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
       el.classList.toggle('is-on', has && type === selected);
       el.setAttribute('role', 'radio');
       el.setAttribute('aria-checked', String(has && type === selected));
-      const note = has ? info.desc : '부품 상점에서 살 수 있어요';
+      const note = has ? info.desc : TEXT.locked;
       const price = has ? `+${info.cost}` : `${info.price}`;
       el.innerHTML = `
         <img class="pp-chip-icon" alt="" draggable="false" src="${partIconURL(type)}">
@@ -106,7 +122,7 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
   }
 
   function renderSlots() {
-    slotsEl.innerHTML = `<span class="pp-slots-label">붙인 부품</span>`;
+    slotsEl.innerHTML = `<span class="pp-slots-label">${TEXT.slots}</span>`;
     for (let i = 0; i < slots; i += 1) {
       const dot = document.createElement('span');
       dot.className = 'pp-slot';
@@ -130,7 +146,7 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
       el.type = 'button';
       el.className = 'pp-badge';
       el.dataset.index = String(index);
-      el.title = `${types[part.type]?.name ?? part.type}: 누르면 떼어져요`;
+      el.title = TEXT.badge(types[part.type]?.name ?? part.type);
       el.setAttribute('aria-label', el.title);
       el.style.left = `${box.left + box.size / 2}px`;
       el.style.top = `${box.top + box.size / 2}px`;
@@ -155,13 +171,13 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
   // ── 붙이기 · 떼기 ───────────────────────────────────────
   function place(type, col, row, movingIndex = -1) {
     if (!painted(col, row)) {
-      say('칠한 칸 위에만 붙일 수 있어요.', true);
+      say(TEXT.onlyPainted, true);
       return false;
     }
     const there = partAt(col, row);
     if (movingIndex >= 0) {
       if (there && there !== parts[movingIndex]) {
-        say('그 칸에는 이미 부품이 있어요.', true);
+        say(TEXT.taken, true);
         return false;
       }
       parts[movingIndex] = { type, col, row };
@@ -170,7 +186,7 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
       there.type = type;
       renderAll(parts.indexOf(there));
     } else if (parts.length >= slots) {
-      say(`부품은 ${slots}개까지 붙일 수 있어요. 붙인 부품을 눌러 떼어 보세요.`, true);
+      say(TEXT.full(slots), true);
       slotsEl.classList.remove('is-shake');
       void slotsEl.offsetWidth;
       slotsEl.classList.add('is-shake');
@@ -179,7 +195,7 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
       parts.push({ type, col, row });
       renderAll(parts.length - 1);
     }
-    say(`${types[type].name}${hasFinalConsonant(types[type].name) ? '을' : '를'} 붙였어요!`);
+    say(TEXT.placed(types[type].name, hasFinalConsonant(types[type].name)));
     emit();
     return true;
   }
@@ -188,7 +204,8 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
     const [gone] = parts.splice(index, 1);
     if (!gone) return;
     renderAll();
-    say(`${types[gone.type]?.name ?? '부품'}${hasFinalConsonant(types[gone.type]?.name ?? '부품') ? '을' : '를'} 뗐어요.`);
+    const name = types[gone.type]?.name ?? TEXT.part;
+    say(TEXT.removed(name, hasFinalConsonant(name)));
     emit();
   }
 
@@ -288,7 +305,7 @@ export function createPartPlacer(rootEl, { design, ownedParts = [] } = {}) {
     const cell = paper.cellAt(event.clientX, event.clientY);
     if (!cell.inside) return;
     if (!selected) {
-      say('먼저 아래에서 부품을 골라 주세요.', true);
+      say(TEXT.pickFirst, true);
       return;
     }
     place(selected, cell.x, cell.y);
