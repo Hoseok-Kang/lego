@@ -1,7 +1,8 @@
 /* 악당 타이쿤 — 괴수 그리기 화면 ⑤ 휴대폰 가로 화면 맞춤
    높이가 낮은 휴대폰 가로 화면(568×320 ~ 932×430)에서 단추 글자는 숨기고 그림 기호만, 모두 조금씩 작게 합니다.
    세로 화면 배치는 없어요 (세로로 들면 '가로로 돌려 주세요' 안내만 나옴).
-   반드시 css/villain-draw.css · draw-board · draw2 · draw-parts 다음에 불러야 합니다 (같은 것을 덮어씀). */
+   반드시 css/villain-draw.css · draw-board · draw2 · draw-parts 다음에 불러야 합니다 (같은 것을 덮어씀).
+   맨 아래 '손가락 단추 40px': 도구 단추를 화면에서 40px 이상으로 (도구 기둥을 위쪽 줄까지 끌어올림). */
 
 /* ── 휴대폰 가로 (높이 560 이하): 단추 글자는 숨기고 그림 기호만, 모두 조금씩 작게 ── */
 
@@ -311,6 +312,59 @@
   .vd-next {
     min-height: 36px;
     font-size: 15px;
+  }
+}
+
+/* ── 손가락 단추 40px (휴대폰 가로 · 화면 크기 '보통'): 도구 단추를 화면에서 40px 이상으로 ──
+   #ui 는 휴대폰에서 0.9 배로 줄어 있으므로 45px = 화면 40.5px. 도구 13개는 2줄 × 7칸.
+   667×375 이상: 칸 높이만 키움 (소굴로 단추도 45px, 위쪽 줄이 조금 높아짐).
+   568×320 처럼 아주 낮은 화면: 도구 기둥을 위쪽 줄 높이까지 끌어올리고, 맨 위 첫 칸은 비워 '소굴로' 단추(45px)를 그 자리에 둠
+   → 위쪽 줄 · 도화지 크기는 그대로이고 도구 단추만 커짐. */
+
+@media (max-height: 560px) {
+  .vd-editor,
+  .pb,
+  .pp {
+    --vd-rail: 45px; /* 도구 단추 폭 */
+  }
+
+  .pb-tools {
+    grid-auto-rows: minmax(0, 46px);
+    gap: 4px;
+  }
+
+  .vd-back {
+    min-width: var(--vd-rail);
+    min-height: var(--vd-rail);
+  }
+}
+
+@media (max-height: 340px) {
+  .vd-editor[data-step="draw"]:not(.vs-screen) .vd-top {
+    height: var(--vd-btn); /* 위쪽 줄 높이는 그대로 (소굴로 단추만 아래로 삐져나옴) */
+  }
+
+  .vd-editor[data-step="draw"]:not(.vs-screen) .vd-back {
+    position: relative;
+    z-index: 2;
+    align-self: flex-start;
+    height: var(--vd-rail);
+    padding: 0;
+  }
+
+  .vd-editor[data-step="draw"]:not(.vs-screen) .pb {
+    justify-content: flex-start; /* 도구 기둥이 늘 소굴로 단추 바로 아래에 오게 */
+  }
+
+  .vd-editor[data-step="draw"]:not(.vs-screen) .pb-tools {
+    margin-top: calc(-1 * (var(--vd-btn) + var(--vd-gap)));
+    grid-auto-rows: minmax(0, 50px);
+    align-content: start;
+    gap: 3px 4px;
+  }
+
+  .vd-editor[data-step="draw"]:not(.vs-screen) .pb-tools::before {
+    content: ""; /* 비운 첫 칸: 소굴로 단추 자리 */
   }
 }
 

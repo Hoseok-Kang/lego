@@ -246,6 +246,38 @@
   }
 }
 
+/* ── 손가락 단추 40px (휴대폰 가로 · 화면 크기 '보통'): 쌓기 도구를 2줄로 (45px = 화면 40.5px) ──
+   그리기 화면처럼 도구 기둥을 위쪽 줄 높이까지 끌어올리고, 맨 위 첫 칸은 비워 '소굴로' 단추(45px) 자리로 씁니다.
+   (도구 단추 폭 --vd-rail 은 css/villain-draw-phone.css 맨 아래에서 정함) */
+
+@media (max-height: 560px) {
+  .vs-screen[data-step="build"] .vd-top {
+    height: var(--vd-btn);
+  }
+
+  .vs-screen[data-step="build"] .vd-back {
+    position: relative;
+    z-index: 2;
+    align-self: flex-start;
+    width: var(--vd-rail);
+    min-width: var(--vd-rail);
+    height: var(--vd-rail);
+    padding: 0;
+  }
+
+  .vs-screen[data-step="build"] .vs-tools {
+    grid-template-columns: repeat(2, var(--vd-rail));
+    grid-auto-rows: minmax(0, 50px);
+    align-content: start;
+    gap: 4px;
+    margin-top: calc(-1 * (var(--vd-btn) + var(--vd-gap)));
+  }
+
+  .vs-screen[data-step="build"] .vs-tools::before {
+    content: ""; /* 비운 첫 칸: 소굴로 단추 자리 */
+  }
+}
+
 /* ── 도감 카드 (ui/bestiaryPanel.js): 새 괴수 카드의 두 단추 · 3D 딱지 · 빠르기 ── */
 
 .mcard--make {

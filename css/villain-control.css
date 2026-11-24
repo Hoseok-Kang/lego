@@ -18,8 +18,14 @@
   --chip-top: 78px; /* 모드 칩: 화면 위 가장자리에서 (괴수 체력 칸 아래) */
   position: absolute;
   inset: 0;
+  z-index: 6; /* 마을 사람 말풍선 · 떠오르는 글자(.villain-floats, 5)보다 위 */
   pointer-events: none;
   transition: opacity 0.25s, visibility 0.25s;
+}
+
+/* 영웅 출동 띠는 단추판 위로 */
+.hud.is-alert .cpad {
+  z-index: auto;
 }
 
 .cpad[data-state="off"] {
@@ -99,7 +105,7 @@ body.screen-result .cpad {
 
 .cpad-attack[data-count="4"],
 .cpad-attack[data-count="5"] {
-  --arc: 136px;
+  --arc: 142px;
 }
 
 .cpad-btn {
@@ -174,11 +180,11 @@ body.screen-result .cpad {
 .cpad-btn::before {
   content: "";
   position: absolute;
-  inset: -7px;
+  inset: -6px;
   border-radius: 50%;
   background: conic-gradient(var(--slime) calc((1 - var(--cd, 0)) * 1turn), rgb(255 255 255 / 0.22) 0);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4.5px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4.5px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4.5px), #000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4.5px), #000 calc(100% - 4px));
   pointer-events: none;
 }
 
@@ -427,11 +433,11 @@ body.screen-result .cpad {
 
   .cpad-attack[data-count="4"],
   .cpad-attack[data-count="5"] {
-    --arc: 117px;
+    --arc: 124px;
   }
 
   .cpad-chip {
-    min-height: 44px;
+    min-height: 46px;
     font-size: 15px;
   }
 
