@@ -16,6 +16,7 @@ import { celebrate, tripping, gettingUp, entering, flyOut, wailing, still, toRun
 
 const DOOR_REACH = 1.0; // 문 앞 이만큼 가까우면 들어감
 const GIVE_UP_SECONDS = 6; // 숨거나 달아나다 이만큼 못 가면 다시 그냥 도망
+const CHEER_SHOUT = 0.15; // 응원하는 사람이 외치는 빈도 (도망칠 때 외치는 빈도의 이만큼)
 const HIDDEN = new Set(['inside', 'gone']);
 
 export function stepVillager(v, dt, w) {
@@ -92,6 +93,7 @@ function roam(v, dt, w) {
     speed = R.runSpeed * v.speedMul;
   } else if (v.state === 'cheer') {
     if (w.hero) face(v, w.hero.x - v.x, w.hero.z - v.z, dt);
+    if (w.rnd() < R.shoutPerSecond * CHEER_SHOUT * dt) w.say(v, 'hero'); // 구경꾼이 가끔 '영웅이다!'
     return celebrate(v, dt, w.hero);
   }
   move(v, dt, speed, w);
