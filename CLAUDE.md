@@ -11,6 +11,7 @@
 - 코드 안의 주석도 한국어로 씁니다.
 - 게임 숫자(값·체력·속도 등)는 **설정 파일**에 모읍니다. 예: 악당 타이쿤은 `js/villain/villainConfig.js`, `js/villain/data/*.js`
 - 화면에 보이는 글자는 각 화면 파일 맨 위 `TEXT` 에 모읍니다.
+- 악당 타이쿤은 한국어 · 영어 두 가지예요 (영어 이름 **Doodle Kaiju**). 글자를 더할 때는 `L({ ko: '…', en: '…' })` 처럼 **한국어와 영어를 같이** 적습니다 (`js/villain/lang/lang.js`). 영어 화면만의 모양 고치기는 `css/villain-en.css`.
 - 빌드 도구 없이 브라우저에서 바로 열리는 ES 모듈(`<script type="module">`)로 만듭니다. three.js 는 `vendor/three/` (`js/lib/three.js` 로 불러 씀).
 
 ## 화면 방향: 가로 전용
