@@ -19,7 +19,7 @@ import { EMPTY } from './paintOps.js';
 
 const MIN_CELL = 8;
 
-export function createPaintCanvas(stageEl, { cols, rows, colorOf, maxCell = 46 }) {
+export function createPaintCanvas(stageEl, { cols, rows, colorOf, maxCell = 60 }) {
   const frame = document.createElement('div');
   frame.className = 'pb-frame';
   const canvas = document.createElement('canvas');

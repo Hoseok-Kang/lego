@@ -6,7 +6,10 @@
 
    차례: 좋음·나쁨 색 → 악명 휘장 → 목표 띠 · 말풍선 · 축하 카드 → 판 공통(머리줄 · 몸통 · 효과 칩 · 시설 칩)
         → 짓기 메뉴 카드 → 자리 고르기 띠 → 시설 판 → 계책 도감 → 괴수 도감 → 마을 지도 → 괴수 고르기
-        → 컴퓨터 · 휴대폰 가로 · 휴대폰 세로 */
+        → 컴퓨터 · 휴대폰 가로 · 작은 창
+
+   가로 화면 전용입니다. 화면 나눔은 villain-lair.css 와 같아요:
+     컴퓨터 (min-width: 900px) and (min-height: 521px)  /  휴대폰 가로 · 작은 창 (max-width: 899px), (max-height: 520px) */
 
 :root {
   --good-ink: #3a5a00;
@@ -162,7 +165,7 @@
   }
 }
 
-/* ── 목표 띠 (휴대폰 세로: 칩 3개가 가로로) ── */
+/* ── 목표 (왼쪽 기둥에 세로로: 컴퓨터는 설명까지, 휴대폰 가로는 이름 + 막대만 → 아래 두 묶음) ── */
 .goals {
   position: relative;
 }
@@ -173,8 +176,7 @@
 
 .goals-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -188,16 +190,9 @@
 .goal-btn {
   position: relative;
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
-  grid-template-areas:
-    "icon meter"
-    "name name";
   align-items: center;
-  gap: 4px 6px;
   width: 100%;
   height: 100%;
-  min-height: 64px;
-  padding: 6px 8px 7px;
   border: 2px solid var(--line);
   border-bottom: 4px solid var(--edge);
   border-radius: 15px;
@@ -241,7 +236,6 @@
   display: -webkit-box;
   overflow: hidden;
   font-family: var(--font-display);
-  font-size: 13.5px;
   font-weight: 400;
   line-height: 1.18;
   -webkit-line-clamp: 2;
@@ -667,18 +661,6 @@
   gap: 10px;
   padding: 16px 12px 10px 14px;
   border-bottom: 2px solid var(--line);
-  touch-action: none; /* 휴대폰: 아래로 쓸어 닫기 */
-}
-
-.lsheet-grab {
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  width: 46px;
-  height: 5px;
-  border-radius: 999px;
-  background: var(--edge);
-  translate: -50% 0;
 }
 
 .lsheet-icon {
@@ -2443,10 +2425,6 @@
     font-style: normal;
   }
 
-  .lsheet-grab {
-    display: none;
-  }
-
   .lsheet-head {
     padding-top: 12px;
   }
@@ -2499,8 +2477,8 @@
   }
 }
 
-/* ── 휴대폰 가로: 목표는 왼쪽 기둥에 작게, 자리 고르기 띠는 기둥에 세로로, 마을 카드는 납작하게 ── */
-@media (max-height: 520px) and (min-width: 560px) {
+/* ── 휴대폰 가로 · 작은 창: 목표는 왼쪽 기둥에 작게, 자리 고르기 띠는 기둥에 세로로, 마을 카드는 납작하게 ── */
+@media (max-width: 899px), (max-height: 520px) {
   .goals-list {
     grid-template-columns: minmax(0, 1fr);
     gap: 7px;
@@ -2546,10 +2524,6 @@
   }
 
   .rank-text small {
-    display: none;
-  }
-
-  .lsheet-grab {
     display: none;
   }
 
@@ -2731,241 +2705,5 @@
   .pick-go {
     min-height: 52px;
     font-size: 23px;
-  }
-}
-
-/* ── 휴대폰 세로 · 좁은 화면 ── */
-@media (max-width: 899px) and (min-height: 521px), (max-width: 559px) {
-  .townmap {
-    --band: calc(var(--edge-top) + 62px);
-  }
-
-  .townmap-head {
-    gap: 8px;
-  }
-
-  .townmap-head .vt-btn {
-    min-height: 44px;
-    padding-inline: 8px 12px;
-    border-bottom-width: 4px;
-  }
-
-  .townmap-head .vt-money {
-    min-height: 40px;
-    padding: 2px 12px 4px 7px;
-    border-bottom-width: 4px;
-    font-size: 20px;
-  }
-
-  .townmap-head .vt-money .ico {
-    width: 24px;
-    height: 24px;
-  }
-
-  .townmap-title {
-    display: -webkit-box;
-    font-size: 18px;
-    white-space: normal;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-
-  .townmap-towns {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    padding-top: 18px;
-  }
-
-  .tcard {
-    grid-template-columns: 38% minmax(0, 1fr);
-    grid-template-rows: auto;
-    border-bottom-width: 6px;
-    border-radius: 20px;
-  }
-
-  .tcard-art {
-    height: auto;
-    min-height: 100%;
-    padding: 0 6px;
-  }
-
-  .tcard-art .pix {
-    width: 100%;
-    height: auto;
-    margin-bottom: 16px;
-  }
-
-  .tcard--village .tcard-art {
-    background: linear-gradient(180deg, #9fc3e9 0%, #d7ebfb 82%, #4b9f4a 82%, #3f8f3e 100%);
-  }
-
-  .tcard--harbor .tcard-art {
-    background: linear-gradient(180deg, #f8bb3d 0%, #fce2a6 55%, #fff3d6 82%, #36aebf 82%, #078bc9 100%);
-  }
-
-  .tcard--castle .tcard-art {
-    background: linear-gradient(180deg, #ac78ba 0%, #e4adc8 80%, #958a73 80%, #6c6e68 100%);
-  }
-
-  .tcard-wins {
-    top: 7px;
-    right: auto;
-    left: 7px;
-    font-size: 13px;
-  }
-
-  .tcard-body {
-    gap: 6px;
-    padding: 10px 11px 11px;
-  }
-
-  .tcard-name {
-    font-size: 21px;
-  }
-
-  .tcard-blurb {
-    display: -webkit-box;
-    overflow: hidden;
-    font-size: 12.5px;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-
-  .tcard-hero {
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 12px;
-  }
-
-  .tcard-hero small {
-    display: none;
-  }
-
-  .tcard-hero b {
-    font-size: 15px;
-  }
-
-  .tcard-hero em {
-    font-size: 11.5px;
-  }
-
-  .tchip {
-    padding: 2px 8px 3px 5px;
-    font-size: 12px;
-  }
-
-  .tchip.is-wins {
-    display: none;
-  }
-
-  .tcard-locktext {
-    font-size: 12.5px;
-  }
-
-  .townmap-pick {
-    padding-top: 16px;
-  }
-
-  .pick-town-art {
-    width: 80px;
-    height: 50px;
-  }
-
-  .pick-town-art .pix {
-    height: 38px;
-  }
-
-  .pick-mods {
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .pick-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .pick {
-    padding: 6px 6px 8px;
-    border-radius: 17px;
-  }
-
-  .pick-name {
-    font-size: 16.5px;
-  }
-
-  .pick .vt-chip {
-    padding: 1px 6px 2px 4px;
-    font-size: 12px;
-  }
-
-  .pick-cost {
-    font-size: 18px;
-  }
-
-  .pick-go {
-    width: 100%;
-    font-size: 25px;
-  }
-}
-
-@media (max-width: 559px) {
-  /* 좁은 휴대폰: 자리 고르기 띠는 세 줄 (무엇 / 계책 칩 / 취소 · 짓기) */
-  .placebar {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-    grid-template-areas:
-      "what what"
-      "chips chips"
-      "actions actions";
-    gap: 7px;
-    padding-top: 9px;
-  }
-
-  .placebar-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-  }
-
-  .placebar-ok {
-    min-width: 0;
-  }
-
-  .placebar-chips {
-    mask-image: linear-gradient(90deg, #000 88%, transparent);
-  }
-
-  .goal.is-claimable .goal-meter em {
-    display: none;
-  }
-}
-
-@media (max-width: 420px) {
-  .rank-text small {
-    display: none;
-  }
-
-  .rank-text b {
-    font-size: 16.5px;
-  }
-
-  .fgrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-}
-
-@media (max-width: 370px) {
-  .goal-name {
-    font-size: 12.5px;
-  }
-
-  .goal-meter em {
-    display: none;
-  }
-
-  .facpanel-actions .vt-btn {
-    font-size: 15.5px;
   }
 }

@@ -2,7 +2,10 @@
    js/villain/ui/raidHud.js, resultScreen.js 가 만드는 화면의 모양입니다. 색은 css/villain.css 맨 위에서 정합니다.
 
    차례: 정보판 틀 → 위쪽 줄(괴수 체력 · 번 돈과 마을 부서짐 · 영웅 체력) → 체력 막대 → 영웅 출동 사이렌 띠
-        → 한 줄 안내 → 아래 단추 → 결과 화면 → 휴대폰 세로 → 휴대폰 가로 */
+        → 한 줄 안내 → 아래 단추 → 결과 화면 → 낮은 화면(휴대폰 가로)
+
+   가로 화면 전용입니다. 기본 모양은 컴퓨터(높이 521 이상), 높이 520 이하는 '낮은 화면' 묶음이 한 줄로 납작하게 바꿉니다.
+   높이 400 이하(568×320 · 844×390 등)는 한 번 더 촘촘히. */
 
 /* ── 정보판 틀: 3D 마을 위에 떠 있고, 단추만 눌림 ── */
 .hud {
@@ -1016,7 +1019,7 @@
 }
 
 /* 낮은 가로 화면은 카드 아래 여백이 더 좁음 */
-@media (max-height: 400px) and (min-width: 560px) {
+@media (max-height: 400px) {
   .result-actions {
     bottom: -9px;
     margin-bottom: -9px;
@@ -1024,7 +1027,7 @@
   }
 }
 
-/* 키가 작은 화면 (1280×720 · 360×740 …): 항목 줄을 조금 촘촘히 */
+/* 조금 낮은 컴퓨터 화면 (1280×720 · 960×540 …): 항목 줄을 조금 촘촘히 */
 @media (max-height: 780px) and (min-height: 401px) {
   .result-card {
     gap: 9px;
@@ -1042,15 +1045,6 @@
 
   .result-total {
     padding-block: 6px 8px;
-  }
-}
-
-/* 좁은 휴대폰: 단추 글자를 조금 줄여 카드 안에 들어가게 */
-@media (max-width: 420px) {
-  .result .result-actions .vt-btn {
-    gap: 6px;
-    padding-inline: 8px;
-    font-size: 18px;
   }
 }
 
@@ -1094,103 +1088,8 @@ body.screen-result .hud-edge {
   }
 }
 
-/* ── 휴대폰 세로: 위에 번 돈과 마을 막대, 그 아래 괴수와 영웅이 나란히 ── */
-@media (max-width: 700px) {
-  .hud-top {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      "town town"
-      "monster hero";
-    gap: 7px 8px;
-  }
-
-  .hud-town {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 7px;
-  }
-
-  .hud-earned {
-    padding: 3px 13px 4px 7px;
-    border-bottom-width: 4px;
-    font-size: 23px;
-  }
-
-  .hud-earned .ico {
-    width: 27px;
-    height: 27px;
-  }
-
-  .hud-town-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding: 9px 11px 10px;
-  }
-
-  .hud-town-label {
-    display: none;
-  }
-
-  .hud-fighter {
-    grid-template-columns: 40px minmax(0, 1fr);
-    gap: 7px;
-    width: 100%;
-    padding: 5px 10px 6px 6px;
-    border-radius: 15px;
-  }
-
-  .hud-fighter--hero {
-    grid-template-columns: minmax(0, 1fr) 38px;
-    padding: 5px 6px 6px 10px;
-  }
-
-  .hud-face {
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
-  }
-
-  .hud-fighter--hero .hud-face {
-    width: 38px;
-    height: 38px;
-    padding: 5px;
-  }
-
-  .hud-name {
-    font-size: 14.5px;
-  }
-
-  .hud-bar {
-    height: 14px;
-  }
-
-  .hud-caption {
-    top: calc(var(--edge-top) + 122px);
-    font-size: 15.5px;
-  }
-
-  .hud-alert {
-    top: 34%;
-    padding: 18px 0 20px;
-  }
-
-  .hud-btn {
-    min-height: 52px;
-  }
-
-  .result-card {
-    padding: 16px 14px 14px;
-    gap: 10px;
-    border-radius: 23px;
-  }
-
-  .result-face {
-    width: 78px;
-    height: 78px;
-  }
-}
-
-/* ── 휴대폰 가로 (화면이 낮음): 한 줄로 납작하게, 결과는 두 칸으로 ── */
-@media (max-height: 520px) and (min-width: 560px) {
+/* ── 낮은 화면 (휴대폰 가로 · 높이 520 이하): 한 줄로 납작하게, 결과는 두 칸으로 ── */
+@media (max-height: 520px) {
   .hud-top {
     grid-template-columns: minmax(0, 1fr) minmax(240px, 340px) minmax(0, 1fr);
     grid-template-areas: "monster town hero";
@@ -1354,7 +1253,7 @@ body.screen-result .hud-edge {
 }
 
 /* 아주 낮은 가로 화면 (작은 휴대폰): 결과 카드가 한 화면에 다 들어오게 더 촘촘히 */
-@media (max-height: 400px) and (min-width: 560px) {
+@media (max-height: 400px) {
   .result {
     padding-block: 6px;
   }
@@ -1408,7 +1307,7 @@ body.screen-result .hud-edge {
 }
 
 /* 낮은 가로 화면: 악명 띠도 촘촘히 */
-@media (max-height: 400px) and (min-width: 560px) {
+@media (max-height: 400px) {
   .result-fame {
     margin-top: 2px;
     padding-block: 2px 3px;
@@ -1451,7 +1350,7 @@ body.screen-result .hud-edge {
 }
 
 /* 아주 작은 휴대폰 가로 (예: 568×320) */
-@media (max-height: 400px) and (min-width: 560px) and (max-width: 640px) {
+@media (max-height: 400px) and (max-width: 640px) {
   .result-meters {
     grid-template-columns: minmax(0, 1fr);
   }

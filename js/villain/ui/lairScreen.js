@@ -3,7 +3,7 @@
 //   머리줄: 로고, 악명 휘장(단계 이름 + 다음 단계까지 막대), 가진 돈, 소리
 //   목표 띠: 목표 3개 (goalsBar.js)          가운데: lair.viewBox ← game.js 가 3D 소굴을 여기에 붙임
 //   아래 단추: [짓기] [괴수 도감] [부품 상점] [출동!]      3D 위 작은 단추: [계책 도감]
-//   판(시트): 휴대폰은 아래에서 올라오고, 넓은 화면은 왼쪽 옆판. 판이 가리는 만큼 3D 칸이 줄어 소굴이 다 보여요.
+//   판(시트): 언제나 왼쪽 옆판 (가로 화면 전용). 판이 가리는 만큼 3D 칸이 줄어 소굴이 다 보여요.
 //   자리 고르기 중에는 판이 접히고 얇은 띠만 남아요 (buildMenu.js 의 createPlaceBar).
 // 이 화면은 보여 주기와 누름 알리기만 합니다. 저장 · 화면 바꾸기 · 3D 는 부른 쪽(game.js)이 합니다.
 //
@@ -211,11 +211,7 @@ export function createLairScreen(root, options = {}) {
     const cellBottom = cell.offsetTop + cell.offsetHeight;
     let bottom = 0;
     let left = 0;
-    const side = getComputedStyle(screen).getPropertyValue('--sheet-side').trim() === 'left';
-    if (!sheet.hidden) {
-      if (side) left = Math.max(0, sheet.offsetLeft + sheet.offsetWidth - cellLeft);
-      else bottom = Math.max(0, cellBottom - sheet.offsetTop);
-    }
+    if (!sheet.hidden) left = Math.max(0, sheet.offsetLeft + sheet.offsetWidth - cellLeft);
     // 자리 고르기 띠가 3D 칸 아래쪽을 가로로 가리면 그만큼 (옆 기둥에 있을 때는 그대로)
     if (!place.el.hidden && place.el.offsetWidth >= cell.offsetWidth * 0.6 && place.el.offsetTop < cellBottom) {
       bottom = Math.max(bottom, cellBottom - place.el.offsetTop);
@@ -323,29 +319,6 @@ export function createLairScreen(root, options = {}) {
     else if (act === 'raid') openPanel('towns');
   });
   hello.addEventListener('click', () => (hello.hidden = true));
-
-  // 휴대폰: 판 머리줄을 아래로 쓸어내리면 닫힘
-  let drag = null;
-  sheet.addEventListener('pointerdown', (event) => {
-    const headEl = event.target.closest('.lsheet-head');
-    if (!headEl || event.target.closest('button') || getComputedStyle(screen).getPropertyValue('--sheet-side').trim() === 'left') return;
-    drag = { y: event.clientY, id: event.pointerId, dy: 0 };
-    headEl.setPointerCapture?.(event.pointerId);
-  });
-  sheet.addEventListener('pointermove', (event) => {
-    if (!drag || event.pointerId !== drag.id) return;
-    drag.dy = Math.max(0, event.clientY - drag.y);
-    sheet.style.transform = `translateY(${drag.dy}px)`;
-  });
-  const endDrag = () => {
-    if (!drag) return;
-    const far = drag.dy > 70;
-    drag = null;
-    sheet.style.transform = '';
-    if (far) closePanel();
-  };
-  sheet.addEventListener('pointerup', endDrag);
-  sheet.addEventListener('pointercancel', endDrag);
 
   // 키보드: Esc = 닫기 / 취소, Enter = 자리 고르기 확인
   document.addEventListener('keydown', (event) => {

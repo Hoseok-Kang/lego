@@ -304,13 +304,11 @@ export function createRaidHud(root, { onSpeed, onQuit, onPause, speeds = VILLAIN
       hud.hidden = true;
       hud.querySelector(':scope > .vt-dialog')?.remove();
     },
-    // 정보판이 가리는 크기 (세로 화면에서는 아래 단추 줄도 가림)
+    // 정보판이 가리는 크기 (위쪽 줄만. 아래 단추는 양쪽 구석에 작게 있어서 마을을 거의 안 가림). 화면 픽셀 기준
     getInsets() {
       if (hud.hidden) return { top: 0, bottom: 0, left: 0, right: 0 };
       const top = q('.hud-top').getBoundingClientRect().bottom;
-      const bottomBar = q('.hud-bottom').getBoundingClientRect();
-      const portrait = innerHeight > innerWidth;
-      return { top: Math.round(top), bottom: portrait && bottomBar.height > 0 ? Math.round(innerHeight - bottomBar.top) : 0, left: 0, right: 0 };
+      return { top: Math.round(top), bottom: 0, left: 0, right: 0 };
     },
   };
 }

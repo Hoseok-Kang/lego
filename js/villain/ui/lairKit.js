@@ -95,7 +95,6 @@ export function unlockLines(def) {
 export function sheetHead({ icon = '', title = '', sub = '' } = {}) {
   return `
     <header class="lsheet-head">
-      <span class="lsheet-grab" data-grab aria-hidden="true"></span>
       ${icon ? `<span class="lsheet-icon">${icon}</span>` : ''}
       <h2 class="lsheet-title">${escapeHTML(title)}${sub ? ` <small data-sub>${escapeHTML(sub)}</small>` : ''}</h2>
       <button type="button" class="vt-btn vt-btn--icon lsheet-close" data-close aria-label="닫기" title="닫기">${lairIcon('close')}</button>

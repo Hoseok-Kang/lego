@@ -33,7 +33,7 @@ export function tailMace(ctx, target, mount) {
   const s = mount.side; // +1 오른쪽 꼬리, -1 왼쪽 꼬리
   const turn = s; // 오른쪽 꼬리는 + 방향, 왼쪽 꼬리는 - 방향으로 돎
   const rest = mount.art.rest.z;
-  const reach = ctx.model.radius + cfg.range; // 바닥 원 반지름
+  const reach = (ctx.extent(1, 0) + ctx.extent(0, 1)) / 2 + cfg.range; // 바닥 원 반지름 (몸은 옆으로 넓고 앞뒤로 얇아서 그 가운데쯤)
   let t = 0;
   let phase = 'windup';
   let swept = []; // 돌면서 칠 상대 [{ other, at(지나가야 할 각도) }]
