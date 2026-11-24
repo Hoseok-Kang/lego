@@ -21,7 +21,9 @@
 //   SOUND_NAMES                                         소리 이름 목록
 // ─────────────────────────────────────────────────────────────
 
-import { VILLAIN_SOUNDS } from './villainSoundBank.js';
+import { VILLAIN_SOUNDS as BANK_SOUNDS } from './villainSoundBank.js';
+import { VILLAGER_SOUNDS, villagerVoiceFor } from './villagerVoices.js'; // (V) 마을 사람 '으악!' · '와아!' · '으앙~'
+const VILLAIN_SOUNDS = { ...BANK_SOUNDS, ...VILLAGER_SOUNDS };
 import { createNoiseBuffer, createMasterChain } from '../../fight/audio/synthKit.js';
 
 const MASTER_VOLUME = 0.5; // 전체 소리 크기 (0 ~ 1)
@@ -61,6 +63,7 @@ const EVENT_SOUNDS = {
   monsterPopped: 'pop',
   heroPopped: 'pop',
   raidEnded: ({ result }) => (result?.aborted ? null : result?.win ? [['win', 0.3]] : [['lose', 0.5]]),
+  villagerShout: villagerVoiceFor, // (V) 마을 사람 말풍선이 뜰 때 작은 목소리 (소리 모양은 villagerVoices.js)
 };
 
 export function createVillainSounds({ volume = MASTER_VOLUME } = {}) {
