@@ -115,7 +115,11 @@ export function createSculptView(hostEl, { grid, colorOf, hooks }) {
 
   function onDown(event) {
     event.preventDefault();
-    surface.setPointerCapture?.(event.pointerId);
+    try {
+      surface.setPointerCapture?.(event.pointerId);
+    } catch {
+      // 손가락이 이미 떨어진 경우 등: 붙잡지 않아도 됨
+    }
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     showGhost(null);
     if (pointers.size >= 2) {

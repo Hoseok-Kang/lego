@@ -113,7 +113,11 @@ export function createMonsterPreview(el, { spin = true, drag = true, sway = fals
   function onDown(event) {
     if (!drag || grab || (event.pointerType === 'mouse' && event.button !== 0)) return;
     grab = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    el.setPointerCapture?.(event.pointerId);
+    try {
+      el.setPointerCapture?.(event.pointerId);
+    } catch {
+      // 손가락이 이미 떨어진 경우: 붙잡지 않아도 됨
+    }
     el.classList.add('is-turning');
   }
   function onMove(event) {

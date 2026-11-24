@@ -102,6 +102,8 @@ export function createSculptScene(renderer, { w, h, d }) {
       n += 1;
     });
     blocks.count = n;
+    blocks.boundingSphere = null; // 누른 자리 찾기가 옛 크기를 기억하지 않게 (three.js 가 처음 한 번만 계산해 둠)
+    blocks.boundingBox = null;
     blocks.instanceMatrix.needsUpdate = true;
     if (blocks.instanceColor) blocks.instanceColor.needsUpdate = true;
   }

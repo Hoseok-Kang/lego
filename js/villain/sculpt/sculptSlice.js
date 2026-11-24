@@ -97,7 +97,11 @@ export function createSculptSlice(rootEl, { grid, colorOf, hooks, onLayer }) {
     event.preventDefault();
     const cell = paper.cellAt(event.clientX, event.clientY);
     if (!cell.inside) return;
-    canvas.setPointerCapture?.(event.pointerId);
+    try {
+      canvas.setPointerCapture?.(event.pointerId);
+    } catch {
+      // 손가락이 이미 떨어진 경우: 붙잡지 않아도 됨
+    }
     stroke = { id: event.pointerId, last: cell };
     hooks.start();
     applyAt(cell);
