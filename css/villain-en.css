@@ -54,3 +54,15 @@ html[lang="en"] .result-title {
     font-size: 14.5px;
   }
 }
+
+/* 아주 작은 휴대폰 가로 (568×320): 습격 정보판의 괴수 · 영웅 이름 ('Thunder Knight') 이 잘리지 않게 작게 두 줄까지 */
+@media (max-height: 400px) and (max-width: 640px) {
+  html[lang="en"] .hud-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 12px;
+    line-height: 1;
+    white-space: normal;
+  }
+}
